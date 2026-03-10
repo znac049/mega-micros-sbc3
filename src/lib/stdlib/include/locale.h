@@ -1,0 +1,3 @@
+/* locale.h */
+
+#pragma once
