@@ -89,6 +89,7 @@ PROGRAM_BASENAME=$(shell basename $(CURDIR))
 # Set other output files using output basname
 ELF=$(PROGRAM_BASENAME).elf
 BINARY=$(PROGRAM_BASENAME).bin
+SREC=$(PROGRAM_BASENAME).srec
 DISASM=$(PROGRAM_BASENAME).dis
 MAP=$(PROGRAM_BASENAME).map
 SYM=$(PROGRAM_BASENAME).sym
@@ -106,7 +107,7 @@ OBJECTS=$(addsuffix .o,$(basename $(SOURCES)))
 
 TO_CLEAN=$(OBJECTS) $(ELF) $(BINARY) $(MAP) $(SYM) $(DISASM) $(addsuffix .lst,$(basename $(SSOURCES) $(ASMSOURCES)))
 
-all: $(BINARY) $(DISASM)
+all: $(BINARY) $(SREC) $(DISASM)
 
 $(ELF) : $(OBJECTS) $(ROM_OBJ)
 	$(LD) $(LDFLAGS) $(GCC_LIBS) $^ $(LIBS) -o $@
@@ -116,6 +117,9 @@ $(ELF) : $(OBJECTS) $(ROM_OBJ)
 
 $(BINARY) : $(ELF)
 	$(OBJCOPY) -O binary $(ELF) $(BINARY)
+
+$(SREC) : $(ELF)
+	$(OBJCOPY) -O srec $(ELF) $(SREC)
 
 $(DISASM) : $(ELF)
 	$(OBJDUMP) --disassemble -S $(ELF) >$(DISASM)

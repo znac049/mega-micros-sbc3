@@ -1,3 +1,5 @@
+#include "printf.h"
+
 #define DUART_BASE 0xad0001
 #define DUART_MR1A 0
 #define DUART_MR2A 0
@@ -42,7 +44,7 @@ void init_duart(void) {
     duart[DUART_IMR] = 0;
 }
 
-char getchar(void) {
+char _getchar(void) {
     volatile char *duart = (volatile char *)DUART_BASE;
     volatile char sr = duart[DUART_SRA];
 
@@ -53,7 +55,7 @@ char getchar(void) {
     return duart[DUART_RBA];
 }
 
-void putchar(char c) {
+void _putchar(char c) {
     volatile char *duart = (volatile char *)DUART_BASE;
     volatile char sr = duart[DUART_SRA];
 
@@ -65,7 +67,7 @@ void putchar(char c) {
 
 void putstr(char *str) {
     while (*str) {
-        putchar(*str++);
+        _putchar(*str++);
     }
 }
 
@@ -77,6 +79,7 @@ int main(void) {
     putstr("Here we go...\r\n");
 
     for (int i=0; i<20; i++) {
+        printf("Loop=%d\r\n", i);
         duart[DUART_OPR_SET] = (char) LEDS1;
         duart[DUART_OPR_RESET] = (char) LEDS2;
         twiddle_thumbs();
@@ -87,5 +90,5 @@ int main(void) {
     }
 
     putstr("All done. Press any key to terminate...");
-    getchar();
+    _getchar();
 }

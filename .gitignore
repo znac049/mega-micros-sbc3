@@ -1,0 +1,7 @@
+*.o
+*.a
+*~
+\#*
+3rdParty-tools/*
+built/*
+SystemROM/*
