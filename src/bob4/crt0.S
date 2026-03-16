@@ -12,7 +12,15 @@ _start:
 /* Setup the stack and frame pointer */
 	move.l #init_sp,%sp
 	move.l #init_fp,%fp
-	
+
+/* Init BSS */
+	move.l 	#_bss_start,%a0
+1:	cmp.l	#_bss_end,%a0
+	beq		2f
+	clr.b   (%a0)+
+	bra.s   1b	
+2:
+
 /* invoke main() */
 	bsr	main
 

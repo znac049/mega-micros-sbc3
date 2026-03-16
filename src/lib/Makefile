@@ -12,7 +12,8 @@ FLAGS=-ffreestanding -ffunction-sections -fdata-sections				\
 			$(DEFINES)
 CFLAGS=-std=c11 $(FLAGS)
 CXXFLAGS=-std=c++20 -fno-exceptions -fno-rtti $(FLAGS)
-ASFLAGS=-Felf -m$(CPU) -quiet $(DEFINES)
+ASFLAGS=
+VASMFLAGS=-Felf -m$(CPU) -quiet $(DEFINES)
 ARFLAGS=
 
 GCC_68K_PFX=m68k-linux-gnu
@@ -23,7 +24,7 @@ LD=$(GCC_68K_PFX)-ld
 NM=$(GCC_68K_PFX)-nm
 AR=$(GCC_68K_PFX)-ar
 RANLIB=$(GCC_68K_PFX)-ranlib
-AS=vasmm68k_mot
+VASM=vasmm68k_mot
 RM_F=rm -f
 RM_RF=$(RM_F) -r
 MKDIR_P=mkdir -p
@@ -36,11 +37,11 @@ INSTALL_INC=$(INSTALL_DIR)/include
 UBERLIB=libmega.a
 
 # Avoid plain "make" building only the first target encountered, causing confusion
-decoy:
+decoy: all
 	@echo Please use \"make all\" to build all the libraries.
 
-include stdlib/include.mk
 include machine/include.mk
+include stdlib/include.mk
 
 # Keep this at the end, or it'll error out _sometimes_ and we don't really know why...
 #include printf/include.mk
@@ -55,9 +56,9 @@ include machine/include.mk
 	$(AS) $(ASFLAGS) -o $@ $<
 
 %.o : %.asm
-	$(AS) $(ASFLAGS) -o $@ $<
+	$(VASM) $(VASMFLAGS) -o $@ $<
 
-.PHONY: all install clean clobber
+.PHONY: all install clean clobber decoy
 
 all: $(UBERLIB) $(LIBS)
 
