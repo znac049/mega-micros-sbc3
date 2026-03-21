@@ -1,12 +1,12 @@
 OUTPUT_FORMAT("binary")
 ENTRY(_start)
 
+STARTUP(crt0.o)
+
 MEMORY
 {
-  RAM       : org = 0x00000000,  l = 0x00100000
-  EXP_RAM   : org = 0x00100000,  l = 0x00E80000
-  IO_SPACE  : org = 0x00F80000,  l = 0x00040000
-  ROM       : org = 0x00FC0000,  l = 0x00040000
+  RAM       : org = 0x00200000,  l = 0x00200000
+  ROM       : org = 0x00C00000,  l = 0x00400000
 }
 
 /* program configuration symbols that may be useful to override */
@@ -14,7 +14,7 @@ MEMORY
 PROVIDE(_STACK_SIZE     = 0x00004000);  /* 16KB default stack size      */
 
 /* firmware absolute addresses (generally not useful to override)  */
-PROVIDE(_INITIAL_STACK  = 0x00000000);  /* firmware stack top (mem top) */
+PROVIDE(_INITIAL_STACK  = 0x0027FFF0);  /* firmware stack top (mem top) */
 PROVIDE(_WARM_BOOT      = 0x00000004);  /* firmware warm boot address   */
 
 PROVIDE(_MFP_VECTORS    = 0x00000100);  /* MFP interrupt vector base    */
@@ -24,8 +24,8 @@ PROVIDE(_FIRMWARE       = 0x00FC0000);  /* firmware address             */
 PROVIDE(_FIRMWARE_REV   = 0x00FC0400);  /* firmware revision code       */
 
 /* NOTE: rev1.1 used 0x00028000 (but init now position independent)     */
-PROVIDE(_LOAD_ADDRESS   = 0x00040000);  /* firmware KERNEL_LOAD_ADDRESS */
-PROVIDE(_RUN_ADDRESS    = 0x00002000);  /* start of user memory         */
+PROVIDE(_LOAD_ADDRESS   = 0x00200000);  /* firmware KERNEL_LOAD_ADDRESS */
+PROVIDE(_RUN_ADDRESS    = 0x00280000);  /* start of user memory         */
 
 SECTIONS
 {

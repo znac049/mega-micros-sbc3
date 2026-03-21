@@ -16,7 +16,6 @@ LIBOBJECTS=$(DIR)/atol.o \
 			$(DIR)/putchar.o \
 			$(DIR)/puts.o \
 			$(DIR)/rand.o \
-			$(DIR)/snprintf.o \
 			$(DIR)/srand.o \
 			$(DIR)/sscanf.o \
 			$(DIR)/strcmp.o \

@@ -32,8 +32,6 @@ int putchar(int c);
 int puts(const char *str);
 /* rand.c */
 int rand(void);
-/* snprintf.c */
-int snprintf(char *dst, int n, const char *format, ...);
 /* srand.c */
 void srand(unsigned int seed);
 /* sscanf.c */

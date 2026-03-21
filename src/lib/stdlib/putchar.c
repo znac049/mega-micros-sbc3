@@ -1,6 +1,6 @@
-#include "tutor.h"
+#include "duart.h"
 
 int putchar(int c) {
-  _t14_outch(c);
+  _putchar(c);
   return c;
 }

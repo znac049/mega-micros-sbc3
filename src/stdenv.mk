@@ -31,7 +31,7 @@ GCC_LIBS?=$(shell $(CC) --print-search-dirs \
 LIBS=$(EXTRA_LIBS) -lstdlib -lmachine -lgcc
 ASFLAGS=-mcpu=$(CPU) -march=$(ARCH)
 VASMFLAGS=-Felf -m$(CPU) -quiet -Lnf $(DEFINES)
-LDFLAGS=-T $(LDSCRIPT) -L $(SYSLIBDIR) -Map=$(MAP) --gc-sections --oformat=elf32-m68k $(EXTRA_LDFLAGS)
+LDFLAGS=-T $(LDSCRIPT) -L $(SYSLIBDIR) -Map=$(MAP) -z noexecstack --gc-sections --oformat=elf32-m68k $(EXTRA_LDFLAGS)
 
 GCC_68K_PFX=m68k-linux-gnu
 CC=$(GCC_68K_PFX)-gcc
@@ -105,7 +105,7 @@ SOURCES=$(CSOURCES) $(CXXSOURCES) $(SSOURCES) $(ASMSOURCES)
 # Assume each source files makes an object file
 OBJECTS=$(addsuffix .o,$(basename $(SOURCES)))
 
-TO_CLEAN=$(OBJECTS) $(ELF) $(BINARY) $(MAP) $(SYM) $(DISASM) $(addsuffix .lst,$(basename $(SSOURCES) $(ASMSOURCES)))
+TO_CLEAN=$(OBJECTS) $(ELF) $(BINARY) $(SREC) $(MAP) $(SYM) $(DISASM) $(addsuffix .lst,$(basename $(SSOURCES) $(ASMSOURCES)))
 
 all: $(BINARY) $(SREC) $(DISASM)
 

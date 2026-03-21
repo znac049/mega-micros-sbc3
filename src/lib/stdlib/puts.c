@@ -1,11 +1,11 @@
-#include "tutor.h"
+#include "duart.h"
 
 int puts(const char *str) {
   while (*str) {
-    _t14_outch(*str++);
+    _putchar(*str++);
   }
   
-  _t14_outch('\n');
+  _putchar('\n');
 
   return 0;
 }

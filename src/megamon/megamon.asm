@@ -100,10 +100,16 @@ FlickPtr	equ	BotOfStore+4	; Address of next flick character
 ;* xr68c681 Duart
 ;*
 mr_off          equ     0
+sr_off          equ     2
 csr_off         equ     2
 cr_off          equ     4
+rhr_off         equ     6
+thr_off         equ     6
 acr_off         equ     8
 imr_off         equ     10
+opcr_off        equ     26
+sopbc_off       equ     28
+copbc_off       equ     30
 
 
 Stack           equ     FlickPtr+4096
@@ -125,25 +131,28 @@ _start::
 		lea     TtyUart,a0	; Address of uart
                 move.b  #0,imr_off(a0)  ; No interrupts from anything
 
-                move.b  #$a0,cr_off(a0) ; x=1 on Tx
-                move.b  #$80,cr_off(a0) ; x=1 on Rx
-                move.b  #$70,acr_off(a0); ACR: BRG set #1, CLK/16 
-                move.b  #$88,csr_off(a0); CSR: 230400 (115200 x 2)
+                move.b  #$a0,cr_off(a0) ; CRA: x=1 on Tx
+                move.b  #$80,cr_off(a0) ; CRA: x=1 on Rx
 
-                move.b  #$93,mr_off(a0) ; MR1: Rx RTS,8N
-                move.b  #$17,mr_off(a0) ; MR2: Normal, CTS, 1 stop bit
+                move.b  #$70,acr_off(a0); ACR: BRG set #1, CLK/16 
+                move.b  #$88,csr_off(a0); CSRA: 230400 (115200 x 2)
+
+                move.b  #$93,mr_off(a0) ; MR1A: Rx RTS,8N
+                move.b  #$17,mr_off(a0) ; MR2A: No echo, CTS, 1 stop bit
                 move.b  #$05,cr_off(a0) ; CRA: enable tx/rx
+                move.b  #$ff,sopbc_off(a0)  ;
 ;
 ;* Initialise the host uart
 		lea	HostUart,a0	; Address of uart
 
-                move.b  #$a0,cr_off(a0) ; x=1 on Tx
-                move.b  #$80,cr_off(a0) ; x=1 on Rx
-                move.b  #$88,csr_off(a0); CSR: 230400 (115200 x 2)
+                move.b  #$a0,cr_off(a0) ; CRB: x=1 on Tx
+                move.b  #$80,cr_off(a0) ; CRB: x=1 on Rx
 
-                move.b  #$93,mr_off(a0) ; MR1: Rx RTS,8N
-                move.b  #$17,mr_off(a0) ; MR2: Normal, CTS, 1 stop bit
-                move.b  #$05,cr_off(a0) ; CRA: enable tx/rx
+                move.b  #$88,csr_off(a0); CSRB: 230400 (115200 x 2)
+
+                move.b  #$93,mr_off(a0) ; MR1B: Rx RTS,8N
+                move.b  #$17,mr_off(a0) ; MR2B: No echo, CTS, 1 stop bit
+                move.b  #$05,cr_off(a0) ; CRB: enable tx/rx
 ;;
 		move.l	#TtyUart,CurrentIn  ; Setup tty port
 		move.l	#TtyUart,CurrentOut ; as default io device
@@ -2379,9 +2388,9 @@ CRLF            move.l  d0,-(SP)        ; save REGS
 ;*
 PUTCH           move.l  a1,-(sp)
                 move.l  CurrentOut,a1
-pcPoll          btst.b  #3,2(a1)
+pcPoll          btst.b  #3,sr_off(a1)
                 beq     pcPoll
-                move.b  d0,6(a1)
+                move.b  d0,thr_off(a1)
                 move.l  (sp)+,a1
                 rts
 
@@ -2393,9 +2402,9 @@ pcPoll          btst.b  #3,2(a1)
 ;*
 GetCh		move.l  a1,-(sp)
                 move.l  CurrentIn,a1
-gcPoll          btst.b  #0,2(a1)
+gcPoll          btst.b  #0,sr_off(a1)
                 beq     gcPoll
-                move.b  6(a1),d0
+                move.b  rhr_off(a1),d0
                 and.b   #$7f,d0
                 move.l  (sp)+,a1
                 rts

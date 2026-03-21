@@ -1,7 +1,14 @@
 *.o
 *.a
+*.sym
+*.elf
+*.bin
+*.dis
+*.lst
+*.romlst
 *~
 \#*
 3rdParty-tools/*
 built/*
 SystemROM/*
+src/libs_in_waiting

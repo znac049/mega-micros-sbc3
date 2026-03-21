@@ -1,5 +1,5 @@
-#include "tutor.h"
+#include "duart.h"
 
 int getchar(void) {
-    return _t14_getch();
+    return _getchar();
 }
