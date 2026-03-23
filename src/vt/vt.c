@@ -1,32 +1,15 @@
+#include "string.h"
 #include "printf.h"
 #include "machine.h"
 
-#define MAXLINE 512
-
-#define MAXSEQ 16
-
-#define CURSOR_UP       256
-#define CURSOR_DOWN     257
-#define CURSOR_LEFT     258
-#define CURSOR_RIGHT    259
-
-#define EOS '\0'
-#define BS 8
-#define LF 10
-#define CR 13
-#define ESCAPE 27
-
-#define PRINTABLE(ch) (((ch >= ' ') && (ch <= '~'))?ch:'.')
+#include "cli.h"
 
 int do_help(int, char **);
 
-static struct command_t {
-    char *command;
-    int (*fn)(int, char**);
-} commands[] = {
-    {
-        "help", &do_help
-    }
+static command_t commands[] = {
+    { "boot", &do_boot, "[<name>]\tBoot"},
+    { "help", &do_help, "[<command>]\tShow help"},
+    { NULL, NULL, NULL}
 };
 
 int get_vt_char(void) {
@@ -112,18 +95,49 @@ int readline(char *line, int max_len) {
 }
 
 int do_help(int argc, char **argv) {
-    return 1;
+    printf("The following commands are available:\r\n");
+
+    for (int i=0; commands[i].command != NULL; i++) {
+        printf("  %s %s\r\n", commands[i].command, commands[i].short_help);
+    }
+
+    printf("\r\n");
+
+    return 0;
 }
 
 void main(void) {
     char cmd[MAXLINE];
+    short running = 1;
+    int res;
 
-    printf("Command are:\r\n");
-    for (unsigned int i=0; i<(sizeof(commands) / sizeof(struct command_t)); i++) {
-        printf("  %s\r\n", commands[i].command);
-    }
+    while (running) {
+        int argc;
+        int num_matches;
 
-    while (readline(cmd, MAXLINE)) {
-        printf("\r\nGot commandline: '%s'\r\n", cmd);
+        printf("-> ");
+        res = readline(cmd, MAXLINE);
+        if (res == 0) {
+            running = 0;
+        }
+        else {
+            argc = make_args(cmd);
+
+            num_matches = match_command(argc, g_argv, commands);
+            printf("\r\nnum matches = %d\r\n", num_matches);
+
+            if (num_matches > 1) {
+                printf("Command '%s' is ambiguous.\r\n", g_argv[0]);
+            }
+            else if (num_matches == 1) {
+                res = run_command(argc, g_argv, commands);
+                if (res) {
+                    printf("Command exited with error code %d\r\n", res);
+                }
+            }
+            else {
+                printf("'%s' is not a command.\r\n", g_argv[0]);
+            }
+        }
     }
 }

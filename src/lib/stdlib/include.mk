@@ -18,6 +18,7 @@ LIBOBJECTS=$(DIR)/atol.o \
 			$(DIR)/rand.o \
 			$(DIR)/srand.o \
 			$(DIR)/sscanf.o \
+			$(DIR)/strchr.o \
 			$(DIR)/strcmp.o \
 			$(DIR)/strcpy.o \
 			$(DIR)/strlen.o \
