@@ -22,16 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <ctype.h>
 
-int sscanf(const char *str, const char *format, ...) {
- 	int res;
-	va_list args;
-
-	va_start(args, format);
-	res = vsscanf(str, format, args);
-	va_end(args);
-
-	return res;
+int isspace(int c) {
+    return ((c == ' ') ||
+            (c == '\t') ||
+            (c == '\f') ||
+            (c == '\r') ||
+            (c == '\n'));
 }

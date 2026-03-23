@@ -24,7 +24,7 @@ SOFTWARE.
 
 #include <stdlib.h>
 
-long int sttrtol(const char *nptr, char **endptr, int base)
+long strtol(const char *nptr, char **endptr, int base)
 {
 	char b, sign = 1;
 	int num = 0;

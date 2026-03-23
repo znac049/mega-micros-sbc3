@@ -31,5 +31,6 @@ typedef unsigned int uint32_t;
 typedef unsigned int size_t;
 
 int isdigit(int c);
+int isspace(int c);
 int tolower(int c);
 int toupper(int c);

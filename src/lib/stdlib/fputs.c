@@ -26,7 +26,12 @@ SOFTWARE.
 
 int fputs(const char *s, FILE *stream) {
   if ((stream == stdout) || (stream == stdin)) {
-    return puts(s);
+    char *str = (char *)s;
+
+    while (*str) {
+      _putchar(*str++);
+    }
+    return 0;
   }
 
   puts("\r\nERROR: attempt to fputs to somewhere other than the terminal! That's not working yet!\r\n");

@@ -14,6 +14,7 @@ LIBOBJECTS=$(DIR)/atoi.o \
 			$(DIR)/getenv.o \
 			$(DIR)/gets.o \
 			$(DIR)/isdigit.o \
+			$(DIR)/isspace.o \
 			$(DIR)/itoa.o \
 			$(DIR)/memset.o \
 			$(DIR)/printf.o \
@@ -34,6 +35,7 @@ LIBOBJECTS=$(DIR)/atoi.o \
 			$(DIR)/toupper.o \
 			$(DIR)/vfprintf.o \
 			$(DIR)/vsnprintf.o \
+			$(DIR)/vsscanf.o \
 			$(DIR)/warn.o
 
 LIBINCLUDES=$(DIR)/include

@@ -35,4 +35,4 @@ char *itoa(unsigned int value, char *string, int base);
 char *itoa_padded(unsigned int value, char *string, int base, char width, char zeropad, char is_signed);
 int rand(void);
 void srand(unsigned int seed);
-long int strtol(const char *nptr, char **endptr, int base);
+long strtol(const char *nptr, char **endptr, int base);
