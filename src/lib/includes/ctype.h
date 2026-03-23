@@ -1,3 +1,0 @@
-/* ctype.h */
-
-#pragma once

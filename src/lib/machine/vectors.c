@@ -1,5 +1,5 @@
-#include "vectors.h"
-#include "printf.h"
+#include <stdio.h>
+#include <vectors.h>
 
 unsigned int get_isr_vector(int vector_number) {
     unsigned int *vector_base;

@@ -1,3 +1,0 @@
-/* err.h */
-
-#pragma once

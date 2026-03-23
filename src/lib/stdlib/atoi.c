@@ -22,4 +22,24 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+int atoi(const char *str) {
+	int res = 0;
+    int neg = 0;
+
+    // Skip leading whitespace
+	while (*str == ' ' || *str == '\t') {
+        str++;
+    }
+
+	if (*str == '-') {
+		neg = 1;
+		str++;
+	}
+
+	for (char ch= *str; ch >= '0' && ch <= '9'; ch=*str++) {
+		res *= 10;
+		res += (ch - '0');
+	}
+
+	return neg?-res:res;
+}

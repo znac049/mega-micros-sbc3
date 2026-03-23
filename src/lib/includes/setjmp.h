@@ -1,3 +1,0 @@
-/* setjmp.h */
-
-#pragma once

@@ -5,10 +5,11 @@ endif
 CPU?=68030
 EXTRA_CFLAGS?=-g -O2
 EXTRA_CXXFLAGS?=-g -O2
-DEFINES:=$(DEFINES) -DROSCO_M68K_SYSLIBS
+DEFINES:=$(DEFINES)
 FLAGS=-ffreestanding -ffunction-sections -fdata-sections				\
 			-nostartfiles -Wall -Wpedantic -Werror      				\
 			-mcpu=$(CPU) -march=$(CPU) -mtune=$(CPU)    				\
+			-nostdinc													\
 			$(DEFINES)
 CFLAGS=-std=c11 $(FLAGS)
 CXXFLAGS=-std=c++20 -fno-exceptions -fno-rtti $(FLAGS)

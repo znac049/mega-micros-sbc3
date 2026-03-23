@@ -22,4 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+#include <ctype.h>
+
+int isdigit(int c) {
+    return ((c >= '0') && (c <= '9'));
+}

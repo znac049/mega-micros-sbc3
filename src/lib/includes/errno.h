@@ -1,3 +1,0 @@
-/* errno.h */
-
-#pragma once

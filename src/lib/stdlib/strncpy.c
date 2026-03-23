@@ -22,4 +22,19 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+#include <string.h>
+#include <stddef.h>
+
+char *strncpy(char *dst, const char *src, size_t dsize) {
+	char *ret = dst;
+
+	for (; dsize > 0; dsize--) {
+		*dst++ = (*src != EOS) ? *src++ : 0;
+    }
+
+	if (dsize > 0) {
+		*dst = EOS;
+    }
+
+	return ret;
+} 

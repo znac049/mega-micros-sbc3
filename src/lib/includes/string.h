@@ -1,3 +1,0 @@
-/* string.h */
-
-#pragma once

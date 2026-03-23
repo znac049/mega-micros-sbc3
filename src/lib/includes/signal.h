@@ -1,3 +1,0 @@
-/* signal.h */
-
-#pragma once
