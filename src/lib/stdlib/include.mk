@@ -16,6 +16,7 @@ LIBOBJECTS=$(DIR)/atoi.o \
 			$(DIR)/isdigit.o \
 			$(DIR)/isspace.o \
 			$(DIR)/itoa.o \
+			$(DIR)/memcpy.o \
 			$(DIR)/memset.o \
 			$(DIR)/printf.o \
 			$(DIR)/putchar.o \

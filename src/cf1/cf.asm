@@ -1,6 +1,6 @@
         section .text,code
 
-ata_reg_base    equ     $ae0001
+ata_reg_base    equ     $ae0000
 ata_reg_status  equ     ata_reg_base+$0e
 
 ata_status_busy equ     $80

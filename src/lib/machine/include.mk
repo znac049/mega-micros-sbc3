@@ -1,6 +1,10 @@
 LIB=machine
-LIBOBJECTS=$(DIR)/_duart.o \
+LIBOBJECTS=$(DIR)/_cf.o \
+			$(DIR)/cf.o \
+			$(DIR)/_duart.o \
 			$(DIR)/duart.o \
+			$(DIR)/_misc.o \
+			$(DIR)/misc.o \
 			$(DIR)/pit.o \
 			$(DIR)/_vectors.o \
 			$(DIR)/vectors.o \

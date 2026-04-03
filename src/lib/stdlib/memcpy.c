@@ -22,16 +22,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <stdio.h>
+#include <string.h>
 
-int fputs(const char *s, FILE *stream) {
-  if ((stream == stdout) || (stream == stderr)) {
-    while (*s) {
-      putchar(*s++);
+void *memcpy(void *dest, const void *src, size_t n) {
+    unsigned char *d = (unsigned char *)dest;
+    unsigned char *s = (unsigned char *)src;
+
+    for (; n; n--) {
+        *d++ = *s++;
     }
-    return 0;
-  }
 
-  puts("\r\nERROR: attempt to fputs to somewhere other than the terminal! That's not working yet!\r\n");
-  return EOF;
+    return dest;
 }

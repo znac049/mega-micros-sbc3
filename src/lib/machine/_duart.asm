@@ -45,14 +45,14 @@ _putchar::
                 move.b  d0,duart_tba(a1)
                 rts
 
-_char_available::
+_polled_char_available::
                 move.l  #duart_base,a1
                 moveq.l #0,d0
                 move.b  duart_sra(a1),d0
                 and.b   #1,d0
                 rts
 
-_getchar::
+_polled_getchar::
                 move.l  #duart_base,a1
                 btst.b  #0,duart_sra(a1)
                 beq     _getchar

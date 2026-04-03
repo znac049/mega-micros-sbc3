@@ -1,10 +1,12 @@
 #pragma once
 
-#include "duart.h"
-#include "pit.h"
-#include "vectors.h"
+#include <ctype.h>
+#include <duart.h>
+#include <pit.h>
+#include <cf.h>
+#include <vectors.h>
 
-typedef unsigned char byte_t;
-typedef unsigned char bool_t;
+#define INTSOFF() __asm("or.w #0x0700,%sr")
+#define INTSON() __asm("and.w #0xf8ff,%sr")
 
-typedef unsigned char uint8_t;
+#define ISR void __attribute((interrupt))

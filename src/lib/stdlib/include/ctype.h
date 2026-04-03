@@ -30,6 +30,13 @@ typedef unsigned int uint32_t;
 
 typedef unsigned int size_t;
 
+typedef unsigned char bool_t;
+
+#define TRUE 1
+#define FALSE 0
+#define YES 1
+#define NO 0
+
 int isdigit(int c);
 int isspace(int c);
 int tolower(int c);

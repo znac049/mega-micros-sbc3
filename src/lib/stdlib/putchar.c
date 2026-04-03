@@ -26,6 +26,10 @@ SOFTWARE.
 #include <duart.h>
 
 int putchar(int c) {
+  if (c == '\n') {
+    _putchar('\r');
+  }
+
   _putchar(c);
   return c;
 }

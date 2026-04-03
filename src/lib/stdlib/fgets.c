@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 #include <stdio.h>
+#include <stddef.h>
 
 char *fgets(char *s, int size, FILE *stream) {
   return NULL;

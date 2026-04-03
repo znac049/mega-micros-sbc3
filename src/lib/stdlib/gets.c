@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 #include <stdio.h>
+#include <stddef.h>
 
 char *gets(char *s) {
     char c = getchar();

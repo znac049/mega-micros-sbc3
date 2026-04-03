@@ -26,7 +26,6 @@ SOFTWARE.
 
 #include <stdarg.h>
 #include <ctype.h>
-#include "printf.h"
 
 typedef struct file {
     int fd;
