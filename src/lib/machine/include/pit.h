@@ -28,6 +28,8 @@
 #define pit_cntrl ((unsigned char*) pit_base+50)
 #define pit_tsr   ((unsigned char*) pit_base+52)
 
-void _pit_reset(void);
-unsigned int _pit_get_counter(void);
-unsigned int _pit_set_counter(unsigned int);
+void _claim_pit(void);
+uint32_t pit_get_counter(void);
+void _pit_release();
+uint32_t pit_set_counter(uint32_t);
+uint32_t ticks();

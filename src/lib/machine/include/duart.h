@@ -77,7 +77,7 @@ int _getchar(void);
 void _putchar(int ch);
 int _char_available(void);
 
-void init_duart(void);
-void close_duart(void);
+void _claim_duart(void);
+void _release_duart(void);
 void clear_led(int);
 void set_led(int);

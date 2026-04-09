@@ -146,7 +146,7 @@ void _putchar_buffered(int ch) {
      }
 }
 
-void init_duart(void) {
+void _claim_duart(void) {
     uint8_t duart_vector_number = *duart_ivr;   /* Grab the vector number used by the duart */
 
     /* Channel A */
@@ -179,7 +179,7 @@ void init_duart(void) {
     INTSON();
 }
 
-void close_duart(void) {
+void _release_duart(void) {
     uint8_t duart_vector_number = *duart_ivr;   /* Grab the vector number used by the duart */
 
     /* Wait for TX buffer to empty */
