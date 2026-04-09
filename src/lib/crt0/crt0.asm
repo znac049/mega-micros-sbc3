@@ -17,15 +17,24 @@ ibloop:
 	bra.s   ibloop
 
 ibdone:
+; Setup system timer
+	bsr		_claim_pit;
+
 ; Take control of the duart
-	bsr		init_duart
+	bsr		_claim_duart
+
+; Initialise the heap
+	bsr		_init_heap
 
 ; invoke main() 
 	bsr	main
 
 exit::
-; all done - reliquish control of the serial ports
-	bsr		close_duart
+; all done - relinquish control of the serial ports
+	bsr		_release_duart
+
+; ...and the PIT
+	bsr		_release_pit
 
 ; ...and pass control to the monitor
 	move.b #228,d7
