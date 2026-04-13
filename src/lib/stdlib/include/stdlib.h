@@ -31,6 +31,7 @@ int atoi(const char *nptr);
 long atol(const char *nptr);
 void exit(int);
 char *getenv(const char *name);
+void heap_print_free(void);
 char *itoa(unsigned int value, char *string, int base);
 void _init_heap(void);
 char *itoa_padded(unsigned int value, char *string, int base, char width, char zeropad, char is_signed);

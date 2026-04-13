@@ -1,11 +1,14 @@
 LIB=machine
-LIBOBJECTS=$(DIR)/_cf.o \
+LIBOBJECTS=$(DIR)/cb.o \
+			$(DIR)/_cf.o \
 			$(DIR)/cf.o \
 			$(DIR)/_duart.o \
-			$(DIR)/duart.o \
+			$(DIR)/duart2.o \
+			$(DIR)/leds.o \
 			$(DIR)/_misc.o \
 			$(DIR)/misc.o \
 			$(DIR)/pit.o \
+			$(DIR)/termio.o \
 			$(DIR)/_vectors.o \
 			$(DIR)/vectors.o \
 

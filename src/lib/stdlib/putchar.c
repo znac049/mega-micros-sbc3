@@ -30,6 +30,6 @@ int putchar(int c) {
     _putchar('\r');
   }
 
-  _putchar(c);
+  _polled_putchar(c);
   return c;
 }

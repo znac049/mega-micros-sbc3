@@ -25,5 +25,9 @@ SOFTWARE.
 #include <duart.h>
 
 int getchar(void) {
-    return _getchar();
+    return _polled_getchar();
+}
+
+int char_available(void) {
+    return _polled_char_available();
 }

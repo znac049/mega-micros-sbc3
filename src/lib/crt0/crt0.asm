@@ -29,6 +29,7 @@ ibdone:
 ; invoke main() 
 	bsr	main
 
+
 exit::
 ; all done - relinquish control of the serial ports
 	bsr		_release_duart
@@ -40,6 +41,7 @@ exit::
 	move.b #228,d7
 	trap #14
 
+
 twiddle_thumbs::
     movem.l d2/d6,-(sp)
 
@@ -50,6 +52,17 @@ spin:
     bne.s   spin
 
     movem.l (sp)+,d2/d6
-    rts
+	rts
+
+
+get_heap_start::
+	move.l	a0,-(sp)
+	lea		_bss_end,a0
+	addq.l  #4,a0
+	move.l  a0,d0
+	and.l	#$fffffffc,d0
+	move.l	(sp)+,a0
+	rts
 
 	end
+

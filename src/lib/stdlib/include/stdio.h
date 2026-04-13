@@ -41,6 +41,7 @@ extern FILE __stderr;
 
 #define EOF -1
 
+int char_available(void);
 int fclose(FILE *stream);
 int fflush(FILE *stream);
 int fgetc(FILE *stream);
