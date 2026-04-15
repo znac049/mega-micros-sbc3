@@ -29,6 +29,7 @@ SOFTWARE.
 
 void *memcpy(void *dest, const void *src, size_t n);
 void *memset(void *s, int c, size_t n);
+int strcasecmp(const char *s1, const char *s2);
 char *strchr(const char *s, int c);
 int strcmp(const char *s1, const char *s2);
 char *strcpy(char *dst, const char *src);

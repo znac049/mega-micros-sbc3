@@ -22,38 +22,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <stdio.h>
-#include <stddef.h>
+#include <string.h>
+#include <ctype.h>
 
-#define BS 8
+int strcasecmp(const char *s1, const char *s2) {
+  register char c1=0, c2=0;
 
-char *gets(char *s) {
-    int ch;
-    int i = 0;
-
-    while ((ch = getchar()) != -1) {
-        switch(ch) {
-            case '\r': case '\n':
-                s[i] = EOS;
-                putchar('\n');
-
-                return s;
-
-            case BS:
-                if (i) {
-                    putchar(BS);
-                    putchar(' ');
-                    putchar(BS);
-                    i--;
-                }
-                break;
-
-            default:
-                putchar(ch);
-                s[i++] = ch;
-                break;
-        }
+  while ((c1 = *s1++) && (c2 = *s2++)) {
+    if (tolower(c1) != tolower(c2)) {
+      return c1 - c2;
     }
+  }
 
-    return NULL;
+  return c1 - c2;
 }

@@ -23,9 +23,11 @@ LIBOBJECTS=$(DIR)/atoi.o \
 			$(DIR)/putchar.o \
 			$(DIR)/puts.o \
 			$(DIR)/rand.o \
+			$(DIR)/snprintf.o \
 			$(DIR)/srand.o \
 			$(DIR)/sscanf.o \
 			$(DIR)/strchr.o \
+			$(DIR)/strcasecmp.o \
 			$(DIR)/strcmp.o \
 			$(DIR)/strcpy.o \
 			$(DIR)/streams.o \
