@@ -7,15 +7,14 @@
 void twiddle_thumbs(void);
 
 void scan() {
-    static int lednum = 2;
+    static int lednum = -1;
     static int delta = 1;
 
     clear_led(lednum);
 
     lednum += delta;
-    if ((lednum < 4) || (lednum > 9)) {
+    if ((lednum < 0) || (lednum >= 6)) {
         delta = -delta;
-        lednum += delta;
         lednum += delta;
     }
 
@@ -34,26 +33,29 @@ void dump_pit(void) {
 
 int main(void) {
     int zob = 0;
+    int old_timer, timer;
 
     printf("\r\nHere we go...\r\n");
 
-    //dump_pit();
-
-    // Plug in the isr
-
     printf("All done. Press any key to terminate...\r\n");
-    while (!_char_available()) {
-        printf("%08x", ticks());
-        _putchar('\r');
+    timer = ticks();
+    old_timer = 0;
+    while (!char_available()) { 
+        if (old_timer != timer) {
+            printf("%08x", ticks());
+            _putchar('\r');
+        }
+
+        old_timer = timer;
+        timer = ticks();
 
         zob++;
-        if (zob == 100) {
+        if (zob == 10000) {
             scan();
             zob = 0;
         }
     }
-
-    _getchar();
-
-    //dump_pit();
+    
+    printf("\nType a string followed by ENTER and we're done!\n");
+    printf("Quit character was %d\n", getchar());
 }
