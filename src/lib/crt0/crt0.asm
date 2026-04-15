@@ -17,6 +17,15 @@ ibloop:
 	bra.s   ibloop
 
 ibdone:
+; Check if we're running in ROM or RAM
+	clr.b 	running_in_rom
+	lea		(pc),a0
+	move.l  a0,d0
+	cmp.l	#$c00000,d0
+	blt		in_ram
+	move.b  #1,running_in_rom
+in_ram:
+
 ; Setup system timer
 	bsr		_claim_pit;
 
@@ -25,6 +34,8 @@ ibdone:
 
 ; Initialise the heap
 	bsr		_init_heap
+
+	bsr		pre_main
 
 ; invoke main() 
 	bsr	main
@@ -63,6 +74,12 @@ get_heap_start::
 	and.l	#$fffffffc,d0
 	move.l	(sp)+,a0
 	rts
+
+
+	section	.data,data
+
+running_in_rom::
+	dc.b	0
 
 	end
 
