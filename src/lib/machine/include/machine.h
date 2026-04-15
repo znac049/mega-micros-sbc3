@@ -13,3 +13,5 @@
 #define ISR void __attribute((interrupt))
 
 #define BIT(n) (1<<n)
+
+extern uint8_t running_in_rom;
