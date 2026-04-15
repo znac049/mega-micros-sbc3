@@ -6,6 +6,7 @@
 *.dis
 *.lst
 *.romlst
+*.srec
 *~
 \#*
 3rdParty-tools/*

@@ -1368,9 +1368,9 @@ E1              moveq   #1,d0
                 cmpi    #2,ErrNum       ; WHAT ERROR TYPE ?
                 beq     E2
                 move.l  EXSTR+4,a0
-E2              bsr     P_STR   ; say ERROR ETC
+E2              bsr     P_STR           ; say ERROR ETC
                 move.l  #ACSTR,a0
-                bsr     P_STR   ; say ACCESS TYPE
+                bsr     P_STR           ; say ACCESS TYPE
                 move    (A6)+,d0        ; GET ACCESS NUMBER
                 andi    #31,d0          ; MASK LOWER 5 BITS
                 moveq   #2,D6

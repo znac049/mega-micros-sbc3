@@ -1,70 +1,18 @@
-#include "stdlib.h"
-#include "printf.h"
-#include "machine.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <machine.h>
 
-typedef unsigned char uint8_t;
-typedef unsigned short int uint16_t;
-typedef unsigned int uint32_t;
+#define NL() putchar('\n')
 
-#define ATA_REG_BASE		    0xae0001
-#define ATA_REG_DATA		    ((volatile uint16_t *) (ATA_REG_BASE + 0x0))
-#define ATA_REG_DATA_BYTE	    ((volatile uint8_t *) (ATA_REG_BASE + 0x0))
+static uint16_t swap16(uint16_t val) {
+	return (val>>8) | ((val&0xff)<<8);
+}
 
-#define ATA_REG_FEATURE		    ((volatile uint8_t *) (ATA_REG_BASE + 0x2))
-#define ATA_REG_ERROR		    ((volatile uint8_t *) (ATA_REG_BASE + 0x2))
-
-#define ATA_REG_SECTOR_COUNT    ((volatile uint8_t *) (ATA_REG_BASE + 0x4))
-
-#define ATA_REG_SECTOR_NUM	    ((volatile uint8_t *) (ATA_REG_BASE + 0x6))
-
-#define ATA_REG_CYL_LOW		    ((volatile uint8_t *) (ATA_REG_BASE + 0x8))
-
-#define ATA_REG_CYL_HIGH	    ((volatile uint8_t *) (ATA_REG_BASE + 0xa))
-
-#define ATA_REG_DRIVE_HEAD	    ((volatile uint8_t *) (ATA_REG_BASE + 0xc))
-
-#define ATA_REG_STATUS		    ((volatile uint8_t *) (ATA_REG_BASE + 0xe))
-#define ATA_REG_COMMAND		    ((volatile uint8_t *) (ATA_REG_BASE + 0xe))
-
-#define ATA_CMD_READ_SECTORS	0x20
-#define ATA_CMD_WRITE_SECTORS	0x30
-#define ATA_CMD_IDENTIFY	    0xec
-#define ATA_CMD_SET_FEATURE	    0xef
-
-#define ATA_FEATURE_8BIT        0x01
-
-#define ATA_ST_BUSY		        0x80
-#define ATA_ST_DATA_READY	    0x08
-#define ATA_ST_ERROR		    0x01
-
-#define ATA_DELAY(x)		{ for (int delay = 0; delay < (x); delay++) { __asm volatile(""); } }
-#define ATA_WAIT()		{ while (*ATA_REG_STATUS & ATA_ST_BUSY) { } }
-#define ATA_WAIT_FOR_DATA()	{ while (!((*ATA_REG_STATUS) & ATA_ST_DATA_READY)) { } }
-
-struct cf_info {
-	uint16_t signature;
-	uint16_t num_cylinders;
-	uint16_t reserved1;
-	uint16_t num_heads;
-	uint32_t obsolete1;
-	uint16_t sectors_per_track;
-	uint32_t sectors_per_card;
-	uint16_t obsolete2;
-	char serial_num[20];
-	uint32_t obsolete3;
-	uint16_t num_ecc_bytes;
-	char firmware_revision[8];
-	char model_number[40];
-};
-
-void _ata_wait_busy(void);
-void _ata_wait_data(void);
-
-void ata_wait()
-{
-	ATA_DELAY(10);
-	ATA_WAIT();
-	ATA_DELAY(10);
+static uint32_t swap32(uint32_t val) {
+	return (val>>24) | 
+			((val&0xff00)>>8) |
+			((val&0xff00)<<8) |
+			((val&0xff)<<24);
 }
 
 static inline char hexchar(uint8_t byte)
@@ -76,66 +24,57 @@ static inline char hexchar(uint8_t byte)
 	}
 }
 
-int ata_read_sector(int sector, char *buffer)
-{
-	// Set 8-bit mode
-	(*ATA_REG_FEATURE) = 0x01;
-	(*ATA_REG_COMMAND) = ATA_CMD_SET_FEATURE;
-	_ata_wait_busy();
+char *to_binary(unsigned int val, int size) {
+	static char to_binary_buffer[33];
+	unsigned int mask = 1<<(size-1);
 
-	// Read a sector
-	(*ATA_REG_DRIVE_HEAD) = 0xE0;
-	//(*ATA_REG_DRIVE_HEAD) = 0xE0 | (uint8_t) ((sector >> 24) & 0x0F);
-	(*ATA_REG_SECTOR_NUM) = (uint8_t) sector;
-	(*ATA_REG_CYL_LOW) = (uint8_t) (sector >> 8);
-	(*ATA_REG_CYL_HIGH) = (uint8_t) (sector >> 16);
-	(*ATA_REG_SECTOR_COUNT) = 2;
-	(*ATA_REG_COMMAND) = ATA_CMD_READ_SECTORS;
-	_ata_wait_busy();
-
-	char status = (*ATA_REG_STATUS);
-	if (status & 0x01)
-		return 0;
-
-	_ata_wait_busy();
-	ATA_WAIT_FOR_DATA();
-
-	for (int i = 0; i < 1024; i++) {
-		buffer[i] = (*ATA_REG_DATA_BYTE);
-		ata_wait();
+	if ((size < 0) || (size > 32)) {
+		return "Blargh!!";
 	}
 
-	for (int i = 0; i < 1024; i++) {
-		putchar(hexchar((buffer[i] >> 4) & 0xF));
-		putchar(hexchar(buffer[i] & 0xF));
-		if ((i & 0x1F) == 0x1F)
-			putchar('\n');
+	for (int i=0; i<size; i++) {
+		to_binary_buffer[i] = (val&mask)?'1':'0';
+		mask = mask >> 1;
 	}
+	to_binary_buffer[size] = EOS;
 
-	return 0;
+	return to_binary_buffer;
+
 }
 
-int ata_detect()
+static inline void report_status(void) {
+	uint8_t status = *cf_reg_status;
+
+	printf("CF Status: $%02x - %s\n", status, to_binary(status, 8));
+}
+
+int cf_detect()
 {
 	uint8_t status;
+	
+	report_status();
+	status = *cf_reg_status;
 
-	status = *ATA_REG_STATUS;
 	// If the busy bit is already set, or the two bits that are always 0, then perhaps nothing is connected
-	if (status & (ATA_ST_BUSY | 0x06))
+	printf("status=%02x\n", status);
+	if (status & (CF_ST_BUSY | 0x06)) {
+		printf("It's busy and shouldn't be!\n");
 		return 0;
-	ATA_DELAY(10);
+	}
+
+	CF_DELAY(10);
 
 	// Reset the IDE bus
-	(*ATA_REG_COMMAND) = ATA_CMD_IDENTIFY;
+	(*cf_reg_command) = CF_CMD_IDENTIFY;
 
 	for (int i = 0; i < 1000; i++) {
-		ATA_DELAY(10);
+		CF_DELAY(10);
 
-		status = *ATA_REG_STATUS;
+		status = *cf_reg_status;
 		// If it becomes unbusy within the timeout then a drive is connected
-		if (!(status & ATA_ST_BUSY)) {
-			if (status & ATA_ST_DATA_READY) {
-				ATA_DELAY(100);
+		if (!(status & CF_ST_BUSY)) {
+			if (status & CF_ST_RDY) {
+				CF_DELAY(100);
 				return 1;
 			} else {
 				return 0;
@@ -152,52 +91,57 @@ void pr_info(char *buff, int len) {
 }
 
 void cf_info(void) {
-    byte_t info[1024];
+    uint8_t info[512];
 	struct cf_info *inf = (struct cf_info *) info;
-	byte_t status;
+	uint8_t status;
 
     printf("Reading CF info...\r\n");
 
-    _ata_wait_busy();
-    *ATA_REG_COMMAND = ATA_CMD_IDENTIFY;
-    _ata_wait_busy();
+    _cf_wait_busy();
+	//CF_WAIT();
+    *cf_reg_command = CF_CMD_IDENTIFY;
+    _cf_wait_busy();
+	//CF_WAIT();
 
-	for (int i=0; i<1024; i++) {
-		status = *ATA_REG_STATUS;
+	for (int i=0; i<512; i++) {
+		status = *cf_reg_status;
 		while (!(status & 0x08)) {
-			status = *ATA_REG_STATUS;
+			status = *cf_reg_status;
 		}
-		info[i] = *ATA_REG_DATA_BYTE;
+		info[i] = *cf_reg_data_byte;
 		printf("i=%d\r", i);
 	}
 
-	printf("\r\nSignature: %04x\r\n", inf->signature);
-    printf("  Serial: "); pr_info(inf->serial_num, 20);
-    printf("\r\n");
+	printf("\nSignature          : %04x\n", swap16(inf->signature));
+    printf("   Serial          : "); pr_info(inf->serial_num, 20); NL();
+	printf("  Model #          : ");  pr_info(inf->model_number, 40); NL();
+	printf(" Num Cylinders     : %d\n", swap16(inf->current_num_cylinders));
+	printf(" Num Heads         : %d\n", swap16(inf->current_num_heads));
+	printf("Capacity in sectors: %d\n", swap32(inf->current_capacity_in_sectors));
+    printf("\n");
 
-/*
-	for (int i=0; i<1024; i++) {
-		printf("%02x ", info[i]);
-	}
-*/
-	printf("\r\n");
+	printf("\n");
 }
 
 void cf_init(void) {
+	report_status();
+
     // Put the device into 8-bit mode
-    _ata_wait_busy();
-    *ATA_REG_FEATURE = ATA_FEATURE_8BIT;
-    *ATA_REG_COMMAND = ATA_CMD_SET_FEATURE;
-    _ata_wait_busy();
+    _cf_wait_busy();
+	//CF_WAIT();
+	*cf_reg_feature = CF_FEATURE_8BIT;
+    *cf_reg_command = CF_CMD_SET_FEATURE;
+    _cf_wait_busy();
+	//CF_WAIT();
 }
 
 void main() {
 	printf("cf_init()\r\n");
 	cf_init();
 
-	if (!ata_detect()) {
+	if (!cf_detect()) {
         printf("No drive found\r\n");
-        return;
+		exit(42);
     }
 
 	printf("cf_info()\r\n");

@@ -1,12 +1,12 @@
 init_sp equ $27fffe
-init_fp equ init_sp-1024
+init_fp equ init_sp-4096
 
     section .text,code
 
 _start::
 ; Setup the stack and frame pointer
-	move.l #init_sp,sp
-	move.l #init_fp,fp
+	move.l 	#init_sp,sp
+	move.l 	#init_fp,fp
 
 * Init BSS
 	move.l 	#_bss_start,a0
@@ -17,12 +17,20 @@ ibloop:
 	bra.s   ibloop
 
 ibdone:
+; Take control of the duart
+	bsr		init_duart
 
-* invoke main() 
+; Initialise the heaqp
+	bsr		heap_init
+
+; invoke main() 
 	bsr	main
 
 exit::
-* all done - back to the monitor
+; all done - reliquish control of the serial ports
+	bsr		close_duart
+
+; ...and pass control to the monitor
 	move.b #228,d7
 	trap #14
 
