@@ -44,7 +44,6 @@ int run_command(int argc, char **argv, command_t cmds[]) {
     }
 
     if (num_matches == 1) {
-        printf("Running the '%s' command\r\n", match->command);
         return match->fn(argc, argv);
     }
 

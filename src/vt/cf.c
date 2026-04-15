@@ -1,93 +1,214 @@
-#include "ctype.h"
+#include <ctype.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <machine.h>
 
-#define ATA_REG_BASE		CONFIG_ATA_BASE
-#define ATA_REG_DATA		((volatile uint16_t *) (ATA_REG_BASE + 0x0))
-#define ATA_REG_DATA_BYTE	((volatile uint8_t *) (ATA_REG_BASE + 0x0))
-#define ATA_REG_FEATURE		((volatile uint8_t *) (ATA_REG_BASE + 0x2))
-#define ATA_REG_ERROR		((volatile uint8_t *) (ATA_REG_BASE + 0x2))
-#define ATA_REG_SECTOR_COUNT	((volatile uint8_t *) (ATA_REG_BASE + 0x4))
-#define ATA_REG_SECTOR_NUM	((volatile uint8_t *) (ATA_REG_BASE + 0x6))
-#define ATA_REG_CYL_LOW		((volatile uint8_t *) (ATA_REG_BASE + 0x8))
-#define ATA_REG_CYL_HIGH	((volatile uint8_t *) (ATA_REG_BASE + 0xa))
-#define ATA_REG_DRIVE_HEAD	((volatile uint8_t *) (ATA_REG_BASE + 0xc))
-#define ATA_REG_STATUS		((volatile uint8_t *) (ATA_REG_BASE + 0xe))
-#define ATA_REG_COMMAND		((volatile uint8_t *) (ATA_REG_BASE + 0xe))
+#include "cli.h"
 
+#define NL() putchar('\n')
 
-#define ATA_CMD_READ_SECTORS	0x20
-#define ATA_CMD_WRITE_SECTORS	0x30
-#define ATA_CMD_IDENTIFY	0xEC
-#define ATA_CMD_SET_FEATURE	0xEF
-
-#define ATA_ST_BUSY		0x80
-#define ATA_ST_DATA_READY	0x08
-#define ATA_ST_ERROR		0x01
+typedef struct dos_partition {
+    unsigned char boot_flag;
+    unsigned char chs_begin[3];
+    unsigned char sys_type;
+    unsigned char chs_end[3];
+    unsigned char start_sector[4];
+    unsigned char nr_sector[4];
+} dos_partition_t;
 
 
-#define ATA_DELAY(x)		{ for (int delay = 0; delay < (x); delay++) { asm volatile(""); } }
-#define ATA_WAIT()		{ ATA_DELAY(4); while (*ATA_REG_STATUS & ATA_ST_BUSY) { } }
-#define ATA_WAIT_FOR_DATA()	{ while (!((*ATA_REG_STATUS) & ATA_ST_DATA_READY)) { } }
+static uint16_t swap16(uint16_t val) {
+	return (val>>8) | ((val&0xff)<<8);
+}
 
-void command_atatest(int argc, char **args)
-{
-	uint32_t sector = 46842;
-	char buffer[512];
+static uint32_t swap32(uint32_t val) {
+	return (val>>24) | 
+			((val&0xff00)>>8) |
+			((val&0xff00)<<8) |
+			((val&0xff)<<24);
+}
 
-	if (argc >= 2)
-		sector = (uint32_t) strtol(args[1], NULL, 10);
+void pr_info(char *buff, int len) {
+    for (int i=0; i<len; i++) {
+        _putchar(buff[i]);
+    }
+}
 
-	//printf("Set COMET CompactFlash async mode\n");
-	//*COMET_VME_CF_CONTROL = 0x00;
-	//ATA_DELAY(10);
-	//*COMET_VME_CF_CONTROL = 0xb8;
-	//ATA_DELAY(20);
+void cf_info(void) {
+    uint8_t info[512];
+	struct cf_info *inf = (struct cf_info *) info;
+	uint8_t status;
+	uint16_t *cp;
 
+    printf("Reading CF info...\n");
+
+    _cf_wait_busy();
+    *cf_reg_command = CF_CMD_IDENTIFY;
+    _cf_wait_busy();
+
+	for (int i=0; i<512; i++) {
+		status = *cf_reg_status;
+		while (!(status & 0x08)) {
+			status = *cf_reg_status;
+		}
+		info[i] = *cf_reg_data_byte;
+		//printf("i=%d\r", i);
+	}
+
+	// Fix byte order
+	inf->signature = swap16(inf->signature);
+	inf->num_cylinders = swap16(inf->num_cylinders);
+	inf->num_heads = swap16(inf->num_heads);
+	inf->sectors_per_track = swap16(inf->sectors_per_track);
+	inf->sectors_per_card = swap32(inf->sectors_per_card);
+	inf->num_ecc_bytes = swap16(inf->num_ecc_bytes);
+	inf->max_multiple_sectors = swap16(inf->max_multiple_sectors);
+	inf->capabilities = swap16(inf->capabilities);
+	inf->field_validity = swap16(inf->field_validity);
+	inf->current_num_cylinders = swap16(inf->current_num_cylinders);
+	inf->current_num_heads = swap16(inf->current_num_heads);
+	inf->current_sectors_per_track = swap16(inf->current_sectors_per_track);
+	inf->current_capacity_in_sectors = swap32(inf->current_capacity_in_sectors);
+
+	cp = (uint16_t *)&inf->serial_num;
+	for (int i=0; i<10; i++) {
+		cp[i] = swap16(cp[i]);
+	}
+
+	cp = (uint16_t *)&inf->firmware_revision;
+	for (int i=0; i<4; i++) {
+		cp[i] = swap16(cp[i]);
+	}
+
+	cp = (uint16_t *)&inf->model_number;
+	for (int i=0; i<20; i++) {
+		cp[i] = swap16(cp[i]);
+	}
+
+	printf("\nSignature          : %04x\n", inf->signature);
+    printf("   Serial          : "); pr_info(inf->serial_num, 20); NL();
+	printf("  Model #          : ");  pr_info(inf->model_number, 40); NL();
+	printf(" Num Cylinders     : %d\n", inf->current_num_cylinders);
+	printf(" Num Heads         : %d\n", inf->current_num_heads);
+	printf("Capacity in sectors: %d\n", inf->current_capacity_in_sectors);
+    printf("\n");
+}
+
+void init_cf(void) {
 	// Set 8-bit mode
-	//printf("Set 8-bit mode\n");
-	(*ATA_REG_FEATURE) = 0x01;
-	(*ATA_REG_COMMAND) = ATA_CMD_SET_FEATURE;
-	ATA_WAIT();
+	printf("Set 8-bit mode\n");
+	*cf_reg_feature = 0x01;
+	*cf_reg_command = CF_CMD_SET_FEATURE;
+	_cf_wait_busy();
+}
 
-	// Read a sector
-	//printf("Setup read\n");
-	(*ATA_REG_DRIVE_HEAD) = 0xE0;
-	//(*ATA_REG_DRIVE_HEAD) = 0xE0 | (uint8_t) ((sector >> 24) & 0x0F);
-	(*ATA_REG_CYL_HIGH) = (uint8_t) (sector >> 16);
-	(*ATA_REG_CYL_LOW) = (uint8_t) (sector >> 8);
-	(*ATA_REG_SECTOR_NUM) = (uint8_t) sector;
-	(*ATA_REG_SECTOR_COUNT) = 1;
-	(*ATA_REG_COMMAND) = ATA_CMD_READ_SECTORS;
-	ATA_WAIT();
+char *to_binary(unsigned int val, int size) {
+	static char to_binary_buffer[33];
+	unsigned int mask = 1<<(size-1);
 
-	//printf("Read status\n");
-	char status = (*ATA_REG_STATUS);
-	if (status & 0x01) {
-		printf("Error while reading ata: %x\n", (*ATA_REG_ERROR));
+	if ((size < 0) || (size > 32)) {
+		return "Blargh!!";
+	}
+
+	for (int i=0; i<size; i++) {
+		to_binary_buffer[i] = (val&mask)?'1':'0';
+		mask = mask >> 1;
+	}
+	to_binary_buffer[size] = EOS;
+
+	return to_binary_buffer;
+
+}
+
+void dump_regs(void) {
+	static char *names[] = {"   Data","  Error","Sec cnt","   LBA0","   LBA1","   LBA2","   LBA3"," Status"};
+	printf("CF registers:\n");
+	for (int i=1; i<8; i++) {
+		uint8_t reg = cf_reg_data_byte[i<<1];
+
+		printf(" %8s: $%02x  %s\n", names[i], reg, to_binary(reg, 8));
+	}
+}
+
+int dump_dos_partition(dos_partition_t *part, int partition_number) {
+	uint32_t start_sector = swap32(*((uint32_t *) &part->start_sector));
+	uint32_t num_sectors = swap32(*((uint32_t *) &part->nr_sector));
+
+	printf(" %d: %02x %02x %08x %08x\n", partition_number + 1, 
+			part->boot_flag,
+			part->sys_type,
+			start_sector,
+			num_sectors
+		);
+
+	return start_sector;
+}
+
+
+void dump_sector(uint32_t sector_num) {
+	uint8_t buffer[512];
+
+	if (cf_read(0, sector_num, buffer) != 0) {
+		printf("CF read failed on sector %d\n", sector_num);
 		return;
 	}
 
-	//printf("Wait for data\n");
-	ATA_WAIT();
-	ATA_WAIT_FOR_DATA();
+	printf("\nSector %d\n", sector_num);
 
-	//printf("Read data\n");
-	for (int i = 0; i < 512; i++) {
-		//((uint16_t *) buffer)[i] = (*ATA_REG_DATA);
-		//asm volatile("rol.w	#8, %0\n" : "+g" (((uint16_t *) buffer)[i]));
-		buffer[i] = (*ATA_REG_DATA_BYTE);
-		//printf("%x ", 0xff & buffer[i]);
+	for (int i=0; i<512; i+= 32) {
+		printf("  %04x: ", i);
 
-		//ATA_WAIT_FOR_DATA();
-		ATA_WAIT();
-		//ATA_DELAY(10);
+		for (int j=0; j<32; j++) {
+			printf("%02x ", buffer[i+j]);
+		}
+
+		printf("   ");
+
+		for (int j=0; j<32; j++) {
+			printf("%c", is_printable(buffer[i+j])?buffer[i+j]:'.');
+		}
+
+		putchar('\n');
 	}
-
-	printf("Mem %x:\n", sector);
-	for (int i = 0; i < 512; i++) {
-		printf("%02x ", 0xff & buffer[i]);
-		if ((i & 0x1F) == 0x1F)
-			printf("\n");
-	}
-
-	return;
 }
+
+int do_partitions(int argc, char **argv) {
+	uint8_t buffer[1024];
+	uint16_t signature;
+	uint16_t *p;
+	uint32_t start_sector;
+
+	init_cf();
+
+	// See if it looks like a MSDOS partition table
+	if (cf_read(0, 0, buffer) != 0) {
+		printf("CF read failed\n");
+		return -1;
+	}
+
+	p = (uint16_t *)&buffer[0x1fe];
+	signature = *p;
+
+	printf("Sector signature: %04x\n", signature);
+	if (signature != 0x55aa) {
+		printf("No '0x55aa' signature found at end of sector\n");
+		return -2;
+	}
+
+	for (int i=0; i<4; i++) {
+		if ((start_sector = dump_dos_partition((dos_partition_t *) &buffer[446+(i*16)], i)) > 0) {
+			dump_sector(start_sector);
+		}
+	}
+
+	return 0;
+}
+
+int do_ata(int argc, char **args) {
+	init_cf();
+	cf_info();
+	dump_sector(0);
+
+	return 0;
+}
+

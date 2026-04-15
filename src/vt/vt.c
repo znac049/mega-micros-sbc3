@@ -1,14 +1,22 @@
-#include "string.h"
-#include "printf.h"
-#include "machine.h"
+#include <string.h>
+#include <stdio.h>
+#include <machine.h>
 
 #include "cli.h"
+
+uint8_t sector_buffer[SECTOR_SIZE];
 
 int do_help(int, char **);
 
 static command_t commands[] = {
-    { "boot", &do_boot, "[<name>]\tBoot"},
-    { "help", &do_help, "[<command>]\tShow help"},
+    { "ata",        &do_ata, "\tDo stuff with the CompactFlash interface"},
+    { "boot",       &do_boot, "[<name>]\tBoot"},
+    { "dump",       &do_dump, "[<address> [<count>]]\tDump contents of memory"},
+    { "go",         &do_go,   "<address>\tTransfer control to program at <address>"},
+    { "load",       &do_load, "[<filename>]\t load filename into memory (default name is 'a.srec')"},
+    { "partitions", &do_partitions, "\tSee if there is a partition table on the CF disk"},
+    { "srecord",    &do_load_srec, "\tLoad a program in S-Record format"},
+    { "help",       &do_help, "[<command>]\tShow help"},
     { NULL, NULL, NULL}
 };
 

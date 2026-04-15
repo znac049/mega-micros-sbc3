@@ -1,4 +1,5 @@
-#include "string.h"
+#include <string.h>
+
 #include "cli.h"
 
 int g_argc;
