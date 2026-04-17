@@ -17,7 +17,7 @@ void init_streams(void) {
 FILE *fopen(const char *pathname, const char *mode) {
 	// Special filenames
 	if (strcasecmp(pathname, "CON:") == 0) {
-		return &__console
+		return &__console;
 	}
 	else if (strcasecmp(pathname, "AUX:") == 0) {
 		return &__aux;

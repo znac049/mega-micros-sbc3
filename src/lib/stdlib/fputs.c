@@ -25,13 +25,13 @@ SOFTWARE.
 #include <stdio.h>
 
 int fputs(const char *s, FILE *stream) {
-  if ((stream == stdout) || (stream == stderr)) {
-    while (*s) {
-      putchar(*s++);
+    switch (stream->type) {
+        case DEVTYPE_CHAR:
+            while (*s) {
+                stream->device->chardev.putchar(*s++, stream->minor);
+            }
+            break;
     }
-    return 0;
-  }
-
-  puts("\r\nERROR: attempt to fputs to somewhere other than the terminal! That's not working yet!\r\n");
-  return EOF;
+    
+    return EOF;
 }
