@@ -25,5 +25,11 @@ SOFTWARE.
 #include <stdio.h>
 
 int fputc(int c, FILE *stream) {
-  return EOF;
+    switch (stream->type) {
+        case DEVTYPE_CHAR:
+            stream->device->chardev.putchar(c, stream->minor);
+            return c;
+    }
+
+    return EOF;
 }

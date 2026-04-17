@@ -27,17 +27,47 @@ SOFTWARE.
 #include <stdarg.h>
 #include <ctype.h>
 
+typedef union io_device {
+    struct {
+        void (*putchar)(int ch, uint8_t minor);
+        int (*getchar)(uint8_t minor);
+        int (*char_available)(uint8_t minor);
+        int (*flush)(uint8_t minor);
+    } chardev;
+    struct {
+        int fred;
+    } fs;
+    struct {
+        int fred;
+    } blockdev;
+} io_device_t;
+
 typedef struct file {
-    int fd;
+    int type;
+    int minor;
+    char *name;
+    io_device_t *device;
 } FILE;
 
-extern FILE __stdin;
-extern FILE __stdout;
-extern FILE __stderr;
+#define DEVTYPE_CHAR 1
+#define DEVTYPE_FS 2
+#define DEVTYPE_BLOCK 3
 
-#define	stdin  (&__stdin)
-#define	stdout (&__stdout)
-#define	stderr (&__stderr)
+#define FHAND_DUART 1
+
+extern FILE __console;
+extern FILE __aux;
+
+extern FILE *__stdin;
+extern FILE *__stdout;
+extern FILE *__stderr;
+
+#define stdcon (&__console)
+#define stddbg (&__aux)
+
+#define	stdin  (__stdin)
+#define	stdout (__stdout)
+#define	stderr (__stderr)
 
 #define EOF -1
 
@@ -46,6 +76,7 @@ int fclose(FILE *stream);
 int fflush(FILE *stream);
 int fgetc(FILE *stream);
 char *fgets(char *s, int size, FILE *stream);
+int fprintf(FILE *stream, const char *fmt, ...);
 int fputc(int c, FILE *stream);
 int fputs(const char *s, FILE *stream);
 size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
@@ -55,6 +86,7 @@ char *gets(char *s);
 int printf(const char *format, ...);
 int putchar(int c);
 int puts(const char *s);
+int snprintf(char *buffer, size_t n, const char *fmt, ...);
 int sscanf(const char *str, const char *format, ...);
 int vfprintf(FILE *stream, const char *format, va_list ap);
 int vsnprintf(char *str, size_t size, const char *format, va_list ap);

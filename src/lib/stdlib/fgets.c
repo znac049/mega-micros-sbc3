@@ -26,5 +26,46 @@ SOFTWARE.
 #include <stddef.h>
 
 char *fgets(char *s, int size, FILE *stream) {
-  return NULL;
+    int ch;
+    int i = 0;
+
+    while (i+1 < size) {
+        ch = fgetc(stream);
+        if (ch == -1) {
+            if (i == 0) {
+                return NULL;
+            }
+            else {
+                s[i] = EOS;
+                return s;
+            }
+        }
+
+        switch(ch) {
+            case '\r': case '\n':
+                s[i++] = '\n';
+                s[i] = EOS;
+                fputc('\n', stream);
+
+                return s;
+
+            case BS:
+                if (i) {
+                    fputc(BS, stream);
+                    fputc(' ', stream);
+                    fputc(BS, stream);
+                    i--;
+                }
+                break;
+
+            default:
+                fputc(ch, stream);
+                s[i++] = ch;
+                break;
+        }
+    }
+
+    s[i] = EOS;
+
+    return s;
 }

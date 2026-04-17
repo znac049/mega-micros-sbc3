@@ -25,5 +25,11 @@ SOFTWARE.
 #include <stdio.h>
 
 int fgetc(FILE *stream) {
+    switch (stream->type) {
+        case DEVTYPE_CHAR:
+            return stream->device->chardev.getchar(stream->minor);
+            break;
+    }
+
     return EOF;   
 }

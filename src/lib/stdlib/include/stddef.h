@@ -27,3 +27,7 @@ SOFTWARE.
 #define NULL ((void *)0)
 #define EOF -1
 #define EOS '\0'
+
+#define BS 8
+#define CR 13
+#define LF 10

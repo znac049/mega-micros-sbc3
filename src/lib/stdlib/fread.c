@@ -24,6 +24,27 @@ SOFTWARE.
 
 #include <stdio.h>
 
+static inline size_t read_chardev(void *ptr, size_t size, size_t nmemb, FILE *stream) {
+    int num_chars = size * nmemb;
+
+    for (int i=0; i<num_chars; i++) {
+        int ch = stream->device->chardev.getchar(stream->minor);
+
+        if (ch == -1) {
+            return i;
+        }
+
+        *(uint8_t *)ptr = (uint8_t)ch;
+    }
+
+    return num_chars;
+}
+
 size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream) {
-  return -1;
+    switch (stream->type) {
+        case DEVTYPE_CHAR:
+            return read_chardev(ptr, size, nmemb, stream);
+    }
+
+    return -1;
 }

@@ -25,5 +25,11 @@ SOFTWARE.
 #include <stdio.h>
 
 int fclose(FILE *stream) {
-  return 0;
+    switch (stream->type) {
+        case DEVTYPE_CHAR:
+            stream->device->chardev.flush(stream->minor);
+            break;
+    }
+
+    return 0;
 }
