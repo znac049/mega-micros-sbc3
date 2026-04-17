@@ -1,38 +1,40 @@
 #pragma once
 
+#include <stdio.h>
 #include <ctype.h>
+#include <cb.h>
 
-/* Duart Register Addresses */
-#define duart_base ((volatile unsigned char*) 0xad0001)
+/* Duart Register Base Addresses */
+#define duart_base ((volatile uint8_t*) 0xad0001)
 
-#define duart_mr1a          ((volatile unsigned char*) duart_base)
-#define duart_mr2a          ((volatile unsigned char*) duart_base)
-#define duart_sra           ((volatile unsigned char*) duart_base+2)
-#define duart_csra          ((volatile unsigned char*) duart_base+2)
-#define duart_cra           ((volatile unsigned char*) duart_base+4)
-#define duart_rba           ((volatile unsigned char*) duart_base+6)
-#define duart_tba           ((volatile unsigned char*) duart_base+6)
-#define duart_ipcr          ((volatile unsigned char*) duart_base+8)
-#define duart_acr           ((volatile unsigned char*) duart_base+8)
-#define duart_isr           ((volatile unsigned char*) duart_base+10)
-#define duart_imr           ((volatile unsigned char*) duart_base+10)
-#define duart_cur           ((volatile unsigned char*) duart_base+12)
-#define duart_ctur          ((volatile unsigned char*) duart_base+12)
-#define duart_clr           ((volatile unsigned char*) duart_base+14)
-#define duart_ctlr          ((volatile unsigned char*) duart_base+14)
-#define duart_mr1b          ((volatile unsigned char*) duart_base+16)
-#define duart_mr2b          ((volatile unsigned char*) duart_base+16)
-#define duart_srb           ((volatile unsigned char*) duart_base+18)
-#define duart_csrb          ((volatile unsigned char*) duart_base+18)
-#define duart_crb           ((volatile unsigned char*) duart_base+20)
-#define duart_rbb           ((volatile unsigned char*) duart_base+22)
-#define duart_tbb           ((volatile unsigned char*) duart_base+22)
-#define duart_ivr           ((volatile unsigned char*) duart_base+24)
-#define duart_opcr          ((volatile unsigned char*) duart_base+26)
-#define duart_start_counter ((volatile unsigned char*) duart_base+28)
-#define duart_opr_set       ((volatile unsigned char*) duart_base+28)
-#define duart_stop_counter  ((volatile unsigned char*) duart_base+30)
-#define duart_opr_reset     ((volatile unsigned char*) duart_base+30)
+#define duart_mr1a          ((volatile uint8_t*) duart_base)
+#define duart_mr2a          ((volatile uint8_t*) duart_base)
+#define duart_sra           ((volatile uint8_t*) duart_base+2)
+#define duart_csra          ((volatile uint8_t*) duart_base+2)
+#define duart_cra           ((volatile uint8_t*) duart_base+4)
+#define duart_rba           ((volatile uint8_t*) duart_base+6)
+#define duart_tba           ((volatile uint8_t*) duart_base+6)
+#define duart_ipcr          ((volatile uint8_t*) duart_base+8)
+#define duart_acr           ((volatile uint8_t*) duart_base+8)
+#define duart_isr           ((volatile uint8_t*) duart_base+10)
+#define duart_imr           ((volatile uint8_t*) duart_base+10)
+#define duart_cur           ((volatile uint8_t*) duart_base+12)
+#define duart_ctur          ((volatile uint8_t*) duart_base+12)
+#define duart_clr           ((volatile uint8_t*) duart_base+14)
+#define duart_ctlr          ((volatile uint8_t*) duart_base+14)
+#define duart_mr1b          ((volatile uint8_t*) duart_base+16)
+#define duart_mr2b          ((volatile uint8_t*) duart_base+16)
+#define duart_srb           ((volatile uint8_t*) duart_base+18)
+#define duart_csrb          ((volatile uint8_t*) duart_base+18)
+#define duart_crb           ((volatile uint8_t*) duart_base+20)
+#define duart_rbb           ((volatile uint8_t*) duart_base+22)
+#define duart_tbb           ((volatile uint8_t*) duart_base+22)
+#define duart_ivr           ((volatile uint8_t*) duart_base+24)
+#define duart_opcr          ((volatile uint8_t*) duart_base+26)
+#define duart_start_counter ((volatile uint8_t*) duart_base+28)
+#define duart_opr_set       ((volatile uint8_t*) duart_base+28)
+#define duart_stop_counter  ((volatile uint8_t*) duart_base+30)
+#define duart_opr_reset     ((volatile uint8_t*) duart_base+30)
 
 /* Status Register A and B */
 #define SR_RXRDY 0x01
@@ -71,6 +73,21 @@
 #define ISR_TX_READY    0x01
 #define ISR_RX_READY    0x02
 
+struct duart_port {
+    volatile uint8_t *mode_regs;
+    volatile uint8_t *sr_csr_reg;
+    volatile uint8_t *cmd_reg;
+    volatile uint8_t *acr_reg;
+    volatile uint8_t *data_reg;
+    circular_buffer_t rx_buff;
+    circular_buffer_t tx_buff;
+    uint8_t rts_bit;
+};
+
+typedef struct duart_port duart_port_t;
+
+extern io_device_t xr68681_device;
+
 int _getchar(void);
 int _buffered_getchar(void);
 int _polled_getchar(void);
@@ -83,5 +100,7 @@ int _polled_char_available(void);
 
 void _claim_duart(void);
 void _release_duart(void);
+
+int polled_rx_char(duart_port_t *);
 void clear_led(int);
 void set_led(int);

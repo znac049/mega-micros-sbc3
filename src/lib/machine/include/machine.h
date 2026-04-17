@@ -14,4 +14,13 @@
 
 #define BIT(n) (1<<n)
 
+#define CPU_68000 0
+#define CPU_68010 1
+#define CPU_68020 2
+#define CPU_68030 3
+
 extern uint8_t running_in_rom;
+extern uint8_t cpu_type;
+
+
+extern int detect_cpu_type(void);
