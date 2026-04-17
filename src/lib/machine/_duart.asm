@@ -37,7 +37,7 @@ duart_rxrdy         equ 0               /* receiver ready */
 duart_txrdy         equ 2               /* transmitter ready */
 
 
-_polled_putchar::
+_zob_polled_putchar::
                 move.l  #duart_base,a1
                 btst.b  #3,duart_sra(a1)
                 beq     _polled_putchar
@@ -45,14 +45,14 @@ _polled_putchar::
                 move.b  d0,duart_tba(a1)
                 rts
 
-_polled_char_available::
+_zob_polled_char_available::
                 move.l  #duart_base,a1
                 moveq.l #0,d0
                 move.b  duart_sra(a1),d0
                 and.b   #1,d0
                 rts
 
-_polled_getchar::
+_zob_polled_getchar::
                 move.l  #duart_base,a1
                 btst.b  #0,duart_sra(a1)
                 beq     _polled_getchar
