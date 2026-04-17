@@ -110,10 +110,10 @@ TO_CLEAN=$(OBJECTS) $(ELF) $(BINARY) $(SREC) $(MAP) $(SYM) $(DISASM) $(addsuffix
 all: $(BINARY) $(SREC) $(DISASM)
 
 $(ELF) : $(OBJECTS) $(ROM_OBJ)
-	$(LD) $(LDFLAGS) $(GCC_LIBS) $^ $(LIBS) -o $@
-	$(NM) --numeric-sort $@ >$(SYM)
-	$(SIZE) $@
-	-chmod a-x $@
+	$(LD) $(LDFLAGS) $(GCC_LIBS) $^ $(LIBS) -o $(ELF)
+	$(NM) --numeric-sort $(ELF) >$(SYM)
+	$(SIZE) $(ELF)
+	-chmod a-x $(ELF)
 
 $(BINARY) : $(ELF)
 	$(OBJCOPY) -O binary $(ELF) $(BINARY)
