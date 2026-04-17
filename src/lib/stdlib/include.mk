@@ -6,6 +6,7 @@ LIBOBJECTS=$(DIR)/atoi.o \
 			$(DIR)/fflush.o \
 			$(DIR)/fgetc.o \
 			$(DIR)/fgets.o \
+			$(DIR)/fprintf.o \
 			$(DIR)/fputc.o \
 			$(DIR)/fputs.o \
 			$(DIR)/fread.o \

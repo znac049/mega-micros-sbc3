@@ -1,10 +1,22 @@
 #include <stdio.h>
 #include <machine.h>
 
-ISR unhandled_exception(void) {
+#include "newmon.h"
 
-}
+void main(void) {
+    _claim_duart();
+    pre_main();
 
-int main(void) {
+    set_default_vectors();
 
+    _claim_pit();
+    _init_heap();
+
+    printf("OK, we have control...\n");
+
+    while (!char_available()) {
+        printf("%08x\r", ticks());
+    }
+    getchar();
+    printf("All done!\n");
 }

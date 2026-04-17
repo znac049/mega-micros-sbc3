@@ -4,3 +4,4 @@ endif
 
 -include $(MEGA_MICROS_DIR)/src/stdenv.mk
 FLAGS:=$(FLAGS) -Wno-array-bounds
+LDSCRIPT:=./program.ld

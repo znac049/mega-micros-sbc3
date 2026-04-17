@@ -1,35 +1,43 @@
 OUTPUT_FORMAT("binary")
 ENTRY(_start)
 
-STARTUP(crt0.o)
+/* STARTUP(crt0.o) */
 
 MEMORY
 {
-  RAM       : org = 0x00200000,  l = 0x00200000
+  RAM       : org = 0x0000A000,  l = 0x003F6000
   ROM       : org = 0x00C00000,  l = 0x00400000
 }
 
 /* program configuration symbols that may be useful to override */
 /* using linker option: --defsym=<symbol_name>=<value>          */
-PROVIDE(_STACK_SIZE     = 0x00004000);  /* 16KB default stack size      */
+/* PROVIDE(_STACK_SIZE     = 0x00004000);  /* 16KB default stack size      */
 
 /* firmware absolute addresses (generally not useful to override)  */
-PROVIDE(_INITIAL_STACK  = 0x0027FFF0);  /* firmware stack top (mem top) */
-PROVIDE(_WARM_BOOT      = 0x00000004);  /* firmware warm boot address   */
+/* PROVIDE(_INITIAL_STACK  = 0x0027FFF0);  /* firmware stack top (mem top) */
+/* PROVIDE(_WARM_BOOT      = 0x00000004);  /* firmware warm boot address   */
 
-PROVIDE(_MFP_VECTORS    = 0x00000100);  /* MFP interrupt vector base    */
+/* PROVIDE(_MFP_VECTORS    = 0x00000100);  /* MFP interrupt vector base    */
 
 /* ROM absolute addresses */
-PROVIDE(_FIRMWARE       = 0x00FC0000);  /* firmware address             */
-PROVIDE(_FIRMWARE_REV   = 0x00FC0400);  /* firmware revision code       */
+/* PROVIDE(_FIRMWARE       = 0x00FC0000);  /* firmware address             */
+/*PROVIDE(_FIRMWARE_REV   = 0x00FC0400);  /* firmware revision code       */
 
 /* NOTE: rev1.1 used 0x00028000 (but init now position independent)     */
-PROVIDE(_LOAD_ADDRESS   = 0x00200000);  /* firmware KERNEL_LOAD_ADDRESS */
-PROVIDE(_RUN_ADDRESS    = 0x00280000);  /* start of user memory         */
+PROVIDE(_LOAD_ADDRESS   = 0x00010000);  /* firmware KERNEL_LOAD_ADDRESS */
+PROVIDE(_RUN_ADDRESS    = 0x00010000);  /* start of user memory         */
 
 SECTIONS
 {
-  .text.init _RUN_ADDRESS : AT(_LOAD_ADDRESS)
+  .pretext _RUN_ADDRESS : AT(_LOAD_ADDRESS)
+  {
+    _pretext = .;
+    KEEP(*(.pretext))
+    . = ALIGN(4);
+    _pretext_end = .;
+  } > RAM
+
+  .text.init ALIGN(4) :
   {
     _init = .;
     KEEP(*(.init))      /* KEEP() "anchors" section for gc-sections */
