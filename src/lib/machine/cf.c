@@ -1,7 +1,8 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <cf.h>
+#include <string.h>
+#include <machine.h>
 
 void cf_init(void) {
    _cf_wait_busy();
@@ -12,6 +13,8 @@ void cf_init(void) {
 
 int cf_read(uint8_t drive_num, uint32_t sector, uint8_t *buffer) {
     uint8_t status;
+
+    // printf("cf_read(%d, %d,...)\n", drive_num, sector);
 
     *cf_reg_lba3 = 0xe0 | ((drive_num & 1)<<4) | (uint8_t) ((sector >> 24) & 0x0f);
     *cf_reg_lba2 = (uint8_t) (sector >> 16);
@@ -41,4 +44,74 @@ int cf_read(uint8_t drive_num, uint32_t sector, uint8_t *buffer) {
 	}
 
 	return 0;
+}
+
+static void sanitize_string(char *str, int max_len) {
+    // Endianness!
+    for (int i=0; i<max_len; i+=2) {
+        char c = str[i];
+
+        str[i] = str[i+1];
+        str[i+1] = c;
+    }
+
+    str[max_len-1] = EOS;
+
+    // Remove any trailing spaces
+    for (int i=max_len-2; i<=0; i--) {
+        if (str[i] == ' ') {
+            str[i] = EOS;
+        }
+        else {
+            return;
+        }
+    }
+}
+
+int cf_identify(uint8_t drive_num, cf_info_t *info) {
+    uint8_t buf[CF_SECTOR_SIZE];
+    cf_info_t *inf = (cf_info_t *) buf;
+
+    if (drive_num > 1) {
+        return -1;
+    }
+
+    _cf_wait_busy();
+    *cf_reg_lba3 = 0xe0 | (drive_num?0x10:0);
+    *cf_reg_command = CF_CMD_IDENTIFY;
+    _cf_wait_busy();
+
+	for (int i=0; i<512; i++) {
+		uint8_t status = *cf_reg_status;
+
+        while (!(status & 0x08)) {
+			status = *cf_reg_status;
+		}
+		buf[i] = *cf_reg_data_byte;
+	}
+
+    // Endianness!
+    info->signature = __builtin_bswap16(inf->signature);
+    info->num_cylinders = __builtin_bswap16(inf->num_cylinders);
+    info->num_heads = __builtin_bswap16(inf->num_heads);
+    info->sectors_per_track = __builtin_bswap16(inf->sectors_per_track);
+    info->sectors_per_card = __builtin_bswap32(inf->sectors_per_card);
+    info->num_ecc_bytes = __builtin_bswap16(inf->num_ecc_bytes);
+    info->max_multiple_sectors = __builtin_bswap16(inf->max_multiple_sectors);
+    info->capabilities = __builtin_bswap16(inf->capabilities);
+    info->field_validity = __builtin_bswap16(inf->field_validity);
+    info->current_num_cylinders = __builtin_bswap16(inf->current_num_cylinders);
+    info->current_num_heads = __builtin_bswap16(inf->current_num_heads);
+    info->current_sectors_per_track = __builtin_bswap16(inf->current_sectors_per_track);
+    info->current_capacity_in_sectors = __builtin_bswap32(inf->current_capacity_in_sectors);
+
+    memcpy(&info->serial_num, &inf->serial_num, 20);
+    memcpy(&info->firmware_revision, &inf->firmware_revision, 8);
+    memcpy(&(info->model_number), &(inf->model_number), 40);
+    
+    sanitize_string(info->serial_num, 20);
+    sanitize_string(info->firmware_revision, 8);
+    sanitize_string(info->model_number, 40);
+
+    return 0;
 }

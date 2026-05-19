@@ -1,3 +1,27 @@
+/* 
+MIT License
+
+Copyright (c) 2026 Bob Green
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
 #pragma once
 
 #include <ctype.h>
@@ -38,6 +62,8 @@
 #define CF_DRIVE_MASTER			0
 #define CF_DRIVE_SLAVE			1
 
+#define CF_SECTOR_SIZE			512
+
 #define CF_DELAY(x)		{ for (int delay = 0; delay < (x); delay++) { __asm volatile(""); } }
 #define CF_WAIT_FOR_DATA()	{ while (!((*cf_reg_status) & CF_ST_DRQ)) { } }
 
@@ -68,7 +94,10 @@ struct cf_info {
 	uint32_t current_capacity_in_sectors;
 };
 
+typedef struct cf_info cf_info_t;
+
 void _cf_wait_busy(void);
 void _cf_wait_data(void);
 void cf_init(void);
 int cf_read(uint8_t drive_num, uint32_t sector, uint8_t *buffer);
+int cf_identify(uint8_t drive_num, cf_info_t *info);
