@@ -13,6 +13,9 @@ CPU?=68030
 ARCH?=$(CPU)
 TUNE?=$(CPU)
 
+REMOTE_USER=bob@192.168.1.76
+REMOTE_DIR=OneDrive/1_Srec
+
 SYSINCDIR?=$(MEGA_MICROS_DIR)/built/include
 SYSLIBDIR?=$(MEGA_MICROS_DIR)/built/lib
 
@@ -28,7 +31,7 @@ GCC_LIBS?=$(shell $(CC) --print-search-dirs \
           | grep libraries:\ = \
           | sed 's/libraries: =/-L/g' \
           | sed 's/:/\/ -L/g')
-LIBS=$(EXTRA_LIBS) -lstdlib -lmachine -lgcc
+LIBS=$(EXTRA_LIBS) -lmega -lgcc
 ASFLAGS=-mcpu=$(CPU) -march=$(ARCH)
 VASMFLAGS=-Felf -m$(CPU) -quiet -Lnf $(DEFINES)
 LDFLAGS=-T $(LDSCRIPT) -L $(SYSLIBDIR) -Map=$(MAP) -z noexecstack --gc-sections --oformat=elf32-m68k $(EXTRA_LDFLAGS)
@@ -152,5 +155,8 @@ dump: $(BINARY)
 load: $(BINARY)
 	$(KERMIT) -i -l $(SERIAL) -b $(BAUD) -s $(BINARY)
 
+install: all
+	scp $(SREC) $(REMOTE_USER):$(REMOTE_DIR)
+
 # Makefile magic (for "phony" targets that are not real files)
-.PHONY: all clean disasm dump load
+.PHONY: all clean disasm dump load install
