@@ -26,15 +26,6 @@ ibdone:
 	move.b  #1,running_in_rom
 in_ram:
 
-; Setup system timer
-	bsr		_claim_pit;
-
-; Take control of the duart
-	bsr		_claim_duart
-
-; Initialise the heap
-	bsr		_init_heap
-
 	bsr		pre_main
 
 ; invoke main() 
@@ -42,11 +33,10 @@ in_ram:
 
 
 exit::
-; all done - relinquish control of the serial ports
-	bsr		_release_duart
-
-; ...and the PIT
-	bsr		_release_pit
+; all done - tidy up
+	move.l	d0,-(sp)
+	bsr		post_main
+	move.l  (sp)+,d0
 
 ; ...and pass control to the monitor
 	move.b #228,d7
