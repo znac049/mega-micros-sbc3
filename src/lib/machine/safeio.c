@@ -22,10 +22,10 @@ int peek(uint8_t *addr) {
 int poke(uint8_t *addr, uint8_t val) {
     unsigned int old_handler = set_isr_handler(VEC_BUS_ERROR, (unsigned int)bus_error);
 
-    result = 0;
+    result = val;
     *addr = val;
 
     set_isr_handler(VEC_BUS_ERROR, old_handler);
     
-    return val;
+    return result;
 }
