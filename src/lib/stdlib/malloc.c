@@ -69,6 +69,10 @@ void free(void *ptr)
 	heap_chunk_t *cur;
     bool_t merged = FALSE;
 
+    if (ptr == NULL) {
+        return;
+    }
+
     //printf("free(0x%08x)\n", ptr);
  
 	for (cur=main_heap; cur!=NULL; prev=cur, cur=cur->next) {
