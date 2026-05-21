@@ -30,7 +30,7 @@ int strcasecmp(const char *s1, const char *s2) {
     
     for (i=0; s1[i]; i++) {
         if (tolower(s1[i]) != tolower(s2[i])) {
-            return tolower(s1[i]) < tolower(s2[i]);
+            return tolower(s1[i]) - tolower(s2[i]);
         }
     }
   
