@@ -23,51 +23,14 @@ SOFTWARE.
 */
 
 #include <stdio.h>
+#include <stddef.h>
+#include <stdlib.h>
 #include <machine.h>
 
 #include "ext2.h"
 #include "disk.h"
 
 static uint8_t sbuf[CF_SECTOR_SIZE];
-
-void printn(const char *pfx, const uint8_t *str, int len) {
-    printf(pfx);
-
-    for (int i=0; i<len; i++) {
-        putchar(str[i]);
-    }
-    printf("\n");
-}
-
-void dump(uint8_t *buf, size_t count) {
-    int all_zeroes = 0;
-    int printed_something = 0;
-
-    for (size_t i=0; i<count; i+=16) {
-        all_zeroes = 1;
-        for (int x=0; x<16; x++) {
-            if (buf[i+x]) {
-                all_zeroes = 0;
-            }
-        }
-
-        if (!all_zeroes) {
-            printf("%04x: ", i);
-            for (int x=0; x<16; x++) {
-                printf("%02x ", buf[i+x]);
-            }
-            putchar('\n');
-
-            printed_something = 1;
-        }
-    }
-
-    if (!printed_something) {
-        printf("Data is all zeroes.\n");
-    }
-
-    putchar('\n');
-}
 
 void cf_info(uint8_t drive_num) {
     cf_info_t info;
@@ -89,6 +52,7 @@ void cf_info(uint8_t drive_num) {
     printf("\n");
 }
 
+#if 0
 int cf_detect(uint8_t drive_num)
 {
 	uint8_t status;
@@ -128,6 +92,7 @@ int cf_detect(uint8_t drive_num)
 	}
 	return 0;
 }
+#endif
 
 uint8_t drive_ready(uint8_t drive_num) {
     uint8_t status;
@@ -161,82 +126,7 @@ int cf_present(void) {
     return 0;
 }
 
-void sanitize_superblock(ext2_sb_t *sb) {
-    // Deal with endianness
-
-    sb->total_inodes = __builtin_bswap32(sb->total_inodes);
-    sb->total_blocks = __builtin_bswap32(sb->total_blocks);
-    sb->total_reserved = __builtin_bswap32(sb->total_reserved);
-    sb->num_free_blocks = __builtin_bswap32(sb->num_free_blocks);
-    sb->num_free_inodes = __builtin_bswap32(sb->num_free_inodes);
-    sb->sb_block_num = __builtin_bswap32(sb->sb_block_num);
-    sb->block_size = __builtin_bswap32(sb->block_size);
-    sb->frag_size = __builtin_bswap32(sb->frag_size);
-    sb->blocks_per_block_group = __builtin_bswap32(sb->blocks_per_block_group);
-    sb->frags_per_block_group = __builtin_bswap32(sb->frags_per_block_group);
-    sb->inodes_per_block_group = __builtin_bswap32(sb->inodes_per_block_group);
-    sb->last_mount_time = __builtin_bswap32(sb->last_mount_time);
-    sb->last_written_time = __builtin_bswap32(sb->last_written_time);
-    sb->mounts_since_checked = __builtin_bswap16(sb->mounts_since_checked);
-    sb->mounts_before_check = __builtin_bswap16(sb->mounts_before_check);
-    sb->signature = __builtin_bswap16(sb->signature);
-    sb->fs_state = __builtin_bswap16(sb->fs_state);
-    sb->error_action = __builtin_bswap16(sb->error_action);
-    sb->minor_version = __builtin_bswap16(sb->minor_version);
-    sb->last_checked = __builtin_bswap32(sb->last_checked);
-    sb->check_interval = __builtin_bswap32(sb->check_interval);
-    sb->creator_id = __builtin_bswap32(sb->creator_id);
-    sb->major_version = __builtin_bswap32(sb->major_version);
-    sb->admin_uid = __builtin_bswap16(sb->admin_uid);
-    sb->admin_group = __builtin_bswap16(sb->admin_group);
-
-    if (sb->major_version) {
-        sb->first_free_inode = __builtin_bswap32(sb->first_free_inode);
-        sb->inode_size = __builtin_bswap16(sb->inode_size);
-        sb->block_group = __builtin_bswap16(sb->block_group);
-        sb->optional_features = __builtin_bswap32(sb->optional_features);
-        sb->required_features = __builtin_bswap32(sb->required_features);
-        sb->force_ro_features = __builtin_bswap32(sb->force_ro_features);
-        sb->compression_algorithms = __builtin_bswap32(sb->compression_algorithms);
-        sb->journal_inode = __builtin_bswap32(sb->journal_inode);
-        sb->journal_device = __builtin_bswap32(sb->journal_device);
-        sb->orphan_inode_head = __builtin_bswap32(sb->orphan_inode_head);
-    }
-}
-
-int is_ext2(uint8_t part_num) {
-    ext2_sb_t *sb = (ext2_sb_t *)sbuf;
-
-    if (partition_read(part_num, 2, sbuf) != 0) {
-        return 0;
-    }
-
-    //dump(sbuf, CF_SECTOR_SIZE);
-
-    sanitize_superblock(sb);
-
-    if (sb->signature != 0xef53) {
-        printf("ext2 signature not found in superblock.\n");
-        return 0;
-    }
-
-    printf("Root superblock:\n");
-    printf("       Signature: %04x\n", sb->signature);
-    printf("         Version: %d.%d\n", sb->major_version, sb->minor_version);
-
-    if (sb->major_version >= 1) {
-        // Extended superblock will be present
-        printn("     Volume Name: ", sb->volume_name, sizeof(sb->volume_name));
-        printn(" Last Mounted As: ", sb->last_mounted_at, sizeof(sb->last_mounted_at));
-        // printn("        Block Id: ", sb->blkid, sizeof(sb->blkid));
-        printn("      Journal Id: ", sb->journal_id, sizeof(sb->journal_id));
-    }
-
-    return 1;
-}
-
 int main(void) {
-    //e2_superblock_t *sbp = (e2_superblock_t *)sbuff;
     int res;
     int drive = 0;
     uint8_t num_partitions;
@@ -246,7 +136,7 @@ int main(void) {
 
     if (!cf_present()) {
         printf("No CF drives present.\n");
-        return 0;
+        exit(1);
     }
 
     if (drive_ready(0)) {
@@ -254,11 +144,11 @@ int main(void) {
         cf_info(drive);
 
         res = cf_read(drive, 0, sbuf);
-        //dump(sbuf, CF_SECTOR_SIZE);
+        //dump(sbuf, CF_SECTOR_SIZE, 0);
 
         if (res != 0) {
             printf("Failed to read sector 0!\n");
-            return 1;
+            exit(1);
         }
 
         read_partition_table(drive);
@@ -268,8 +158,24 @@ int main(void) {
     printf("Number of valid partitions found: %d\n", num_partitions);
 
     for (uint8_t part=0; part<num_partitions; part++) {
-        if (is_ext2(part)) {
-            printf("ext2 filesystem found on partition %d\n", part);
+        ext2_fs_t *fs = ext2_mount(part);
+        if (fs == NULL) {
+            printf("Failed to mount partition %d as ext2\n", part);
+        }
+        else {
+            // Do stuff
+            ext2_inode_t inode;
+            int res = ext2_get_inode(fs, 2, &inode);
+
+            if (res != 0) {
+                printf("Failed to get root inode.\n");
+                exit(1);
+            }
+
+            printf("\ninode 2:\n");
+            dump((unsigned char *)&inode, fs->sb->inode_size, 0);
+
+            fs = ext2_umount(fs);
         }
     }
 

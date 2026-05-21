@@ -87,7 +87,7 @@ int partition_read(uint8_t part_num, uint32_t sector, uint8_t *buffer) {
         return -1;
     }
 
-    printf("partition_read(%d, %d,...)\n", part_num, sector);
+    // printf("partition_read(%d, %d,...)\n", part_num, sector);
 
     return cf_read(0, dk_info.partitions[part_num].start_sector + sector, buffer);
 }

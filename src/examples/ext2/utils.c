@@ -22,27 +22,48 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+#include <stdio.h>
+#include <machine.h>
+#include <errno.h>
 
-#define MAX_PARTITIONS 4
-#define MAX_FILESYSTEMS MAX_PARTITIONS
+#include "ext2.h"
 
-struct disk_partition {
-    uint32_t            start_sector;
-    uint32_t            num_sectors;
-    uint8_t             flags;
-    uint8_t             id;
-};
+void printn(const char *pfx, const uint8_t *str, int len) {
+    printf(pfx);
 
-typedef struct disk_partition disk_partition_t;
+    for (int i=0; i<len; i++) {
+        putchar(str[i]);
+    }
+    printf("\n");
+}
 
-struct disk_info {
-    uint8_t             num_partitions;
-    disk_partition_t    partitions[MAX_PARTITIONS];
-};
+void dump(uint8_t *buf, size_t count, uint8_t print_zeroes) {
+    int all_zeroes = 0;
+    int printed_something = 0;
 
-typedef struct disk_info disk_info_t;
+    for (size_t i=0; i<count; i+=16) {
+        all_zeroes = 1;
+        for (int x=0; x<16; x++) {
+            if (buf[i+x]) {
+                all_zeroes = 0;
+            }
+        }
 
-uint8_t get_partition_count(void);
-int partition_read(uint8_t part_num, uint32_t sector, uint8_t *buffer);
-int read_partition_table(uint8_t drive_num);
+        if (!all_zeroes || print_zeroes) {
+            printf("%04x: ", i);
+            for (int x=0; x<16; x++) {
+                printf("%02x ", buf[i+x]);
+            }
+            putchar('\n');
+
+            printed_something = 1;
+        }
+    }
+
+    if (!printed_something) {
+        printf("Data is all zeroes.\n");
+    }
+
+    putchar('\n');
+}
+
