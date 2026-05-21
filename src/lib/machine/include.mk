@@ -9,6 +9,7 @@ LIBOBJECTS=$(DIR)/cb.o \
 			$(DIR)/misc.o \
 			$(DIR)/pit.o \
 			$(DIR)/pre_main.o \
+			$(DIR)/safeio.o \
 			$(DIR)/termio.o \
 			$(DIR)/_vectors.o \
 			$(DIR)/vectors.o \

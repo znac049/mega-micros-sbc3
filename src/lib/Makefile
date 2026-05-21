@@ -8,7 +8,7 @@ EXTRA_CXXFLAGS?=-g -O2
 DEFINES:=$(DEFINES)
 FLAGS=-ffreestanding -ffunction-sections -fdata-sections				\
 			-nostartfiles -Wall -Wpedantic -Werror      				\
-			-mcpu=$(CPU) -march=$(CPU) -mtune=$(CPU)    				\
+			-mcpu=$(CPU) -march=$(CPU) -mtune=$(CPU) -msoft-float		\
 			-nostdinc													\
 			$(DEFINES)
 CFLAGS=-std=c11 $(FLAGS)

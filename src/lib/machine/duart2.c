@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <fcntl.h>
 #include <machine.h>
 
 static unsigned int saved_isr = 0;
@@ -8,7 +9,7 @@ static duart_port_t *channels[] = {&channel_a, &channel_b};
 
 #define NOP() for(int i=0; i<1000; i++) { ; }
 
-io_device_t xr68681_device;
+system_io_device_t xr68681_device;
 
 // Forward declarations
 int xr68681_getchar(uint8_t minor);
@@ -120,6 +121,7 @@ void ___claim_duart(void) {
 }
 
 void _release_duart(void) {
+#if 0
     printf("\nDuart Ch.a:\n");
     printf("  SR: 0x%08x\n", channel_a.sr_csr_reg);
     printf("  DR: 0x%08x\n", channel_a.data_reg);
@@ -127,6 +129,7 @@ void _release_duart(void) {
     printf("\nDuart Ch.a:\n");
     printf("  SR: 0x%08x\n", channel_b.sr_csr_reg);
     printf("  DR: 0x%08x\n", channel_b.data_reg);
+#endif
 }
 
 void ___release_duart(void) {

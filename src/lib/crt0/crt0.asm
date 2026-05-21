@@ -1,12 +1,12 @@
 init_sp equ $27fffe
-init_fp equ init_sp-4096
+;init_fp equ init_sp-16384
 
     section .text,code
 
 _start::
 ; Setup the stack and frame pointer
 	move.l 	#init_sp,sp
-	move.l 	#init_fp,fp
+;	move.l 	#init_fp,fp
 
 * Init BSS
 	move.l 	#_bss_start,a0
@@ -29,12 +29,13 @@ in_ram:
 	bsr		pre_main
 
 ; invoke main() 
-	bsr	main
-
+	bsr	    main
+	bra     done
 
 exit::
-; all done - tidy up
-	move.l	d0,-(sp)
+	move.l  4(sp),d0
+done:
+	move.l  d0,-(sp)
 	bsr		post_main
 	move.l  (sp)+,d0
 
