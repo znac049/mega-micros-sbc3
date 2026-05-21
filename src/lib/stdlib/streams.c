@@ -86,8 +86,9 @@ FILE *fopen(const char *pathname, const char *mode) {
 
 	// now let open(2) does all the heavy lifting
 	fd = open(pathname, flags);
-	if (fd == -1)
+	if (fd == -1) {
 		return NULL;
+	}
 
 	stream->is_open = 1;
 	stream->fd = fd;

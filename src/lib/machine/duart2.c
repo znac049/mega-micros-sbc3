@@ -195,7 +195,6 @@ int _polled_char_available(void) {
 
 void _polled_putchar(int ch) {
     polled_tx_char(ch, &channel_a);
-    polled_tx_char(ch, &channel_b);
 }
 
 /* io_device functions */

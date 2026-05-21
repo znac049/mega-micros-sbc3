@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -35,18 +36,22 @@ static inline size_t write_chardev(int fd, const uint8_t *buf, size_t count) {
 }
 
 size_t write(int fd, void *buf, size_t count) {
+    // printf("write(%d, 0x%08x, %d)\n", fd, buf, count);
+
     if ((fd < 0) || (fd >= FILE_TABLE_SIZE)) {
         errno = EBADF;
 
         return -1;
     }
 
+    // printf("  file type=%d\n", _file_table[fd].type);
     switch (_file_table[fd].type) {
         case DEVTYPE_CHAR:
             return write_chardev(fd, (uint8_t *)buf, count);
             break;
 
         default:
+            printf("  don't know how to handle file type %^d\n", _file_table[fd]);
             break;
     }
 

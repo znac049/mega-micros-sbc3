@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
@@ -40,20 +41,24 @@ static int find_free_slot(void) {
     return -1;
 }
 
-static inline int open_dir(const char *pathname, int flags) {
+int open_dir(const char *pathname, int flags) {
     return -1;
 }
 
-static inline int open_file(const char *pathname, int flags) {
+int open_file(const char *pathname, int flags) {
     int ft_index = find_free_slot();
 
+    // printf("open_file('%s', %d), ft_index=%d\n", pathname, flags, ft_index);
+
     if (ft_index < 0) {
+        // printf("No free file slots!\n");
         errno = ENOMEM;
         return -1;
     }
 
     // Is it a special filename - ignore flags?
     if (strcasecmp(pathname, "CON:") == 0) {
+        // printf("Opening console\n");
         _file_table[ft_index].type = DEVTYPE_CHAR;
         _file_table[ft_index].minor = 0;
         _file_table[ft_index].device = &xr68681_device;
@@ -61,6 +66,7 @@ static inline int open_file(const char *pathname, int flags) {
         return ft_index;
     }
     else if (strcasecmp(pathname, "AUX:") == 0) {
+        // printf("Opening aux\n");
         _file_table[ft_index].type = DEVTYPE_CHAR;
         _file_table[ft_index].minor = 1;
         _file_table[ft_index].device = &xr68681_device;
@@ -69,6 +75,7 @@ static inline int open_file(const char *pathname, int flags) {
     }
 
     // Not a special filename
+    // printf("Not a special filename\n");
 
     return -1;
 }

@@ -15,17 +15,16 @@ static const char *cpus[] = {
     "68030 Enhanced 32-bit"
 };
 
-static void init_streams(void) {
-	//stdin = stdout = fopen("CON:", "a+");
-	//stderr = fopen("AUX:", "w");
+static void _init_streams(void) {
+	stdin = stdout = fopen("CON:", "a+");
+	stderr = fopen("AUX:", "w");
 }
 
 void pre_main(void) {
     _claim_pit();
     _claim_duart();
     _init_heap();
-
-    init_streams();
+    _init_streams();
 
     if (running_in_rom) {
         printf("%c[2J", 27);
