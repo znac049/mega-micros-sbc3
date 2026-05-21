@@ -9,21 +9,6 @@ MEMORY
   ROM       : org = 0x00C00000,  l = 0x00400000
 }
 
-/* program configuration symbols that may be useful to override */
-/* using linker option: --defsym=<symbol_name>=<value>          */
-/* PROVIDE(_STACK_SIZE     = 0x00004000);  /* 16KB default stack size      */
-
-/* firmware absolute addresses (generally not useful to override)  */
-/* PROVIDE(_INITIAL_STACK  = 0x0027FFF0);  /* firmware stack top (mem top) */
-/* PROVIDE(_WARM_BOOT      = 0x00000004);  /* firmware warm boot address   */
-
-/* PROVIDE(_MFP_VECTORS    = 0x00000100);  /* MFP interrupt vector base    */
-
-/* ROM absolute addresses */
-/* PROVIDE(_FIRMWARE       = 0x00FC0000);  /* firmware address             */
-/*PROVIDE(_FIRMWARE_REV   = 0x00FC0400);  /* firmware revision code       */
-
-/* NOTE: rev1.1 used 0x00028000 (but init now position independent)     */
 PROVIDE(_LOAD_ADDRESS   = 0x00010000);  /* firmware KERNEL_LOAD_ADDRESS */
 PROVIDE(_RUN_ADDRESS    = 0x00010000);  /* start of user memory         */
 

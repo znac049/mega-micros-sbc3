@@ -2,7 +2,13 @@ init_sp equ $00fffe
 init_fp equ init_sp-4096
     section .pretext,code
 
-    dc.b 'Bob Rocks!'
+    dc.l    init_sp
+    dc.l    _start
+
+	dc.l    _data_start
+	dc.l 	_data_end
+	
+    dc.b    'Bob Rocks!'
 
 ;    section .text,code
 
@@ -27,6 +33,9 @@ ibdone:
 	cmp.l	#$c00000,d0
 	blt		in_ram
 	move.b  #1,running_in_rom
+
+; If We're running in ROM, we should have a _copy_ of the data segment
+; Immediately following the code segment which needs to be copied into RAM
 
 in_ram:
 
