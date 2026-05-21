@@ -23,3 +23,24 @@ SOFTWARE.
 */
 
 #pragma once
+
+#define _NSIG             17	/* number of signals used */
+
+#define SIGHUP             1	/* hangup */
+#define SIGINT             2	/* interrupt (DEL) */
+#define SIGQUIT            3	/* quit (ASCII FS) */
+#define SIGILL             4	/* illegal instruction */
+#define SIGTRAP            5	/* trace trap (not reset when caught) */
+#define SIGABRT            6	/* IOT instruction */
+#define SIGIOT             6	/* SIGABRT for people who speak PDP-11 */
+#define SIGUNUSED          7	/* spare code */
+#define SIGFPE             8	/* floating point exception */
+#define SIGKILL            9	/* kill (cannot be caught or ignored) */
+#define SIGUSR1           10	/* user defined signal # 1 */
+#define SIGSEGV           11	/* segmentation violation */
+#define SIGUSR2           12	/* user defined signal # 2 */
+#define SIGPIPE           13	/* write on a pipe with no one to read it */
+#define SIGALRM           14	/* alarm clock */
+#define SIGTERM           15	/* software termination signal from kill */
+#define	SIGSTKFLT	      16	/* used by kernel to indicate stack fault */
+#define SIGCHLD           17	/* child process terminated or stopped */

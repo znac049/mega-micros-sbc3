@@ -25,11 +25,6 @@ SOFTWARE.
 #include <stdio.h>
 
 int fflush(FILE *stream) {
-    switch (stream->type) {
-        case DEVTYPE_CHAR:
-            return stream->device->chardev.flush(stream->minor);
-            break;
-    }
   
     return -1;
 }

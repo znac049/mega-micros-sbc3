@@ -22,27 +22,35 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <stdio.h>
-#include <stddef.h>
 #include <unistd.h>
-#include <string.h>
+#include <fcntl.h>
 #include <errno.h>
 
-int fputs(const char *s, FILE *stream) {
-    int res;
-    int nbytes;
-
-    if ((stream == NULL) || ((stream != NULL) && (stream->is_open == 0))) {
-        errno = EBADF;
-
-        return EOF;
+static inline size_t write_chardev(int fd, const uint8_t *buf, size_t count) {
+    for (size_t i=0; i<count; i++) {
+        _file_table[fd].device->chardev.putchar(*buf++, _file_table[fd].minor);
     }
 
-    nbytes = strlen(s);
-    res = write(stream->fd, (void *)s, nbytes);
+    return count;
+}
 
-    if (nbytes != res)
-        return EOF;
-    
-    return nbytes;
+size_t write(int fd, void *buf, size_t count) {
+    if ((fd < 0) || (fd >= FILE_TABLE_SIZE)) {
+        errno = EBADF;
+
+        return -1;
+    }
+
+    switch (_file_table[fd].type) {
+        case DEVTYPE_CHAR:
+            return write_chardev(fd, (uint8_t *)buf, count);
+            break;
+
+        default:
+            break;
+    }
+
+    errno = EBADF;
+
+    return -1;
 }

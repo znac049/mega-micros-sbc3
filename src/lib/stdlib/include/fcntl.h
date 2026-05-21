@@ -1,0 +1,90 @@
+/* 
+MIT License
+
+Copyright (c) 2026 Bob Green
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+#pragma once
+
+#include <ctype.h>
+
+#define FILE_TABLE_SIZE 16
+
+/* File flags */
+#define O_RDONLY    (1<<0)
+#define O_WRONLY    (1<<1)
+#define O_RDWR      (O_RDONLY | O_WRONLY)
+#define O_CREAT     (1<<3)
+#define O_DIRECTORY (1<<4)
+#define O_TMPFILE   (1<<5)
+#define O_TRUNC     (1<<6)
+#define O_APPEND    (1<<7)
+
+/* File mode constants (in octal) */
+#define S_IRWXU     00700
+#define S_IRUSR     00400
+#define S_IWUSR     00200
+#define S_IXUSR     00100
+#define S_IRWXG     00070
+#define S_IRGRP     00040
+#define S_IWGRP     00020
+#define S_IXGRP     00010
+#define S_IRWXO     00007
+#define S_IROTH     00004
+#define S_IWOTH     00002
+#define S_IXOTH     00001
+
+#define S_ISUID     004000
+#define S_ISGID     002000
+#define S_ISVTX     001000
+
+
+#define DEVTYPE_NOTSET  0
+#define DEVTYPE_CHAR    1
+#define DEVTYPE_FS      2
+#define DEVTYPE_BLOCK   3
+
+typedef union system_io_device {
+    struct {
+        void (*putchar)(int ch, uint8_t minor);
+        int (*getchar)(uint8_t minor);
+        int (*char_available)(uint8_t minor);
+        int (*flush)(uint8_t minor);
+    } chardev;
+    struct {
+        int fred;
+    } fs;
+    struct {
+        int fred;
+    } blockdev;
+} system_io_device_t;
+
+typedef struct file_table_entry {
+    int type;
+    int minor;
+    char *name;
+    system_io_device_t *device;
+} file_table_entry_t;
+
+extern file_table_entry_t _file_table[FILE_TABLE_SIZE];
+
+int creat(const char *pathname, mode_t mode);
+int open(const char *pathname, int flags);

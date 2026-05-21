@@ -5,11 +5,11 @@
 
 int vfprintf(FILE *stream, const char *format, va_list args)
 {
-	int r;
+	int res;
 	char buffer[MAX_STR];
 
-	r = vsnprintf(buffer, MAX_STR, format, args);
+	res = vsnprintf(buffer, MAX_STR, format, args);
 	fputs(buffer, stream);
 
-	return r;
+	return res;
 }

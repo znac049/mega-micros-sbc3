@@ -22,27 +22,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <stdio.h>
-#include <stddef.h>
 #include <unistd.h>
-#include <string.h>
+#include <fcntl.h>
 #include <errno.h>
 
-int fputs(const char *s, FILE *stream) {
-    int res;
-    int nbytes;
-
-    if ((stream == NULL) || ((stream != NULL) && (stream->is_open == 0))) {
+int isatty(int fd) {
+    if ((fd < 0) || (fd >= FILE_TABLE_SIZE)) {
         errno = EBADF;
 
-        return EOF;
+        return 0;
     }
 
-    nbytes = strlen(s);
-    res = write(stream->fd, (void *)s, nbytes);
-
-    if (nbytes != res)
-        return EOF;
-    
-    return nbytes;
+    return (_file_table[fd].type == DEVTYPE_CHAR);
 }

@@ -27,47 +27,19 @@ SOFTWARE.
 #include <stdarg.h>
 #include <ctype.h>
 
-typedef union io_device {
-    struct {
-        void (*putchar)(int ch, uint8_t minor);
-        int (*getchar)(uint8_t minor);
-        int (*char_available)(uint8_t minor);
-        int (*flush)(uint8_t minor);
-    } chardev;
-    struct {
-        int fred;
-    } fs;
-    struct {
-        int fred;
-    } blockdev;
-} io_device_t;
-
+// Stream object
 typedef struct file {
-    int type;
-    int minor;
-    char *name;
-    io_device_t *device;
+    int fd;
+    uint8_t is_open;
 } FILE;
 
-#define DEVTYPE_CHAR 1
-#define DEVTYPE_FS 2
-#define DEVTYPE_BLOCK 3
+#define STREAM_TABLE_SIZE 16
 
 #define FHAND_DUART 1
 
-extern FILE __console;
-extern FILE __aux;
-
-extern FILE *__stdin;
-extern FILE *__stdout;
-extern FILE *__stderr;
-
-#define stdcon (&__console)
-#define stddbg (&__aux)
-
-#define	stdin  (__stdin)
-#define	stdout (__stdout)
-#define	stderr (__stderr)
+extern FILE *stdin;
+extern FILE *stdout;
+extern FILE *stderr;
 
 #define EOF -1
 
@@ -76,6 +48,7 @@ int fclose(FILE *stream);
 int fflush(FILE *stream);
 int fgetc(FILE *stream);
 char *fgets(char *s, int size, FILE *stream);
+extern FILE *fopen(const char *pathname, const char *mode);
 int fprintf(FILE *stream, const char *fmt, ...);
 int fputc(int c, FILE *stream);
 int fputs(const char *s, FILE *stream);

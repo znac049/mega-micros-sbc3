@@ -1,7 +1,10 @@
 LIB=stdlib
 LIBOBJECTS=$(DIR)/atoi.o \
 			$(DIR)/atol.o \
+			$(DIR)/chdir.o \
+			$(DIR)/close.o \
 			$(DIR)/err.o \
+			$(DIR)/errno.o \
 			$(DIR)/fclose.o \
 			$(DIR)/fflush.o \
 			$(DIR)/fgetc.o \
@@ -14,16 +17,19 @@ LIBOBJECTS=$(DIR)/atoi.o \
 			$(DIR)/getchar.o \
 			$(DIR)/getenv.o \
 			$(DIR)/gets.o \
+			$(DIR)/isatty.o \
 			$(DIR)/isdigit.o \
 			$(DIR)/isspace.o \
 			$(DIR)/itoa.o \
 			$(DIR)/malloc.o \
 			$(DIR)/memcpy.o \
 			$(DIR)/memset.o \
+			$(DIR)/open.o \
 			$(DIR)/printf.o \
 			$(DIR)/putchar.o \
 			$(DIR)/puts.o \
 			$(DIR)/rand.o \
+			$(DIR)/read.o \
 			$(DIR)/snprintf.o \
 			$(DIR)/srand.o \
 			$(DIR)/sscanf.o \
@@ -41,7 +47,8 @@ LIBOBJECTS=$(DIR)/atoi.o \
 			$(DIR)/vfprintf.o \
 			$(DIR)/vsnprintf.o \
 			$(DIR)/vsscanf.o \
-			$(DIR)/warn.o
+			$(DIR)/warn.o \
+			$(DIR)/write.o
 
 LIBINCLUDES=$(DIR)/include
 

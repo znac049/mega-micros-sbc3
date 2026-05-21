@@ -22,27 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <stdio.h>
-#include <stddef.h>
-#include <unistd.h>
-#include <string.h>
-#include <errno.h>
+#pragma once
 
-int fputs(const char *s, FILE *stream) {
-    int res;
-    int nbytes;
+#include <ctype.h>
 
-    if ((stream == NULL) || ((stream != NULL) && (stream->is_open == 0))) {
-        errno = EBADF;
-
-        return EOF;
-    }
-
-    nbytes = strlen(s);
-    res = write(stream->fd, (void *)s, nbytes);
-
-    if (nbytes != res)
-        return EOF;
-    
-    return nbytes;
-}
+int chdir(const char *path);
+int close(int fd);
+int isatty(int fd);
+size_t read(int fd, void *buf, size_t count);
+size_t write(int fd, void *buf, size_t count);

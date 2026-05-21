@@ -23,13 +23,29 @@ SOFTWARE.
 */
 
 #include <stdio.h>
+#include <stddef.h>
+#include <errno.h>
+#include <unistd.h>
 
 int fputc(int c, FILE *stream) {
-    switch (stream->type) {
-        case DEVTYPE_CHAR:
-            stream->device->chardev.putchar(c, stream->minor);
-            return c;
+    int res;
+    uint8_t ch = (uint8_t)c;
+
+    if ((stream != NULL) && (stream->is_open == 0)) {
+        errno = EBADF;
+
+        puts("!");
+
+        return EOF;
     }
 
+    res = write(stream->fd, &ch, 1);
+
+    if (res == 1) {
+        puts("C");
+        return c;
+    }
+
+    puts("X");
     return EOF;
 }

@@ -60,57 +60,77 @@ int vsnprintf(char *str, size_t size, const char *format, va_list ap)
 			// Fetch the data and format it accordingly
 			switch (type) {
 			    case 's': {
-				const char *s;
+					const char *s;
 
-				s = va_arg(ap, const char *);
-				len = strlen(s);
-				strncpy(&str[i], s, size - i - 1);
-				i += len;
-				break;
+					s = va_arg(ap, const char *);
+					len = strlen(s);
+					strncpy(&str[i], s, size - i - 1);
+					i += len;
+					break;
 			    }
+
 			    case 'i':
-				type = 'd';
+					type = 'd';
 			    case 'p':
 			    case 'd':
 			    case 'u':
 			    case 'o':
 			    case 'x':
 			    case 'X': {
-				// Extract the data from ap based on the requested length
-				unsigned long long d;
-				if (length <= sizeof(int)) {
-					d = va_arg(ap, unsigned int);
-				} else {
-					d = va_arg(ap, unsigned long long);
-				}
-
-				// Determine what base to display the number in
-				int radix = 10;
-				if (type == 'x' || type == 'X' || type == 'p') {
-					if (numprefix && d) {
-						str[i++] = '0';
-						str[i++] = 'x';
+					// Extract the data from ap based on the requested length
+					unsigned long long d;
+					if (length <= sizeof(int)) {
+						d = va_arg(ap, unsigned int);
+					} else {
+						d = va_arg(ap, unsigned long long);
 					}
-					radix = 16;
-				} else if (type == 'o') {
-					if (numprefix && d)
-						str[i++] = '0';
-					radix = 8;
+
+					// Determine what base to display the number in
+					int radix = 10;
+
+					if (type == 'x' || type == 'X' || type == 'p') {
+						if (numprefix && d) {
+							str[i++] = '0';
+							str[i++] = 'x';
+						}
+						radix = 16;
+					} else if (type == 'o') {
+						if (numprefix && d)
+							str[i++] = '0';
+						radix = 8;
+					}
+
+					itoa_padded(d, &str[i], radix, width, zeropad, type == 'd' ? 1 : 0);
+					i += strlen(&str[i]);
+					break;
+			    }
+
+				case 'f': {
+					// Total bodge - needs to be reworked.
+					double d;
+					long intpart;
+					long floatpart;
+
+					d = va_arg(ap, double);
+					intpart = (long int)d;
+					floatpart = (d - intpart) * 100000000;
+					itoa_padded(intpart, &str[i], 10, width, zeropad, 1);
+					i += strlen(&str[i]);
+					str[i++] = '.';
+					itoa_padded(floatpart, &str[i], 10, width, 1, 1);
+					break;
 				}
 
-				itoa_padded(d, &str[i], radix, width, zeropad, type == 'd' ? 1 : 0);
-				i += strlen(&str[i]);
-				break;
-			    }
-			    case 'c': {
-				int c;
+				case 'c': {
+					int c;
 
-				c = va_arg(ap, int);
-				str[i++] = (char) c;
-				break;
-			    }
-			    default:
-				break;
+					c = va_arg(ap, int);
+					str[i++] = (char) c;
+					break;
+				}
+				
+				default:
+					break;
 			}
 		} else {
 			str[i++] = format[j];

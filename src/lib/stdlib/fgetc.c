@@ -23,13 +23,23 @@ SOFTWARE.
 */
 
 #include <stdio.h>
+#include <unistd.h>
+#include <stddef.h>
+#include <errno.h>
 
 int fgetc(FILE *stream) {
-    switch (stream->type) {
-        case DEVTYPE_CHAR:
-            return stream->device->chardev.getchar(stream->minor);
-            break;
+    uint8_t ch;
+    int res;
+
+    if ((stream != NULL) && (stream->is_open == 0)) {
+        errno = EBADF;
+
+        return -1;
     }
 
-    return EOF;   
+    res = read(stream->fd, &ch, 1);
+    if (res != 1)
+        return EOF;
+
+    return (int) ch;
 }

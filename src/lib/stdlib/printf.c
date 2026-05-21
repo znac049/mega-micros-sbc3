@@ -1,12 +1,18 @@
 #include <stdio.h>
+#include <duart.h>
 
 int printf(const char *format, ...) {
-	int r;
+	int res;
 	va_list args;
+	char buffer[512];
 
 	va_start(args, format);
-	r = vfprintf(stdout, format, args);
+	res = vsnprintf(buffer, sizeof(buffer), format, args);
 	va_end(args);
 
-	return r;
+	for (int i=0; buffer[i]; i++) {
+		_putchar(buffer[i]);
+	}
+
+	return res;
 }

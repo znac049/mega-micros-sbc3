@@ -23,13 +23,16 @@ SOFTWARE.
 */
 
 #include <stdio.h>
+#include <unistd.h>
 
 int fclose(FILE *stream) {
-    switch (stream->type) {
-        case DEVTYPE_CHAR:
-            stream->device->chardev.flush(stream->minor);
-            break;
+    int res = -1;
+
+    if (stream->is_open) {
+        fflush(stream);
+        res = close(stream->fd);
+        stream->is_open = 0;
     }
 
-    return 0;
+    return res;
 }

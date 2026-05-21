@@ -23,3 +23,33 @@ SOFTWARE.
 */
 
 #pragma once
+
+/* Borrowed this from the Minix source tree */
+
+/* The <limits.h> header defines some basic sizes, both of the language types 
+ * (e.g., the number of bits in an integer), and of the operating system (e.g.
+ * the number of characters in a file name.
+ */
+
+/* Definitions about chars (8 bits in MINIX, and signed). */
+#define CHAR_BIT           8	/* # bits in a char */
+#define CHAR_MIN        -128	/* minimum value of a char */
+#define CHAR_MAX         127	/* maximum value of a char */
+#define SCHAR_MIN       -128	/* minimum value of a signed char */
+#define SCHAR_MAX        127	/* maximum value of a signed char */
+#define UCHAR_MAX        255	/* maximum value of an unsigned char */
+#define MB_LEN_MAX         1	/* maximum length of a multibyte char */
+
+/* Definitions about shorts (16 bits in MINIX). */
+#define SHRT_MIN  (-32767-1)	/* minimum value of a short */
+#define SHRT_MAX       32767	/* maximum value of a short */
+#define USHRT_MAX     0xFFFF	/* maximum value of unsigned short */
+
+#define INT_MIN (-2147483647-1)	/* minimum value of a 32-bit int */
+#define INT_MAX   2147483647	/* maximum value of a 32-bit int */
+#define UINT_MAX  0xFFFFFFFF	/* maximum value of an unsigned 32-bit int */
+
+/*Definitions about longs (32 bits in MINIX). */
+#define LONG_MIN (-2147483647L-1)/* minimum value of a long */
+#define LONG_MAX  2147483647L	/* maximum value of a long */
+#define ULONG_MAX 0xFFFFFFFFL	/* maximum value of an unsigned long */
