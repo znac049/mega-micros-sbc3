@@ -10,7 +10,7 @@ static uint16_t swap16(uint16_t val) {
 
 static uint32_t swap32(uint32_t val) {
 	return (val>>24) | 
-			((val&0xff00)>>8) |
+			((val&0xff0000)>>8) |
 			((val&0xff00)<<8) |
 			((val&0xff)<<24);
 }
@@ -109,7 +109,7 @@ void cf_info(void) {
 			status = *cf_reg_status;
 		}
 		info[i] = *cf_reg_data_byte;
-		printf("i=%d\r", i);
+		//printf("i=%d\r", i);
 	}
 
 	printf("\nSignature          : %04x\n", swap16(inf->signature));
