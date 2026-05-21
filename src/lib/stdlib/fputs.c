@@ -32,7 +32,7 @@ int fputs(const char *s, FILE *stream) {
     int res;
     int nbytes;
 
-    if ((stream == NULL) || ((stream != NULL) && (stream->is_open == 0))) {
+    if ((stream == NULL) || (stream->is_open == 0)) {
         errno = EBADF;
 
         return EOF;
