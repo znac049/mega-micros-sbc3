@@ -26,13 +26,17 @@ SOFTWARE.
 #include <ctype.h>
 
 int strcasecmp(const char *s1, const char *s2) {
-  register char c1=0, c2=0;
-
-  while ((c1 = *s1++) && (c2 = *s2++)) {
-    if (tolower(c1) != tolower(c2)) {
-      return c1 - c2;
+    int i;
+    
+    for (i=0; s1[i]; i++) {
+        if (tolower(s1[i]) != tolower(s2[i])) {
+            return tolower(s1[i]) < tolower(s2[i]);
+        }
     }
-  }
+  
+    if (s2[i]) {
+        return -1;
+    }  
 
-  return c1 - c2;
+    return 0;
 }

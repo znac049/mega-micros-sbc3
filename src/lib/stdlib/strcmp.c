@@ -25,13 +25,17 @@ SOFTWARE.
 #include <string.h>
 
 int strcmp(const char *s1, const char *s2) {
-  register char c1=0, c2=0;
-
-  while ((c1 = *s1++) && (c2 = *s2++)) {
-    if (c1 != c2) {
-      return c1 - c2;
+    int i;
+    
+    for (i=0; s1[i]; i++) {
+        if (s1[i] != s2[i]) {
+            return s1[i] < s2[i];
+        }
     }
-  }
+  
+    if (s2[i]) {
+        return -1;
+    }  
 
-  return c1 - c2;
+    return 0;
 }
