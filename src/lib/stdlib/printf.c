@@ -10,9 +10,13 @@ int printf(const char *format, ...) {
 	res = vsnprintf(buffer, sizeof(buffer), format, args);
 	va_end(args);
 
+#if 0
 	for (int i=0; buffer[i]; i++) {
 		_putchar(buffer[i]);
 	}
+#else
+	fputs(buffer, stdout);
+#endif
 
 	return res;
 }

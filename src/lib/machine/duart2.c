@@ -21,10 +21,9 @@ int xr68681_flush(uint8_t minor);
 static inline void init_duart_channel(duart_port_t *channel) {
     *channel->cmd_reg = CR_RESET_MR_PTR;
     NOP();
-#if 0
     *channel->cmd_reg = CR_RESET_TX;
     NOP();
-#endif
+
     *channel->cmd_reg = CR_SET_EXT_RX;  // Set X bit on xr68c681 for RX
     NOP();
     *channel->cmd_reg = CR_SET_EXT_TX;  // Set X bit on xr68c681 for TX
@@ -68,6 +67,7 @@ ISR duart_irq_handler() {
     register uint8_t interrupt_status_reg = *duart_isr;
 
     handle_channel_irq(interrupt_status_reg, &channel_a);
+    handle_channel_irq(interrupt_status_reg, &channel_b);
 }
 
 static void pre_init_duart(void) {
@@ -95,7 +95,11 @@ static void pre_init_duart(void) {
 }
 
 void _claim_duart(void) {
+    uint8_t duart_vector_number = *duart_ivr;   /* Grab the vector number used by the duart */
+
     pre_init_duart();
+
+    INTSOFF();
 
     init_duart_channel(&channel_a);
     init_duart_channel(&channel_b);
@@ -104,23 +108,22 @@ void _claim_duart(void) {
     xr68681_device.chardev.char_available = xr68681_char_available;
     xr68681_device.chardev.putchar = xr68681_putchar;
     xr68681_device.chardev.flush = xr68681_flush;
-}
-
-void ___claim_duart(void) {
-    uint8_t duart_vector_number = *duart_ivr;
-
-    INTSOFF();
-
-    pre_init_duart();
-
-    init_duart_channel(&channel_a);
 
     saved_isr = set_isr_handler(duart_vector_number, (unsigned int)duart_irq_handler);
     *duart_imr = ISR_RX_READY | ISR_TX_READY;
+
     INTSON();
 }
 
 void _release_duart(void) {
+    uint8_t duart_vector_number = *duart_ivr;   /* Grab the vector number used by the duart */
+
+    INTSOFF();
+
+    set_isr_handler(duart_vector_number, saved_isr);
+
+    INTSON();
+
 #if 0
     printf("\nDuart Ch.a:\n");
     printf("  SR: 0x%08x\n", channel_a.sr_csr_reg);
@@ -132,30 +135,25 @@ void _release_duart(void) {
 #endif
 }
 
-void ___release_duart(void) {
-    uint8_t duart_vector_number = *duart_ivr;   /* Grab the vector number used by the duart */
-
-    set_isr_handler(duart_vector_number, saved_isr);
-}
-
-int _buffered_getchar(void) {
-    while (cb_is_empty(&channel_a.rx_buff)) {
+int buffered_rx_char(duart_port_t *channel) {
+    while (cb_is_empty(&channel->rx_buff)) {
         ;
     }
 
-    return cb_remove(&channel_a.rx_buff);
+    return cb_remove(&channel->rx_buff);
 }
 
-int _buffered_char_available() {
-    return (channel_a.rx_buff.remove != channel_a.rx_buff.insert);
+int buffered_rx_available(duart_port_t *channel) {
+    return (!cb_is_empty(&channel->rx_buff));
 }
 
-void _buffered_putchar(int ch) {
+void buffered_tx_char(int ch, duart_port_t *channel) {
     /* Add it to the TX buffer */
-    cb_insert(&channel_a.tx_buff, ch);
-    *channel_a.cmd_reg = CR_ENABLE_TX;
+    cb_insert(&channel->tx_buff, ch);
+    *channel->cmd_reg = CR_ENABLE_TX;
 }
 
+#if 0
 int polled_rx_char(duart_port_t *channel) {
     uint8_t status = *channel->sr_csr_reg;
     uint8_t ch;
@@ -184,7 +182,9 @@ void polled_tx_char(int ch, duart_port_t *channel) {
 
     *channel->data_reg = ch;
 }
+#endif
 
+#if 0
 int _polled_getchar(void) {
     return polled_rx_char(&channel_a);
 }
@@ -197,26 +197,27 @@ void _polled_putchar(int ch) {
     polled_tx_char(ch, &channel_a);
 }
 
+#endif 
 /* io_device functions */
 int xr68681_getchar(uint8_t minor) {
     if (minor >= 2)
         return -1;
 
-    return polled_rx_char(channels[minor]);
+    return buffered_rx_char(channels[minor]);
 }
 
 int xr68681_char_available(uint8_t minor) {
     if (minor >= 2)
         return -1;
 
-    return polled_rx_available(channels[minor]);
+    return buffered_rx_available(channels[minor]);
 }
 
 void xr68681_putchar(int ch, uint8_t minor) {
     if (minor >= 2)
         return;
 
-    polled_tx_char(ch, channels[minor]);
+    buffered_tx_char(ch, channels[minor]);
 }
 
 int xr68681_flush(uint8_t minor) {

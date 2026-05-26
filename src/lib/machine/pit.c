@@ -7,6 +7,9 @@ static unsigned int saved_pit_counter=0;
 
 static unsigned int pit_ticks = 0;
 
+static uint8_t pit_port_a = 0;
+static uint8_t pit_port_b = 0;
+
 ISR pit_isr_handler(void) {
     pit_ticks++;
 
@@ -68,4 +71,40 @@ uint32_t pit_set_counter(uint32_t count_max) {
     *pit_cprl = l;
 
     return old_count_max;
+}
+
+void pit_set_a(uint8_t val) {
+    pit_port_a = ~val;
+
+    *pit_padr = pit_port_a;
+}
+
+void pit_set_bits_a(uint8_t bits) {
+    pit_port_a = pit_port_a | ~bits;
+
+    *pit_padr = pit_port_a;
+}
+
+void pit_clear_bits_a(uint8_t bits) {
+    pit_port_a = pit_port_a & bits;
+
+    *pit_padr = pit_port_a;
+}
+
+void pit_set_b(uint8_t val) {
+    pit_port_b = ~val;
+
+    *pit_pbdr = pit_port_b;
+}
+
+void pit_set_bits_b(uint8_t bits) {
+    pit_port_b = pit_port_b | ~bits;
+
+    *pit_pbdr = pit_port_b;
+}
+
+void pit_clear_bits_b(uint8_t bits) {
+    pit_port_b = pit_port_b & bits;
+
+    *pit_pbdr = pit_port_b;
 }

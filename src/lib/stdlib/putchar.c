@@ -27,9 +27,9 @@ SOFTWARE.
 
 int putchar(int c) {
   if (c == '\n') {
-    _putchar('\r');
+    fputc('\r', stdout);
   }
 
-  _polled_putchar(c);
+  fputc(c, stdout);
   return c;
 }
