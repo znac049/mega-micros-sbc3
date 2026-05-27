@@ -2,6 +2,7 @@
 
 void cb_reset(circular_buffer_t *cb) {
     cb->insert = cb->remove = 0;
+    cb->free = CIRCULAR_BUFFER_SIZE;
 }   
 
 bool_t cb_is_empty(struct circular_buffer *cb) {
@@ -22,6 +23,8 @@ void cb_insert(struct circular_buffer *cb, uint8_t ch) {
 
     if (cb->insert >= CIRCULAR_BUFFER_SIZE)
         cb->insert = 0;
+
+    cb->free--;
 }
 
 int cb_remove(struct circular_buffer *cb) {
@@ -35,5 +38,7 @@ int cb_remove(struct circular_buffer *cb) {
     if (cb->remove >= CIRCULAR_BUFFER_SIZE)
         cb->remove = 0;
 
+    cb->free++;
+    
     return res;
 }

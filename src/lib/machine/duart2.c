@@ -21,18 +21,24 @@ int xr68681_flush(uint8_t minor);
 static inline void init_duart_channel(duart_port_t *channel) {
     *channel->cmd_reg = CR_RESET_MR_PTR;
     NOP();
-#if 0
     *channel->cmd_reg = CR_RESET_TX;
     NOP();
-#endif
+    *channel->cmd_reg = CR_RESET_RX;
+    NOP();
+
     *channel->cmd_reg = CR_SET_EXT_RX;  // Set X bit on xr68c681 for RX
     NOP();
     *channel->cmd_reg = CR_SET_EXT_TX;  // Set X bit on xr68c681 for TX
     NOP();
 
-    *channel->mode_regs = 0x93;         // MR1: Enable Rx RTS, No Parity, 8-bits
+    *channel->cmd_reg = CR_ENABLE_RX;
+    NOP();
+
+    // RTS Rx handshaking is taken care of in code, not hardware
+    *channel->mode_regs = 0x13;         // MR1: No Handshake, No Parity, 8-bits
     *channel->mode_regs = 0x07;         // MR2: Normal mode, No handshake, Stop bit length=1.000
-    *channel->sr_csr_reg = 0x88;        // Baud rate: 230400 
+    *channel->sr_csr_reg = 0x88;        // Baud rate: 230400
+
     *duart_opr_set = channel->rts_bit;  // Assert RTS
 }
 
@@ -43,6 +49,12 @@ static inline void handle_channel_irq(uint8_t interrupt_status_reg, duart_port_t
 
         if (status & SR_RX_READY) {
             cb_insert(&channel->rx_buff, *channel->data_reg);
+
+            // Handshake ?
+            if (channel->rx_buff.free < 8) {
+                *duart_opr_reset = channel->rts_bit;  // Deassert RTS
+            }
+
             return;
         }
     }
@@ -67,7 +79,13 @@ static inline void handle_channel_irq(uint8_t interrupt_status_reg, duart_port_t
 ISR duart_irq_handler() {
     register uint8_t interrupt_status_reg = *duart_isr;
 
+#if 0
+    pit_set_a(interrupt_status_reg);
+    pit_set_b(*channel_a.sr_csr_reg);
+#endif
+
     handle_channel_irq(interrupt_status_reg, &channel_a);
+    handle_channel_irq(interrupt_status_reg >> 4, &channel_b);
 }
 
 static void pre_init_duart(void) {
@@ -95,7 +113,24 @@ static void pre_init_duart(void) {
 }
 
 void _claim_duart(void) {
+    uint8_t duart_vector_number = *duart_ivr;   /* Grab the vector number used by the duart */
+
+    *pit_paddr = 0xff;  // All outputs
+    *pit_pbddr = 0xff;  // All outputs
+
+#if 0
+    pit_set_a(255);
+    pit_set_b(255);
+
+    idle_for_ticks(400);
+
+    pit_set_a(0);
+    pit_set_b(0);
+#endif
+
     pre_init_duart();
+
+    INTSOFF();
 
     init_duart_channel(&channel_a);
     init_duart_channel(&channel_b);
@@ -104,23 +139,54 @@ void _claim_duart(void) {
     xr68681_device.chardev.char_available = xr68681_char_available;
     xr68681_device.chardev.putchar = xr68681_putchar;
     xr68681_device.chardev.flush = xr68681_flush;
-}
-
-void ___claim_duart(void) {
-    uint8_t duart_vector_number = *duart_ivr;
-
-    INTSOFF();
-
-    pre_init_duart();
-
-    init_duart_channel(&channel_a);
 
     saved_isr = set_isr_handler(duart_vector_number, (unsigned int)duart_irq_handler);
     *duart_imr = ISR_RX_READY | ISR_TX_READY;
+
     INTSON();
 }
 
+static inline void release_duart_channel(duart_port_t *channel) {
+    *channel->cmd_reg = CR_RESET_MR_PTR;
+    NOP();
+    *channel->cmd_reg = CR_RESET_TX;
+    NOP();
+    *channel->cmd_reg = CR_RESET_RX;
+    NOP();
+
+    *channel->cmd_reg = CR_SET_EXT_RX;  // Set X bit on xr68c681 for RX
+    NOP();
+    *channel->cmd_reg = CR_SET_EXT_TX;  // Set X bit on xr68c681 for TX
+    NOP();
+
+    *channel->cmd_reg = CR_ENABLE_RX;
+    NOP();
+
+    *channel->cmd_reg = CR_ENABLE_TX;
+    NOP();
+
+    // RTS Rx handshaking is taken care of in code, not hardware
+    *channel->mode_regs = 0x93;         // MR1: RX Handshake, No Parity, 8-bits
+    *channel->mode_regs = 0x07;         // MR2: Normal mode, No handshake, Stop bit length=1.000
+    *channel->sr_csr_reg = 0x88;        // Baud rate: 230400
+
+    *duart_opr_set = channel->rts_bit;  // Assert RTS
+}
+
 void _release_duart(void) {
+    uint8_t duart_vector_number = *duart_ivr;   /* Grab the vector number used by the duart */
+
+    INTSOFF();
+
+    *duart_imr = 0;
+
+    release_duart_channel(&channel_a);
+    release_duart_channel(&channel_b);
+
+    set_isr_handler(duart_vector_number, saved_isr);
+
+    INTSON();
+
 #if 0
     printf("\nDuart Ch.a:\n");
     printf("  SR: 0x%08x\n", channel_a.sr_csr_reg);
@@ -132,69 +198,30 @@ void _release_duart(void) {
 #endif
 }
 
-void ___release_duart(void) {
-    uint8_t duart_vector_number = *duart_ivr;   /* Grab the vector number used by the duart */
+int buffered_rx_char(duart_port_t *channel) {
+    int c;
 
-    set_isr_handler(duart_vector_number, saved_isr);
-}
-
-int _buffered_getchar(void) {
-    while (cb_is_empty(&channel_a.rx_buff)) {
+    while (cb_is_empty(&channel->rx_buff)) {
         ;
     }
 
-    return cb_remove(&channel_a.rx_buff);
+    c = cb_remove(&channel->rx_buff);
+
+    if (channel->rx_buff.free > 24) {
+        *duart_opr_set = channel->rts_bit;  // Assert RTS
+    }
+
+    return c;
 }
 
-int _buffered_char_available() {
-    return (channel_a.rx_buff.remove != channel_a.rx_buff.insert);
+int buffered_rx_available(duart_port_t *channel) {
+    return (!cb_is_empty(&channel->rx_buff));
 }
 
-void _buffered_putchar(int ch) {
+void buffered_tx_char(int ch, duart_port_t *channel) {
     /* Add it to the TX buffer */
-    cb_insert(&channel_a.tx_buff, ch);
-    *channel_a.cmd_reg = CR_ENABLE_TX;
-}
-
-int polled_rx_char(duart_port_t *channel) {
-    uint8_t status = *channel->sr_csr_reg;
-    uint8_t ch;
-
-    while ((status && SR_RX_READY) == 0) {
-       status = *channel->sr_csr_reg; 
-    }
-
-    ch = *channel->data_reg;
-
-    return (int)ch;
-}
-
-int polled_rx_available(duart_port_t *channel) {
-    uint8_t status = *channel->sr_csr_reg;
-
-    return (status & SR_RX_READY)?1:0;
-}
-
-void polled_tx_char(int ch, duart_port_t *channel) {
-    uint8_t status = *channel->sr_csr_reg;
-
-    while ((status && SR_TX_READY) == 0) {
-       status = *channel->sr_csr_reg; 
-    }
-
-    *channel->data_reg = ch;
-}
-
-int _polled_getchar(void) {
-    return polled_rx_char(&channel_a);
-}
-
-int _polled_char_available(void) {
-    return polled_rx_available(&channel_a);    
-}
-
-void _polled_putchar(int ch) {
-    polled_tx_char(ch, &channel_a);
+    cb_insert(&channel->tx_buff, ch);
+    *channel->cmd_reg = CR_ENABLE_TX;
 }
 
 /* io_device functions */
@@ -202,21 +229,21 @@ int xr68681_getchar(uint8_t minor) {
     if (minor >= 2)
         return -1;
 
-    return polled_rx_char(channels[minor]);
+    return buffered_rx_char(channels[minor]);
 }
 
 int xr68681_char_available(uint8_t minor) {
     if (minor >= 2)
         return -1;
 
-    return polled_rx_available(channels[minor]);
+    return buffered_rx_available(channels[minor]);
 }
 
 void xr68681_putchar(int ch, uint8_t minor) {
     if (minor >= 2)
         return;
 
-    polled_tx_char(ch, channels[minor]);
+    buffered_tx_char(ch, channels[minor]);
 }
 
 int xr68681_flush(uint8_t minor) {

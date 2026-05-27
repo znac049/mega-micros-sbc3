@@ -10,9 +10,7 @@ int printf(const char *format, ...) {
 	res = vsnprintf(buffer, sizeof(buffer), format, args);
 	va_end(args);
 
-	for (int i=0; buffer[i]; i++) {
-		_putchar(buffer[i]);
-	}
+	fputs(buffer, stdout);
 
 	return res;
 }

@@ -54,11 +54,17 @@ SOFTWARE.
 #define pit_cntrl ((volatile uint8_t*) pit_base+50)
 #define pit_tsr   ((volatile uint8_t*) pit_base+52)
 
-void _claim_pit(void);
 uint32_t pit_get_counter(void);
 uint32_t pit_set_counter(uint32_t);
-uint32_t ticks();
+uint32_t ticks(void);
+void idle_for_ticks(uint32_t t);
 
 void _claim_pit(void);
 void _release_pit(void);
 
+void pit_set_a(uint8_t val);
+void pit_set_bits_a(uint8_t bits);
+void pit_clear_bits_a(uint8_t bits);
+void pit_set_b(uint8_t val);
+void pit_set_bits_b(uint8_t bits);
+void pit_clear_bits_b(uint8_t bits);

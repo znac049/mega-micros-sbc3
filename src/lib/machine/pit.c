@@ -5,7 +5,10 @@
 static unsigned int saved_pit_isr=0;
 static unsigned int saved_pit_counter=0;
 
-static unsigned int pit_ticks = 0;
+static volatile unsigned int pit_ticks = 0;
+
+static uint8_t pit_port_a = 0;
+static uint8_t pit_port_b = 0;
 
 ISR pit_isr_handler(void) {
     pit_ticks++;
@@ -21,8 +24,10 @@ void _claim_pit(void) {
     saved_pit_isr = get_isr_handler(pit_ivr);
     set_isr_handler(pit_ivr, (unsigned int)pit_isr_handler);
 
-    saved_pit_counter = pit_set_counter(1000);
-    *pit_tsr = 1;
+    // WIth a 10MHz clock, this will generate 1mS interrupts
+    saved_pit_counter = pit_set_counter(10000/32);
+    *pit_tcr = 0xa1;
+    *pit_tsr = 1;   
 
     INTSON();
 }
@@ -34,13 +39,21 @@ void _release_pit(void) {
 
     set_isr_handler(pit_ivr, saved_pit_isr);
     pit_set_counter(saved_pit_counter);
-    *pit_tsr = 1;
+    // *pit_tsr = 1;
 
     INTSON();
 }
 
 uint32_t ticks(void) {
     return pit_ticks;
+}
+
+void idle_for_ticks(uint32_t t) {
+    uint32_t end_tick = pit_ticks + t;
+
+    while (pit_ticks <= end_tick) {
+        ;
+    }
 }
 
 uint32_t pit_get_counter(void) {
@@ -68,4 +81,40 @@ uint32_t pit_set_counter(uint32_t count_max) {
     *pit_cprl = l;
 
     return old_count_max;
+}
+
+void pit_set_a(uint8_t val) {
+    pit_port_a = ~val;
+
+    *pit_padr = pit_port_a;
+}
+
+void pit_set_bits_a(uint8_t bits) {
+    pit_port_a = pit_port_a | ~bits;
+
+    *pit_padr = pit_port_a;
+}
+
+void pit_clear_bits_a(uint8_t bits) {
+    pit_port_a = pit_port_a & bits;
+
+    *pit_padr = pit_port_a;
+}
+
+void pit_set_b(uint8_t val) {
+    pit_port_b = ~val;
+
+    *pit_pbdr = pit_port_b;
+}
+
+void pit_set_bits_b(uint8_t bits) {
+    pit_port_b = pit_port_b | ~bits;
+
+    *pit_pbdr = pit_port_b;
+}
+
+void pit_clear_bits_b(uint8_t bits) {
+    pit_port_b = pit_port_b & bits;
+
+    *pit_pbdr = pit_port_b;
 }

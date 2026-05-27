@@ -27,11 +27,11 @@ SOFTWARE.
 
 int puts(const char *str) {
   while (*str) {
-    _putchar(*str++);
+    putchar(*str++);
   }
   
-  _putchar('\r');
-  _putchar('\n');
+  putchar('\r');
+  putchar('\n');
 
   return 0;
 }

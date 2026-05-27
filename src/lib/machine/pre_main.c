@@ -3,6 +3,7 @@
 #include <machine.h>
 
 uint8_t cpu_type = CPU_68000;
+uint8_t cpu_speed_mhz = 33;
 
 FILE *stdin;
 FILE *stdout;
@@ -20,11 +21,31 @@ static void _init_streams(void) {
 	stderr = fopen("AUX:", "w");
 }
 
+static int measure_cpu_clock(void) {
+    uint32_t pre_start = ticks() + 2;
+    uint32_t end_tick = pre_start + 100;
+    uint32_t count = 0;
+
+    while (pre_start != ticks()) {
+        ;
+    }
+
+    while (ticks() <= end_tick) {
+        count++;
+    }
+
+    // printf("Clock speed is %dMHz\n", count / 1760);
+
+    return count / 1760;
+}
+
 void pre_main(void) {
     _claim_pit();
     _claim_duart();
     _init_heap();
     _init_streams();
+
+    cpu_speed_mhz = measure_cpu_clock();
 
     if (running_in_rom) {
         printf("%c[2J", 27);
@@ -38,14 +59,14 @@ void pre_main(void) {
             printf("UNKOWN processor type detected\n");
         }
         else {
-            printf("%s Processor\n", cpus[cpu_type]);
+            printf("%s Processor running at ~%dMHz\n", cpus[cpu_type], cpu_speed_mhz);
         }
     }
 }
 
 void post_main(int status) {
     if (status) {
-        printf("exited with %d\n", status);
+        printf("exited with status: %d\n", status);
     }
 
     _release_duart();
