@@ -146,10 +146,42 @@ void _claim_duart(void) {
     INTSON();
 }
 
+static inline void release_duart_channel(duart_port_t *channel) {
+    *channel->cmd_reg = CR_RESET_MR_PTR;
+    NOP();
+    *channel->cmd_reg = CR_RESET_TX;
+    NOP();
+    *channel->cmd_reg = CR_RESET_RX;
+    NOP();
+
+    *channel->cmd_reg = CR_SET_EXT_RX;  // Set X bit on xr68c681 for RX
+    NOP();
+    *channel->cmd_reg = CR_SET_EXT_TX;  // Set X bit on xr68c681 for TX
+    NOP();
+
+    *channel->cmd_reg = CR_ENABLE_RX;
+    NOP();
+
+    *channel->cmd_reg = CR_ENABLE_TX;
+    NOP();
+
+    // RTS Rx handshaking is taken care of in code, not hardware
+    *channel->mode_regs = 0x93;         // MR1: RX Handshake, No Parity, 8-bits
+    *channel->mode_regs = 0x07;         // MR2: Normal mode, No handshake, Stop bit length=1.000
+    *channel->sr_csr_reg = 0x88;        // Baud rate: 230400
+
+    *duart_opr_set = channel->rts_bit;  // Assert RTS
+}
+
 void _release_duart(void) {
     uint8_t duart_vector_number = *duart_ivr;   /* Grab the vector number used by the duart */
 
     INTSOFF();
+
+    *duart_imr = 0;
+
+    release_duart_channel(&channel_a);
+    release_duart_channel(&channel_b);
 
     set_isr_handler(duart_vector_number, saved_isr);
 
