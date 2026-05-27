@@ -31,6 +31,7 @@ struct circular_buffer {
     uint8_t buffer[CIRCULAR_BUFFER_SIZE];
     volatile uint16_t insert;
     volatile uint16_t remove;
+    volatile uint16_t free;
 };
 
 typedef struct circular_buffer circular_buffer_t;
