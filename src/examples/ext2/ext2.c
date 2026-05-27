@@ -298,7 +298,7 @@ ext2_fs_t *ext2_mount(uint8_t part_num) {
     block_size = 1024<<sb->block_size;
 
     fs = malloc(sizeof(ext2_fs_t));
-    bgt = malloc(block_size * sb->locks_per_block_group);
+    bgt = malloc(block_size * sb->blocks_per_block_group);
     buffer = malloc(block_size);
 
     if ((fs == NULL) ||( bgt == NULL) || (buffer == NULL)) {
