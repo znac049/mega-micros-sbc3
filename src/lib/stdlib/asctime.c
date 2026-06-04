@@ -22,29 +22,24 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+#include <stdio.h>
+#include <time.h>
 
-#include <ctype.h>
+static char time_str[256];
 
-struct tm {
-    int	tm_sec;
-    int	tm_min;
-    int	tm_hour;
-    int	tm_mday;
-    int	tm_mon;
-    int	tm_year;
-    int	tm_wday;
-    int	tm_yday;
-    int	tm_isdst;
-};
+static char *day_names[7] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+static char *month_names[12] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+                                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
-char *asctime(const struct tm *tm);
-char *asctime_r(const struct tm *tm, char *buf);
-char *ctime(const time_t *timep);
-char *ctime_r(const time_t *timep, char *buf);
-struct tm *localtime(const time_t *timep);
-struct tm *localtime_r(const time_t *timep, struct tm *result);
-time_t mktime(struct tm *tm);
-struct tm *gmtime(const time_t *timep);
-struct tm *gmtime_r(const time_t *timep, struct tm *result);
+char *asctime_r(const struct tm *tm, char *buf) {
+    snprintf(buf, sizeof(time_str), "%s %s %d %02d:%02d:%02d %04d (GMT)\n", 
+        day_names[tm->tm_wday], month_names[tm->tm_mon], tm->tm_mday,
+        tm->tm_hour, tm->tm_min, tm->tm_sec, 1900+tm->tm_year);
+
+    return buf;
+}
+
+char *asctime(const struct tm *tm) {
+    return asctime_r(tm, time_str);
+}
 

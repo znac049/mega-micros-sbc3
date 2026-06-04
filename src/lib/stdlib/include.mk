@@ -1,8 +1,10 @@
 LIB=stdlib
 LIBOBJECTS=$(DIR)/atoi.o \
 			$(DIR)/atol.o \
+			$(DIR)/asctime.o \
 			$(DIR)/chdir.o \
 			$(DIR)/close.o \
+			$(DIR)/ctime.o \
 			$(DIR)/err.o \
 			$(DIR)/errno.o \
 			$(DIR)/fclose.o \
@@ -17,13 +19,16 @@ LIBOBJECTS=$(DIR)/atoi.o \
 			$(DIR)/getchar.o \
 			$(DIR)/getenv.o \
 			$(DIR)/gets.o \
+			$(DIR)/gmtime.o \
 			$(DIR)/isatty.o \
 			$(DIR)/isdigit.o \
 			$(DIR)/isspace.o \
 			$(DIR)/itoa.o \
+			$(DIR)/localtime.o \
 			$(DIR)/malloc.o \
 			$(DIR)/memcpy.o \
 			$(DIR)/memset.o \
+			$(DIR)/mktime.o \
 			$(DIR)/open.o \
 			$(DIR)/printf.o \
 			$(DIR)/putchar.o \

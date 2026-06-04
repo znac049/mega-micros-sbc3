@@ -22,29 +22,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+#include <time.h>
 
-#include <ctype.h>
+static struct tm tm_buf;
 
-struct tm {
-    int	tm_sec;
-    int	tm_min;
-    int	tm_hour;
-    int	tm_mday;
-    int	tm_mon;
-    int	tm_year;
-    int	tm_wday;
-    int	tm_yday;
-    int	tm_isdst;
-};
+struct tm *localtime_r(const time_t *timep, struct tm *result) {
+    return gmtime_r(timep, result);
+}
 
-char *asctime(const struct tm *tm);
-char *asctime_r(const struct tm *tm, char *buf);
-char *ctime(const time_t *timep);
-char *ctime_r(const time_t *timep, char *buf);
-struct tm *localtime(const time_t *timep);
-struct tm *localtime_r(const time_t *timep, struct tm *result);
-time_t mktime(struct tm *tm);
-struct tm *gmtime(const time_t *timep);
-struct tm *gmtime_r(const time_t *timep, struct tm *result);
-
+struct tm *localtime(const time_t *timep) {
+    return localtime_r(timep, &tm_buf);
+}
