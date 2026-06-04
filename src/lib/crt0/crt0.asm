@@ -1,12 +1,8 @@
-init_sp equ $27fffe
-;init_fp equ init_sp-16384
-
     section .text,code
 
 _start::
 ; Setup the stack and frame pointer
-	move.l 	#init_sp,sp
-;	move.l 	#init_fp,fp
+	move.l  #_INITIAL_STACK,sp
 
 * Init BSS
 	move.l 	#_bss_start,a0
@@ -44,17 +40,17 @@ done:
 	trap #14
 
 
-twiddle_thumbs::
-    movem.l d2/d6,-(sp)
+; twiddle_thumbs::
+;     movem.l d2/d6,-(sp)
 
-    move.l  #1000000,d2
-    moveq.l #1,d6
-spin:
-    sub.l   d6,d2
-    bne.s   spin
+;     move.l  #1000000,d2
+;     moveq.l #1,d6
+; spin:
+;     sub.l   d6,d2
+;     bne.s   spin
 
-    movem.l (sp)+,d2/d6
-	rts
+;     movem.l (sp)+,d2/d6
+; 	rts
 
 
 get_heap_start::
