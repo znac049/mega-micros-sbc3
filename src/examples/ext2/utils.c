@@ -32,38 +32,14 @@ void printn(const char *pfx, const uint8_t *str, int len) {
     printf(pfx);
 
     for (int i=0; i<len; i++) {
-        putchar(str[i]);
+        int ch = str[i];
+
+        if ((ch < ' ') || (ch > '_')) {
+            ch = '.';
+        }
+
+        putchar(ch);
     }
     printf("\n");
-}
-
-void dump(uint8_t *buf, size_t count, uint8_t print_zeroes) {
-    int all_zeroes = 0;
-    int printed_something = 0;
-
-    for (size_t i=0; i<count; i+=16) {
-        all_zeroes = 1;
-        for (int x=0; x<16; x++) {
-            if (buf[i+x]) {
-                all_zeroes = 0;
-            }
-        }
-
-        if (!all_zeroes || print_zeroes) {
-            printf("%04x: ", i);
-            for (int x=0; x<16; x++) {
-                printf("%02x ", buf[i+x]);
-            }
-            putchar('\n');
-
-            printed_something = 1;
-        }
-    }
-
-    if (!printed_something) {
-        printf("Data is all zeroes.\n");
-    }
-
-    putchar('\n');
 }
 

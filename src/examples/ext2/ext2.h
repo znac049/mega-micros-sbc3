@@ -37,31 +37,31 @@ SOFTWARE.
 
 // Superblock
 struct ext2_sb {
-    uint32_t    total_inodes;
-    uint32_t    total_blocks;
-    uint32_t    total_reserved;
-    uint32_t    num_free_blocks;
-    uint32_t    num_free_inodes;
-    uint32_t    sb_block_num;
-    uint32_t    block_size;
-    uint32_t    frag_size;
-    uint32_t    blocks_per_block_group;
-    uint32_t    frags_per_block_group;
-    uint32_t    inodes_per_block_group;
-    uint32_t    last_mount_time;
-    uint32_t    last_written_time;
-    uint16_t    mounts_since_checked;
-    uint16_t    mounts_before_check;
-    uint16_t    signature;
-    uint16_t    fs_state;
-    uint16_t    error_action;
-    uint16_t    minor_version;
-    uint32_t    last_checked;
-    uint32_t    check_interval;
-    uint32_t    creator_id;
-    uint32_t    major_version;
-    uint16_t    admin_uid;
-    uint16_t    admin_group;
+    uint32_t    s_inodes_count;         // total_inodes;
+    uint32_t    s_blocks_count;         // total_blocks;
+    uint32_t    s_r_blocks_count;       // total_reserved;
+    uint32_t    s_free_blocks_count;    // num_free_blocks;
+    uint32_t    s_free_inodes_count;    // num_free_inodes;
+    uint32_t    s_first_data_block;     // sb_block_num;
+    uint32_t    s_log_block_size;       // block_size;
+    uint32_t    s_log_frag_size;        // frag_size;
+    uint32_t    s_blocks_per_group;     // blocks_per_block_group;
+    uint32_t    s_frags_per_group;      // frags_per_block_group;
+    uint32_t    s_inodes_per_group;     // inodes_per_block_group;
+    uint32_t    s_mtime;                // last_mount_time;
+    uint32_t    s_wtime;                // last_written_time;
+    uint16_t    s_mnt_count;            // mounts_since_checked;
+    int16_t     s_max_mnt_count;        // mounts_before_check;
+    uint16_t    s_magic;                // signature;
+    uint16_t    s_state;                // fs_state;
+    uint16_t    s_errors;               // error_action;
+    uint16_t    s_minor_rev_level;      // minor_version;
+    uint32_t    s_lastcheck;            // last_checked;
+    uint32_t    s_checkinterval;        // check_interval;
+    uint32_t    s_creator_os;           // creator_id;
+    uint32_t    s_rev_level;            // major_version;
+    uint16_t    s_def_resuid;           // admin_uid;
+    uint16_t    s_def_resgid;           // admin_group;
 
     /* 
      * Extended Superblock:
@@ -69,61 +69,66 @@ struct ext2_sb {
      * major version is 1 or higher 
      */
 
-    uint32_t    first_free_inode;
-    uint16_t    inode_size;
-    uint16_t    block_group;
-    uint32_t    optional_features;
-    uint32_t    required_features;
-    uint32_t    force_ro_features;
-    uint8_t     blkid[16];
-    uint8_t     volume_name[16];
-    uint8_t     last_mounted_at[64];
-    uint32_t    compression_algorithms;
-    uint8_t     file_blocks_to_preallocate;
-    uint8_t     dir_blocks_to_preallocate;
-    uint16_t    unused_1;
-    uint8_t     journal_id[16];
-    uint32_t    journal_inode;
-    uint32_t    journal_device;
-    uint32_t    orphan_inode_head;
+    uint32_t    s_first_ino;            // first_free_inode;
+    uint16_t    s_inode_size;           // inode_size;
+    uint16_t    s_block_group_nr;       // block_group;
+    uint32_t    s_feature_compat;       // optional_features;
+    uint32_t    s_feature_incompat;     // required_features;
+    uint32_t    s_feature_ro_compat;    // force_ro_features;
+    uint8_t     s_uuid[16];             // blkid[16];
+    uint8_t     s_volume_name[16];      // volume_name[16];
+    uint8_t     s_last_mounted[64];     // last_mounted_at[64];
+    uint32_t    s_algo_bitmap;          // compression_algorithms;
+    uint8_t     s_prealloc_blocks;      // file_blocks_to_preallocate;
+    uint8_t     s_prealloc_dir_blocks;  // dir_blocks_to_preallocate;
+    uint16_t    unused;
+    uint8_t     s_journal_uuid[16];     // journal_id[16];
+    uint32_t    s_journal_inum;         // journal_inode;
+    uint32_t    s_journal_dev;          // journal_device;
+    uint32_t    s_last_orphan;          // orphan_inode_head;
+    uint32_t    s_hash_seed[4];
+    uint8_t     s_def_hash_version;
+    uint8_t     padding[3];
+    uint32_t    s_default_mount_options;
+    uint32_t    s_first_meta_bg;
+    uint8_t     reserved[760];
 };
 
 typedef struct ext2_sb ext2_sb_t;
 
 // Block Group Descriptor
 struct ext2_bg {
-    uint32_t    bitmap_block_lba;
-    uint32_t    inode_table_lba;
-    uint16_t    num_free_blocks;
-    uint16_t    num_free_inodes;
-    uint16_t    num_directories;
-    uint8_t     unused[18];
+    uint32_t    bg_block_bitmap;
+    uint32_t    bg_inode_bitmap;
+    uint32_t    bg_inode_table;
+    uint16_t    bg_free_blocks_count;
+    uint16_t    bg_free_inodes_count;
+    uint16_t    bg_used_dirs_count;
+    uint16_t    bg_pad;
+    uint8_t     bg_reserved[12];
 };
 
 typedef struct ext2_bg ext2_bg_t;
 
 struct ext2_inode {
-    uint16_t    type_and_perms;
-    uint16_t    user_id;
-    uint32_t    lower_size;
-    uint32_t    last_access_time;
-    uint32_t    creation_time;
-    uint32_t    last_modification_time;
-    uint32_t    deletion_time;
-    uint16_t    group_id;
-    uint16_t    num_hard_links;
-    uint32_t    num_sectors;                // Yes, sectors!
-    uint32_t    flags;
-    uint32_t    os_val;
-    uint32_t    direct_blocks[12];
-    uint32_t    single_indirect_pointer;
-    uint32_t    double_indirect_pointer;
-    uint32_t    triple_indirect_pointer;
-    uint32_t    generation_number;
-    uint32_t    extended_attribute_block;   // version >= 1, otherwise reserved.
-    uint32_t    upper_size;                 // version >= 1, otherwise reserved.
-    uint32_t    fragment_address;
-    uint8_t     os_specific[12];
+    uint16_t    i_mode;
+    uint16_t    i_uid;
+    uint32_t    i_size;
+    uint32_t    i_atime;
+    uint32_t    i_ctime;
+    uint32_t    i_mtime;
+    uint32_t    i_dtime;
+    uint16_t    i_gid;
+    uint16_t    i_links_count;
+    uint32_t    i_blocks;
+    uint32_t    i_flags;
+    uint32_t    i_osdl;
+    uint32_t    i_block[15];
+    uint32_t    i_generation;
+    uint32_t    i_file_acl;
+    uint32_t    i_dir_acl;
+    uint32_t    i_faddr;
+    uint8_t     i_osd2[12];
 };
 
 typedef struct ext2_inode ext2_inode_t;
@@ -134,7 +139,6 @@ struct ext2_fs {
     uint8_t     block_in_buffer_valid;
     int         part_num;
     ext2_sb_t   *sb;
-    ext2_bg_t   *bgt;
     uint32_t    num_blockgroups;
     uint32_t    block_size;
     uint8_t     sectors_per_block;
@@ -142,14 +146,26 @@ struct ext2_fs {
 
 typedef struct ext2_fs ext2_fs_t;
 
+// dump.c
+void dump(uint8_t *buf, size_t count, uint8_t print_zeroes);
+void dump_ext2_bg(ext2_bg_t *bg, int bg_num, ext2_sb_t *sb);
+void dump_ext2_inode(ext2_inode_t *in, int in_num);
+void dump_ext2_sb(ext2_sb_t *sb);
+
+// endian.c
+void ext2_sanitize_superblock(ext2_sb_t *src_sb, ext2_sb_t *dst_sb);
+void ext2_sanitize_bg(ext2_bg_t *src_bg, ext2_bg_t *dst_bg);
+void ext2_sanitize_inode(ext2_inode_t *src_in, ext2_inode_t *dst_in);
+
+// ext2.c
 ext2_bg_t *ext2_get_blockgroup_descriptor(ext2_fs_t *fs, uint32_t blockgroup_num, ext2_bg_t *bg);
 int ext2_read_block(ext2_fs_t *fs, uint32_t block_num, uint8_t *buffer);
 int ext2_read_fs_block(ext2_fs_t *fs, uint32_t block_num);
 int ext2_get_inode(ext2_fs_t *fs, uint32_t inode_num, ext2_inode_t *inode);
 ext2_fs_t *ext2_mount(uint8_t part_num);
-void ext2_sanitize_superblock(ext2_sb_t *sb);
 ext2_fs_t *ext2_umount(ext2_fs_t *fs);
 int is_ext2(ext2_sb_t *sb);
 
+// utils.c
 void printn(const char *pfx, const uint8_t *str, int len);
-void dump(uint8_t *buf, size_t count, uint8_t print_zeroes);
+

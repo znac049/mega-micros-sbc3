@@ -52,48 +52,6 @@ void cf_info(uint8_t drive_num) {
     printf("\n");
 }
 
-#if 0
-int cf_detect(uint8_t drive_num)
-{
-	uint8_t status;
-
-    if (drive_num > 1) {
-        printf("Bad drive number (%d)\n", drive_num);
-        return 0;
-    }
-
-	status = *cf_reg_status;
-
-	// If the busy bit is already set, or the two bits that are always 0, then perhaps nothing is connected
-	printf("status=%02x\n", status);
-	if (status & (CF_ST_BUSY | 0x06)) {
-		printf("It's busy and shouldn't be!\n");
-		return 0;
-	}
-
-	CF_DELAY(10);
-
-    *cf_reg_lba3 = 0xe0 | (drive_num?0x10:0);
-	*cf_reg_command = CF_CMD_IDENTIFY;
-
-	for (int i = 0; i < 1000; i++) {
-		CF_DELAY(10);
-
-		status = *cf_reg_status;
-		// If it becomes unbusy within the timeout then a drive is connected
-		if (!(status & CF_ST_BUSY)) {
-			if (status & CF_ST_RDY) {
-				CF_DELAY(100);
-				return 1;
-			} else {
-				return 0;
-			}
-		}
-	}
-	return 0;
-}
-#endif
-
 uint8_t drive_ready(uint8_t drive_num) {
     uint8_t status;
 
@@ -159,6 +117,7 @@ int main(void) {
 
     for (uint8_t part=0; part<num_partitions; part++) {
         ext2_fs_t *fs = ext2_mount(part);
+
         if (fs == NULL) {
             printf("Failed to mount partition %d as ext2\n", part);
         }
@@ -173,7 +132,6 @@ int main(void) {
             }
 
             printf("\ninode 2:\n");
-            dump((unsigned char *)&inode, fs->sb->inode_size, 0);
 
             fs = ext2_umount(fs);
         }
