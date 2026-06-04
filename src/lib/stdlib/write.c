@@ -51,7 +51,7 @@ size_t write(int fd, void *buf, size_t count) {
             break;
 
         default:
-            printf("  don't know how to handle file type %^d\n", _file_table[fd]);
+            printf("  don't know how to write to file type %^d\n", _file_table[fd]);
             break;
     }
 

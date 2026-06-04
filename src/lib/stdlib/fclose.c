@@ -23,12 +23,14 @@ SOFTWARE.
 */
 
 #include <stdio.h>
+#include <stddef.h>
 #include <unistd.h>
+#include <errno.h>
 
 int fclose(FILE *stream) {
     int res = -1;
 
-    if (stream->is_open) {
+    if (stream != NULL && stream->is_open) {
         fflush(stream);
         res = close(stream->fd);
         stream->is_open = 0;
