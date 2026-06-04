@@ -19,7 +19,7 @@ ISR pit_isr_handler(void) {
 void _claim_pit(void) {
     uint8_t pit_ivr = *pit_tivr;
 
-    INTSOFF();
+    DISABLE_IRQS();
 
     saved_pit_isr = get_isr_handler(pit_ivr);
     set_isr_handler(pit_ivr, (unsigned int)pit_isr_handler);
@@ -29,19 +29,19 @@ void _claim_pit(void) {
     *pit_tcr = 0xa1;
     *pit_tsr = 1;   
 
-    INTSON();
+    ENABLE_IRQS();
 }
 
 void _release_pit(void) {
     uint8_t pit_ivr = *pit_tivr;
 
-    INTSOFF();
+    DISABLE_IRQS();
 
     set_isr_handler(pit_ivr, saved_pit_isr);
     pit_set_counter(saved_pit_counter);
     // *pit_tsr = 1;
 
-    INTSON();
+    ENABLE_IRQS();
 }
 
 uint32_t ticks(void) {

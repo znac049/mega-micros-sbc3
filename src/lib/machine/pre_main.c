@@ -50,7 +50,7 @@ void pre_main(void) {
     if (running_in_rom) {
         printf("%c[2J", 27);
         printf("%c[H", 27);
-        printf("Mega-68030 Computer System\n");
+        printf("Mega-680x0 Computer System\n");
         printf("Code is running in %s\n", running_in_rom?"ROM":"RAM");
         
         // Detect CPU variant
@@ -68,6 +68,10 @@ void post_main(int status) {
     if (status) {
         printf("exited with status: %d\n", status);
     }
+
+    // There may be data in the uart TX buffers. Force flush
+    fflush(stdout);
+    fflush(stderr);
 
     _release_duart();
     _release_pit();

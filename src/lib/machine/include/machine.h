@@ -31,8 +31,34 @@ SOFTWARE.
 #include <vectors.h>
 #include <cb.h>
 
-#define INTSOFF() __asm("or.w #0x0700,%sr")
-#define INTSON() __asm("and.w #0xf8ff,%sr")
+typedef short lock_state_t;
+
+#define HALT()			    __asm volatile("stop #0x2700\n")
+
+#define DISABLE_IRQS()		__asm volatile("or.w	#0x0700, %sr");
+#define ENABLE_IRQS()		__asm volatile("and.w	#0xF8FF, %sr");
+
+#define TRACE_ON()		    __asm volatile("or.w	#0x8000, %sr");
+#define TRACE_OFF()		    __asm volatile("and.w	#0x7FFF, %sr");
+
+#define NOP()               __asm volatile("nop\n")
+
+#define SAVE_STATUS(saved) {				\
+	__asm("move.w	%%sr, %0\n" : "=dm" ((saved)));	\
+}
+
+#define RESTORE_STATUS(saved) {					\
+	__asm("move.w	%0, %%sr\n" : : "dm" ((saved)) :);	\
+}
+
+#define LOCK(saved) {					\
+	__asm("move.w	%%sr, %0\n" : "=dm" ((saved)));	\
+	DISABLE_IRQS();					\
+}
+
+#define UNLOCK(saved) {						\
+	__asm("move.w	%0, %%sr\n" : : "dm" ((saved)) :);	\
+}
 
 #define ISR void __attribute((interrupt))
 

@@ -107,6 +107,7 @@ struct duart_port {
     circular_buffer_t rx_buff;
     circular_buffer_t tx_buff;
     uint8_t rts_bit;
+    uint8_t rx_overruns;
 };
 
 typedef struct duart_port duart_port_t;

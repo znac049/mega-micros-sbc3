@@ -1,8 +1,8 @@
 LIB=machine
-LIBOBJECTS=$(DIR)/cb.o \
+LIBOBJECTS=\
 			$(DIR)/_cf.o \
-			$(DIR)/cf.o \
 			$(DIR)/_duart.o \
+			$(DIR)/cf.o \
 			$(DIR)/duart2.o \
 			$(DIR)/leds.o \
 			$(DIR)/_misc.o \

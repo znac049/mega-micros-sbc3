@@ -1,10 +1,5 @@
                 section .text,code
 
-swap16::
-                rts
-
-swap32::
-                rts
 
 ill_inst_vec    equ     4<<2
 
