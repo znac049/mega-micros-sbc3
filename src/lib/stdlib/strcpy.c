@@ -29,6 +29,8 @@ char *strcpy(char *dst, const char *src) {
   while (*src) {
     *cpy++ = *src++;
   }
+  
+  *cpy = EOS;
 
   return dst;
 }
