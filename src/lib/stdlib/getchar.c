@@ -31,5 +31,6 @@ int getchar(void) {
 }
 
 int char_available(void) {
-    return _polled_char_available();
+    // Horrible, horrible, horrible!
+    return xr68681_device.chardev.char_available(0);
 }

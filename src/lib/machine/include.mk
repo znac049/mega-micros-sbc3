@@ -1,7 +1,6 @@
 LIB=machine
 LIBOBJECTS=\
 			$(DIR)/_cf.o \
-			$(DIR)/_duart.o \
 			$(DIR)/cf.o \
 			$(DIR)/duart2.o \
 			$(DIR)/leds.o \
@@ -10,7 +9,6 @@ LIBOBJECTS=\
 			$(DIR)/pit.o \
 			$(DIR)/pre_main.o \
 			$(DIR)/safeio.o \
-			$(DIR)/termio.o \
 			$(DIR)/_vectors.o \
 			$(DIR)/vectors.o \
 
