@@ -1,43 +1,224 @@
-/* 
-MIT License
-
-Copyright (c) 2026 Bob Green
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-*/
+/* I got this code from the gloworm kernel source */
 
 #pragma once
 
 #include <ctype.h>
-#define CIRCULAR_BUFFER_SIZE 128
+
+#define CIRCULAR_BUFFER_SIZE 256
 
 struct circular_buffer {
-    uint8_t buffer[CIRCULAR_BUFFER_SIZE];
-    volatile uint16_t insert;
-    volatile uint16_t remove;
-    volatile uint16_t free;
+	uint16_t max;
+	volatile uint16_t in;
+	volatile uint16_t out;
+	volatile uint8_t buffer[CIRCULAR_BUFFER_SIZE];
 };
 
 typedef struct circular_buffer circular_buffer_t;
 
-int cb_remove(struct circular_buffer *cb);
-void cb_insert(struct circular_buffer *cb, uint8_t ch);
-bool_t cb_is_full(struct circular_buffer *cb);
-bool_t cb_is_empty(struct circular_buffer *cb);
-void cb_reset(circular_buffer_t *cb);
+static inline void _buf_init(circular_buffer_t *cb, uint16_t total_size)
+{
+	cb->max = total_size ? total_size - sizeof(uint16_t) * 3 : CIRCULAR_BUFFER_SIZE;
+	cb->in = 0;
+	cb->out = 0;
+}
+
+static inline uint16_t _buf_next_in(circular_buffer_t *cb)
+{
+	return cb->in + 1 < cb->max ? cb->in + 1 : 0;
+}
+
+static inline int _buf_is_full(circular_buffer_t *cb)
+{
+	return _buf_next_in(cb) == cb->out;
+}
+
+static inline int _buf_is_empty(circular_buffer_t *cb)
+{
+	return cb->in == cb->out;
+}
+
+static inline uint16_t _buf_used_space(circular_buffer_t *cb)
+{
+	if (cb->in >= cb->out) {
+		return cb->in - cb->out;
+	} else {
+		return cb->max - cb->out + cb->in;
+	}
+}
+
+static inline uint16_t _buf_free_space(circular_buffer_t *cb)
+{
+	if (cb->out > cb->in) {
+		return cb->out - cb->in - 1;
+	} else {
+		return cb->max - cb->in + cb->out - 1;
+	}
+}
+
+static inline int _buf_get_char(circular_buffer_t *cb)
+{
+	register uint8_t ch;
+
+	if (cb->out == cb->in)
+		return -1;
+	ch = cb->buffer[cb->out++];
+	if (cb->out >= cb->max)
+		cb->out = 0;
+	return ch;
+}
+
+static inline int _buf_put_char(circular_buffer_t *cb, uint8_t ch)
+{
+	register uint16_t next;
+
+	next = _buf_next_in(cb);
+	if (next == cb->out)
+		return -1;
+	cb->buffer[cb->in] = ch;
+	cb->in = next;
+	return ch;
+}
+
+
+static inline uint16_t _buf_get(circular_buffer_t *cb, uint8_t *data, uint16_t size)
+{
+	uint16_t i;
+
+	for (i = 0; i < size; i++) {
+		if (cb->out == cb->in)
+			return i;
+		data[i] = cb->buffer[cb->out++];
+		if (cb->out >= cb->max)
+			cb->out = 0;
+	}
+	return i;
+}
+
+static inline uint16_t _buf_peek(circular_buffer_t *cb, uint8_t *data, uint16_t offset, uint16_t size)
+{
+	uint16_t i, j;
+	uint16_t avail;
+
+	avail = _buf_used_space(cb);
+	if (offset > avail)
+		offset = avail;
+	j = cb->out + offset;
+	if (j > cb->max)
+		j -= cb->max;
+
+	for (i = 0; i < size; i++) {
+		if (j == cb->in)
+			return i;
+		data[i] = cb->buffer[j++];
+		if (j >= cb->max)
+			j = 0;
+	}
+	return i;
+}
+
+static inline uint16_t _buf_put(circular_buffer_t *cb, const uint8_t *data, uint16_t size)
+{
+	uint16_t i;
+	register uint16_t next;
+
+	for (i = 0; i < size; i++) {
+		cb->buffer[cb->in] = data[i];
+		next = _buf_next_in(cb);
+		if (next == cb->out)
+			return i;
+		cb->in = next;
+	}
+	return i;
+}
+
+static inline uint16_t _buf_drop(circular_buffer_t *cb, uint16_t size)
+{
+	uint16_t avail = _buf_used_space(cb);
+
+	if (size > avail)
+		size = avail;
+
+	cb->out += size;
+	if (cb->out >= cb->max)
+		cb->out -= cb->max;
+	return size;
+}
+
+#if 0
+static inline uint16_t _buf_get_iter(circular_buffer_t *cb, struct iovec_iter *iter)
+{
+	size_t size;
+	uint16_t chunk1, chunk2;
+
+	size = iovec_iter_remaining(iter);
+
+	// Calculate the maximum readable chunk from the current out pointer to either
+	// the in pointer, or if the in pointer is less than the out pointer, then to
+	// the end of the buffer
+	if (cb->in > cb->out) {
+		chunk1 = (cb->in - cb->out < size) ? cb->in - cb->out : size;
+	} else {
+		chunk1 = (cb->max - cb->out < size) ? cb->max - cb->out : size;
+	}
+
+	memcpy_into_iter(iter, (char *) &cb->buffer[cb->out], chunk1);
+
+	cb->out += chunk1;
+	if (cb->out >= cb->max)
+		cb->out = 0;
+
+	// If we've read the full size, or the buffer is empty, then return early
+	size -= chunk1;
+	if (size <= 0 || cb->out == cb->in)
+		return chunk1;
+
+	// Calculate the maximum readable second chunk, from the bottom of the buffer to
+	// the in pointer, or the remaining size if there's more data available than requested
+	chunk2 = (cb->in - cb->out < size) ? cb->in - cb->out : size;
+
+	memcpy_into_iter(iter, (char *) &cb->buffer[cb->out], chunk2);
+	cb->out += chunk2;
+
+	return chunk1 + chunk2;
+}
+
+static inline uint16_t _buf_put_iter(circular_buffer_t *cb, struct iovec_iter *iter)
+{
+	size_t size;
+	uint16_t chunk1, chunk2;
+
+	size = iovec_iter_remaining(iter);
+
+	// Calculate the maximum writable chunk from the current in pointer to either
+	// the out pointer, or if the out pointer is less than the in pointer, then to
+	// the end of the buffer
+	if (cb->out > cb->in) {
+		chunk1 = (cb->out - cb->in - 1 < size) ? cb->out - cb->in - 1 : size;
+	} else {
+		chunk1 = (cb->max - cb->in < size) ? cb->max - cb->in - (cb->out ? 0 : 1) : size;
+	}
+
+	memcpy_out_of_iter(iter, (char *) &cb->buffer[cb->in], chunk1);
+
+	cb->in += chunk1;
+	if (cb->in >= cb->max) {
+		cb->in = 0;
+	}
+
+	// If we've read the full size, or the buffer is empty, then return early
+	size -= chunk1;
+	if (size <= 0 || cb->in + 1 == cb->out || cb->in + 1 == cb->max) {
+		return chunk1;
+	}
+
+	// Calculate the maximum writable second chunk, from the bottom of the buffer to
+	// the out pointer, or the remaining size if there's more data available than requested
+	chunk2 = (cb->out - cb->in - 1 < size) ? cb->out - cb->in - 1 : size;
+
+	memcpy_out_of_iter(iter, (char *) &cb->buffer[cb->in], chunk2);
+	cb->in += chunk2;
+
+	return chunk1 + chunk2;
+}
+
+#endif
