@@ -56,7 +56,7 @@ int ext2_read_fs_block(ext2_fs_t *fs, uint32_t block_num) {
 }
 
 int ext2_read_block(ext2_fs_t *fs, uint32_t block_num, uint8_t *buffer) {
-    int start_sector = (block_num - 1) * fs->sectors_per_block;
+    int start_sector = (block_num) * fs->sectors_per_block;
 
     printf("ext2_read_block %d, (sector %d)\n", block_num, start_sector);
 
@@ -90,6 +90,7 @@ int is_ext2(ext2_sb_t *sb) {
 }
 
 int ext2_get_bg(ext2_fs_t *fs, uint32_t bg_num, ext2_bg_t *bg) {
+#if 0
     uint32_t ents_per_block = fs->block_size / sizeof(ext2_bg_t);
     uint32_t block_num = bg_num / ents_per_block;
     uint32_t bg_index = bg_num % ents_per_block;
@@ -107,8 +108,68 @@ int ext2_get_bg(ext2_fs_t *fs, uint32_t bg_num, ext2_bg_t *bg) {
     }
 
     ext2_sanitize_bg(&bgs[bg_index], bg);
-    dump_ext2_bg(bg, bg_num, fs->sb);
+    dump_ext2_bg(bg, bg_num, fs->sb);    
+#else
+    uint32_t start_block;
     
+    if (bg_num >= (fs->num_blockgroups - 1)) {
+        printf("Block group %d is out of range\n", bg_num);
+        return -1;
+    }
+
+    if (fs->bg_ent[bg_num] == 0) {
+        ext2_sb_t *possible_sb;
+        /*
+        *  Read the first or second block of the block group (2nd if block size
+        * is 1024, otherwise 1st). There might be a superblock. Make adjustments if 
+        * there is.
+        */
+        start_block = bg_num * fs->sb->s_blocks_per_group;
+        if (fs->block_size == 1024)
+            start_block++;
+
+        printf("\n\nGonna see if there's a superblock at block %d\n", start_block);
+
+        if (ext2_read_fs_block(fs, start_block) != 0) {
+            printf("Failed to read ext2 block %d\n", start_block);
+            return -1;
+        }
+
+        possible_sb = (ext2_sb_t *)&fs->block_buffer[0];
+        if (__builtin_bswap16(possible_sb->s_magic) == EXT2_SB_MAGIC) {
+            start_block++;
+            printf("BOOM! Found a superblock at start of buffer\n");
+        }
+        else {
+            if (fs->block_size != 1024) {
+                possible_sb = (ext2_sb_t *)&fs->block_buffer[1024];
+
+                if (__builtin_bswap16(possible_sb->s_magic) == EXT2_SB_MAGIC) {
+                    start_block++;
+                    printf("BOOM! Found a superblock in the middle of the buffer\n");
+                }
+            }
+        }
+
+        printf("Block group table starts at block %d\n", start_block);
+        fs->bg_ent[bg_num] = start_block;
+    }
+    else {
+        start_block = fs->bg_ent[bg_num];
+        printf("Using previously discovered start_block of %d\n", start_block);
+    }
+
+    // Now read the block we know contains the table. 
+    printf("Finally, read in block %d\n", start_block);
+    if (ext2_read_fs_block(fs, start_block) != 0) {
+        printf("Failed to read ext2 block %d\n", start_block);
+        return -1;
+    }
+#endif
+
+    // dump(fs->block_buffer, fs->block_size, 0);
+    ext2_sanitize_bg((ext2_bg_t *)fs->block_buffer, bg);
+
     return 0;
 }
 
@@ -155,6 +216,7 @@ ext2_fs_t *ext2_mount(uint8_t part_num) {
     ext2_fs_t *fs = NULL;
     uint8_t *buffer = NULL;
     uint32_t block_size;
+    uint32_t *bg_ent;
 
     sb = malloc(sizeof(ext2_sb_t));
     if (sb == NULL) {
@@ -200,14 +262,19 @@ ext2_fs_t *ext2_mount(uint8_t part_num) {
 
     fs = malloc(sizeof(ext2_fs_t));
     buffer = malloc(block_size);
+    bg_ent = malloc(sizeof(uint32_t) * bg1);
 
-    if ((fs == NULL) || (buffer == NULL)) {
+    if ((fs == NULL) || (bg_ent == NULL) || (buffer == NULL)) {
         printf("Out of memory.\n");
         free(fs);
         free(buffer);
         free(sb);
+        free(bg_ent);
+
         return NULL;
     }
+
+    memset(bg_ent, 0, sizeof(uint32_t) * bg1);
 
     printf("ext2_mount: all ok.\n");
     // All good !
@@ -219,6 +286,7 @@ ext2_fs_t *ext2_mount(uint8_t part_num) {
     fs->block_num_in_buffer = 0;
     fs->block_in_buffer_valid = 0;
     fs->sectors_per_block = fs->block_size / CF_SECTOR_SIZE;
+    fs->bg_ent = bg_ent;
 
     return fs;
 }

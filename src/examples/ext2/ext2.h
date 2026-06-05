@@ -26,6 +26,9 @@ SOFTWARE.
 
 #include <ctype.h>
 
+#define EXT2_SB_MAGIC 0xef53
+
+
 /*
  * ext2 related code. See the doc:
  *
@@ -142,6 +145,7 @@ struct ext2_fs {
     uint32_t    num_blockgroups;
     uint32_t    block_size;
     uint8_t     sectors_per_block;
+    uint32_t    *bg_ent;
 };
 
 typedef struct ext2_fs ext2_fs_t;

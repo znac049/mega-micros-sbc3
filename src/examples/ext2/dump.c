@@ -35,6 +35,8 @@ void dump(uint8_t *buf, size_t count, uint8_t print_zeroes) {
     int all_zeroes = 0;
     int printed_something = 0;
 
+    printf("Memory at 0x%08x\n", buf);
+
     for (size_t i=0; i<count; i+=16) {
         all_zeroes = 1;
         for (int x=0; x<16; x++) {
@@ -46,9 +48,19 @@ void dump(uint8_t *buf, size_t count, uint8_t print_zeroes) {
         if (!all_zeroes || print_zeroes) {
             printf("%04x: ", i);
             for (int x=0; x<16; x++) {
-                //printf("%02x ", buf[i+x]);
+                printf("%02x ", buf[i+x]);
             }
-            putchar('\n');
+
+            printf("    ");
+            for (int x=0; x<16; x++) {
+                char c = buf[i+x];
+
+                if ((c < ' ') || (c > '_'))
+                    c = '.';
+
+                printf("%c", c);
+            }
+            printf("\n");
 
             printed_something = 1;
         }
@@ -58,7 +70,7 @@ void dump(uint8_t *buf, size_t count, uint8_t print_zeroes) {
         printf("Data is all zeroes.\n");
     }
 
-    putchar('\n');
+    printf("\n");
 }
 
 struct fs_feature {
@@ -179,15 +191,16 @@ void dump_ext2_sb(ext2_sb_t *sb) {
 void dump_ext2_bg(ext2_bg_t *bg, int bg_num, ext2_sb_t *sb) {
     uint32_t inodes_per_block = (1024<<sb->s_log_block_size) / sb->s_inode_size;
     uint32_t num_inode_blocks = sb->s_inodes_per_group / inodes_per_block;
+    uint32_t first_block = bg_num * sb->s_blocks_per_group;
 
     printf("\nGroup %d: (Blocks %d-%d\n", bg_num, bg_num * sb->s_blocks_per_group, ((bg_num + 1) * sb->s_blocks_per_group) - 1);
-    printf("  Block Bitmap at %d\n", bg->bg_block_bitmap);
-    printf("  Inode Bitmap at %d\n", bg->bg_inode_bitmap);
-    printf("  Inode Table at %d-%d\n", bg->bg_inode_table, bg->bg_inode_table + num_inode_blocks - 1);
+    printf("  Block Bitmap at %d (+%d)\n", first_block + bg->bg_block_bitmap, bg->bg_block_bitmap);
+    printf("  Inode Bitmap at %d (+%d)\n", first_block + bg->bg_inode_bitmap, bg->bg_inode_bitmap);
+    printf("  Inode Table at %d-%d (+%d)\n", first_block + bg->bg_inode_table, first_block + bg->bg_inode_table + num_inode_blocks - 1, bg->bg_inode_table);
     printf("  %d free blocks, %d free inodes, %d directories\n", 
         bg->bg_free_blocks_count, bg->bg_free_inodes_count, bg->bg_used_dirs_count);   
-    printf("  Free blocks: ????\n");
-    printf("  Free inodes: ????\n");
+    // printf("  Free blocks: ????\n");
+    // printf("  Free inodes: ????\n");
 }
 
 void dump_ext2_inode(ext2_inode_t *in, int in_num) {
