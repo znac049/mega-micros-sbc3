@@ -84,6 +84,55 @@ int cf_present(void) {
     return 0;
 }
 
+int print_dirent(ext2_dirent_t *dp) {
+
+    ext2_sanitize_dirent(dp, dp);
+
+    printf("Directory entry:\n");
+
+    printf("  Inode:      %d\n", dp->inode);
+    printf("  Record len: %d\n", dp->rec_len);
+    printf("  Name len:   %d\n", dp->name_len);
+    printf("  File type:  0x%02x\n", dp->file_type);
+
+    printf("  File name:  ");
+    for (int i=0; i<dp->name_len; i++) {
+        printf("%c", dp->name[i]);
+    }
+    printf("\n");
+
+    return dp->rec_len;
+}
+
+void do_dir(ext2_fs_t *fs, ext2_inode_t *in) {
+    uint8_t *bp;
+    int looping;
+
+    printf("do_dir() #dir ents per block is %d\n", fs->block_size / sizeof(ext2_dirent_t));
+
+    for (int i=0; i<12; i++) {
+        if (in->i_block[i] == 0) {
+            return;
+        }
+
+        if (ext2_read_fs_block(fs, in->i_block[i]) != 0) {
+            printf("Failed to readd i_block[%d]: %d\n", i, in->i_block[i]);
+            return;
+        }
+
+        bp = fs->block_buffer;
+        looping = 1;
+        while (looping) {
+            int offset = print_dirent((ext2_dirent_t *) bp);
+
+            bp += offset;
+            if (bp >= &fs->block_buffer[fs->block_size]) {
+                looping = 0;
+            }
+        }
+    }
+}
+
 int main(void) {
     int res;
     int drive = 0;
@@ -124,15 +173,14 @@ int main(void) {
         else {
             // Do stuff
             ext2_inode_t inode;
-            int res = ext2_get_inode(fs, 2, &inode);
+            int res = ext2_get_inode(fs, EXT2_ROOT_INO, &inode);
 
             if (res != 0) {
                 printf("Failed to get root inode.\n");
                 exit(1);
             }
 
-            printf("\ninode 2:\n");
-
+            do_dir(fs, &inode);
             fs = ext2_umount(fs);
         }
     }
