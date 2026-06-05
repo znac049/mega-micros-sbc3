@@ -154,3 +154,14 @@ void ext2_sanitize_inode(ext2_inode_t *src_in, ext2_inode_t *dst_in) {
     dst_in->i_faddr = __builtin_bswap32(src_in->i_faddr);
 #endif
 }
+
+void ext2_sanitize_dirent(ext2_dirent_t *src_dp, ext2_dirent_t *dst_dp) {
+#if __BYTE_ORDER__ != __ORDER_BIG_ENDIAN__
+    if (src_dp != dst_dp) {
+        memcpy(dst_dp, src_dp, sizeof(ext2_dirent_t));
+    }
+#else
+    dst_dp->inode = __builtin_bswap32(src_dp->inode);
+    dst_dp->rec_len = __builtin_bswap16(src_dp->rec_len);    
+#endif
+}

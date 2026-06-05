@@ -28,6 +28,57 @@ SOFTWARE.
 
 #define EXT2_SB_MAGIC 0xef53
 
+#define EXT2_FT_UNKNOWN     0
+#define EXT2_FT_REG_FILE    1
+#define EXT2_FT_DIR         2
+#define EXT2_FT_CHRDEV      3
+#define EXT2_FT_BLKDEV      4
+#define EXT2_FT_FIFO        5
+#define EXT2_FT_SOCK        6
+#define EXT2_FT_SYMLINK     7
+
+// Reserved Inodes
+#define EXT2_BAD_INO            1
+#define EXT2_ROOT_INO           2
+#define EXT2_ACL_IDX_INO        3       // ACL Index inode - possibly deprecated
+#define EXT2_ACL_DATA_INO       4       // ACL: data inode - possibly deprecated
+#define EXT2_BOOT_LOADER_INO    5       // Boot loader inode
+#define EXT2_UNDEL_DIR_INO      6       // Undelete directory inode
+
+// inode i_mode values
+#define EXT2_S_IFSOCK   0xc000
+#define EXT2_S_IFLNK    0xa000
+#define EXT2_S_IFREG    0x8000
+#define EXT2_S_IFBLK    0x6000
+#define EXT2_S_IFDIR    0x4000
+#define EXT2_S_IFCHR    0x2000
+#define EXT2_S_IFIFO    0x1000
+
+#define EXT2_S_ISUID    0x0800
+#define EXT2_S_ISGID    0x0400
+#define EXT2_S_ISVTX    0x0200
+
+#define EXT2_S_IRUSR    0x0100
+#define EXT2_S_IWUSR    0x0080
+#define EXT2_S_IXUSR    0x0040
+#define EXT2_S_IRGRP    0x0020
+#define EXT2_S_IWGRP    0x0010
+#define EXT2_S_IXGRP    0x0008
+#define EXT2_S_IROTH    0x0004
+#define EXT2_S_IWOTH    0x0002
+#define EXT2_S_IXOTH    0x0001
+
+#define EXT2_MAX_LEN    255
+
+// Mode testing macros
+#define S_ISREG(m) ((m&0xf000)==EXT2_S_IFREG)
+#define S_ISDIR(m) ((m&0xf000)==EXT2_S_IFDIR)
+#define S_ISCHR(m) ((m&0xf000)==EXT2_S_IFCHR)
+#define S_ISBLK(m) ((m&0xf000)==EXT2_S_IFBLK)
+#define S_ISFIFO(m) ((m&0xf000)==EXT2_S_IFFIFO)
+#define S_ISLNK(m) ((m&0xf000)==EXT2_S_IFLNK)
+#define S_ISSOCK(m) ((m&0xf000)==EXT2_S_IFSOCK)
+
 
 /*
  * ext2 related code. See the doc:
@@ -150,6 +201,16 @@ struct ext2_fs {
 
 typedef struct ext2_fs ext2_fs_t;
 
+struct ext2_dirent {
+    uint32_t    inode;
+    uint16_t    rec_len;
+    uint8_t     name_len;
+    uint8_t     file_type;
+    uint8_t     name[EXT2_MAX_LEN];
+};
+
+typedef struct ext2_dirent ext2_dirent_t;
+
 // dump.c
 void dump(uint8_t *buf, size_t count, uint8_t print_zeroes);
 void dump_ext2_bg(ext2_bg_t *bg, int bg_num, ext2_sb_t *sb);
@@ -160,6 +221,7 @@ void dump_ext2_sb(ext2_sb_t *sb);
 void ext2_sanitize_superblock(ext2_sb_t *src_sb, ext2_sb_t *dst_sb);
 void ext2_sanitize_bg(ext2_bg_t *src_bg, ext2_bg_t *dst_bg);
 void ext2_sanitize_inode(ext2_inode_t *src_in, ext2_inode_t *dst_in);
+void ext2_sanitize_dirent(ext2_dirent_t *src_dp, ext2_dirent_t *dst_dp);
 
 // ext2.c
 ext2_bg_t *ext2_get_blockgroup_descriptor(ext2_fs_t *fs, uint32_t blockgroup_num, ext2_bg_t *bg);

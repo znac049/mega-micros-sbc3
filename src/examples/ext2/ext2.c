@@ -90,26 +90,6 @@ int is_ext2(ext2_sb_t *sb) {
 }
 
 int ext2_get_bg(ext2_fs_t *fs, uint32_t bg_num, ext2_bg_t *bg) {
-#if 0
-    uint32_t ents_per_block = fs->block_size / sizeof(ext2_bg_t);
-    uint32_t block_num = bg_num / ents_per_block;
-    uint32_t bg_index = bg_num % ents_per_block;
-    ext2_bg_t *bgs = (ext2_bg_t *) fs->block_buffer;
-
-    block_num += (fs->block_size == 1024)?3:2;
-
-    printf("\n\n++++++++++\next2_get_bg(?, %d,...)\n", bg_num);
-    printf("  -> block %d, index %d (%d entries per block)\n", block_num, bg_index, ents_per_block);
-
-    // Grab the block with the entry
-    if (ext2_read_fs_block(fs, block_num) != 0) {
-        printf("Failed to read ext2 block %d\n", block_num);
-        return -1;
-    }
-
-    ext2_sanitize_bg(&bgs[bg_index], bg);
-    dump_ext2_bg(bg, bg_num, fs->sb);    
-#else
     uint32_t start_block;
     
     if (bg_num >= (fs->num_blockgroups - 1)) {
@@ -128,7 +108,7 @@ int ext2_get_bg(ext2_fs_t *fs, uint32_t bg_num, ext2_bg_t *bg) {
         if (fs->block_size == 1024)
             start_block++;
 
-        printf("\n\nGonna see if there's a superblock at block %d\n", start_block);
+        // printf("\n\nGonna see if there's a superblock at block %d\n", start_block);
 
         if (ext2_read_fs_block(fs, start_block) != 0) {
             printf("Failed to read ext2 block %d\n", start_block);
@@ -138,7 +118,7 @@ int ext2_get_bg(ext2_fs_t *fs, uint32_t bg_num, ext2_bg_t *bg) {
         possible_sb = (ext2_sb_t *)&fs->block_buffer[0];
         if (__builtin_bswap16(possible_sb->s_magic) == EXT2_SB_MAGIC) {
             start_block++;
-            printf("BOOM! Found a superblock at start of buffer\n");
+            // printf("BOOM! Found a superblock at start of buffer\n");
         }
         else {
             if (fs->block_size != 1024) {
@@ -146,28 +126,26 @@ int ext2_get_bg(ext2_fs_t *fs, uint32_t bg_num, ext2_bg_t *bg) {
 
                 if (__builtin_bswap16(possible_sb->s_magic) == EXT2_SB_MAGIC) {
                     start_block++;
-                    printf("BOOM! Found a superblock in the middle of the buffer\n");
+                    // printf("BOOM! Found a superblock in the middle of the buffer\n");
                 }
             }
         }
 
-        printf("Block group table starts at block %d\n", start_block);
+        // printf("Block group table starts at block %d\n", start_block);
         fs->bg_ent[bg_num] = start_block;
     }
     else {
         start_block = fs->bg_ent[bg_num];
-        printf("Using previously discovered start_block of %d\n", start_block);
+        // printf("Using previously discovered start_block of %d\n", start_block);
     }
 
     // Now read the block we know contains the table. 
-    printf("Finally, read in block %d\n", start_block);
+    // printf("Finally, read in block %d\n", start_block);
     if (ext2_read_fs_block(fs, start_block) != 0) {
         printf("Failed to read ext2 block %d\n", start_block);
         return -1;
     }
-#endif
 
-    // dump(fs->block_buffer, fs->block_size, 0);
     ext2_sanitize_bg((ext2_bg_t *)fs->block_buffer, bg);
 
     return 0;
@@ -187,15 +165,8 @@ int ext2_get_inode(ext2_fs_t *fs, uint32_t inode_num, ext2_inode_t *inode) {
         return -1;
     }
 
-    printf("First data block is %d\n", fs->sb->s_first_data_block);
-
-    // printf("in get_inode: inode %d is in block group %d.\n", inode_num, block_group);
-    // printf("block size is %d\n", fs->block_size);
-
-    // printf("Block Group Table entry %d:\n", block_group);
-    // printf("  inode table LBA: %d\n", bg.bg_inode_table);
-    printf("\nindex=%d, offset=%d, block_num=%d, inode_size=%d (%d)\n\n", index, offset, block_num, fs->sb->s_inode_size, sizeof(ext2_inode_t));
-    printf("inode block is %d + %d (%d)\n", bg.bg_inode_table, block_num, bg.bg_inode_table + block_num);
+    // printf("\nindex=%d, offset=%d, block_num=%d, inode_size=%d (%d)\n\n", index, offset, block_num, fs->sb->s_inode_size, sizeof(ext2_inode_t));
+    // printf("inode block is %d + %d (%d)\n", bg.bg_inode_table, block_num, bg.bg_inode_table + block_num);
     if (ext2_read_fs_block(fs, block_group_base + bg.bg_inode_table + block_num) != 0) {
         return -1;
     }
