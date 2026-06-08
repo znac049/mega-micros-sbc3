@@ -70,6 +70,20 @@ int cf_read(uint8_t drive_num, uint32_t sector, uint8_t *buffer) {
 	return 0;
 }
 
+uint8_t cf_drive_ready(uint8_t drive_num) {
+    uint8_t status;
+
+    if (drive_num > 1) {
+        return 0;
+    }
+
+    *cf_reg_lba3 = 0xe0 | (drive_num?0x10:0);
+    status = *cf_reg_status;
+    // printf("CF Status: 0x%02x\n", status);
+
+    return status & CF_ST_RDY;
+}
+
 static void sanitize_string(char *str, int max_len) {
     // Endianness!
     for (int i=0; i<max_len; i+=2) {

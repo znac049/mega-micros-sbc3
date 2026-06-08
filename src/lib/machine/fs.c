@@ -22,27 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+/*
+ * First attempt at a generic filesystem abstraction layer
+ */
 
-#define MAX_PARTITIONS 4
-#define MAX_FILESYSTEMS MAX_PARTITIONS
-
-struct disk_partition {
-    uint32_t            start_sector;
-    uint32_t            num_sectors;
-    uint8_t             flags;
-    uint8_t             id;
-};
-
-typedef struct disk_partition disk_partition_t;
-
-struct disk_info {
-    uint8_t             num_partitions;
-    disk_partition_t    partitions[MAX_PARTITIONS];
-};
-
-typedef struct disk_info disk_info_t;
-
-uint8_t get_partition_count(void);
-int partition_read(uint8_t part_num, uint32_t sector, uint8_t *buffer);
-int read_partition_table(uint8_t drive_num);
+ 

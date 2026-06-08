@@ -44,6 +44,7 @@ decoy: all
 include machine/include.mk
 include stdlib/include.mk
 include crt0/include.mk
+include nonstdlib/include.mk
 
 # Keep this at the end, or it'll error out _sometimes_ and we don't really know why...
 #include printf/include.mk

@@ -22,29 +22,35 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+#include <string.h>
 
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned int uint32_t;
+int split_str(char *s, char sep, char *bits[], int max_bits) {
+    int bit_num = 0;
+    char *next_sep = strchr(s, sep);
 
-typedef char int8_t;
-typedef short int16_t;
-typedef int int32_t;
+    if (sep == 0) {
+        return -1;
+    }
 
-typedef unsigned int size_t;
-typedef unsigned int time_t;
+    max_bits--;
 
-typedef unsigned short int mode_t;
+    while ((next_sep != NULL) && (bit_num < max_bits)) {
+        bits[bit_num++] = s;
+        *next_sep++ = EOS;
 
-typedef unsigned char bool_t;
+        s = next_sep;
+        while (*s == sep) {
+            s++;
+        }
 
-#define TRUE 1
-#define FALSE 0
-#define YES 1
-#define NO 0
+        if (*s == EOS) {
+            return bit_num;
+        }
 
-extern int isdigit(int c);
-extern int isspace(int c);
-extern int tolower(int c);
-extern int toupper(int c);
+        next_sep = strchr(s, sep);
+    }
+
+    bits[bit_num++] = s;
+
+    return bit_num;
+}

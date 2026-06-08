@@ -24,27 +24,20 @@ SOFTWARE.
 
 #pragma once
 
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned int uint32_t;
+#include <dirent.h>
+#include <ext2.h>
 
-typedef char int8_t;
-typedef short int16_t;
-typedef int int32_t;
+struct ext2_dir {
+    ext2_inode_t    *inode;
+    uint32_t        block_index;
+    uint32_t        offset;
+    ext2_dirent_t   dirent;
+    ext2_fs_t       *fs;
+};
 
-typedef unsigned int size_t;
-typedef unsigned int time_t;
+typedef struct ext2_dir ext2_dir_t;
 
-typedef unsigned short int mode_t;
-
-typedef unsigned char bool_t;
-
-#define TRUE 1
-#define FALSE 0
-#define YES 1
-#define NO 0
-
-extern int isdigit(int c);
-extern int isspace(int c);
-extern int tolower(int c);
-extern int toupper(int c);
+int ext2_closedir(ext2_dir_t *dirp);
+ext2_dir_t *ext2_opendir(ext2_fs_t *fs, const char *name);
+ext2_dirent_t *ext2_readdir(ext2_dir_t *dirp);
+void ext2_rewinddir(ext2_dir_t *dirp);

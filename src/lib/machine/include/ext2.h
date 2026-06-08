@@ -68,14 +68,16 @@ SOFTWARE.
 #define EXT2_S_IWOTH    0x0002
 #define EXT2_S_IXOTH    0x0001
 
-#define EXT2_MAX_LEN    255
+#define EXT2_MAX_LEN        255
+#define EXT2_MAX_DIR_DEPTH  16
+#define EXT2_MAX_PATH_LEN   511
 
 // Mode testing macros
 #define S_ISREG(m) ((m&0xf000)==EXT2_S_IFREG)
 #define S_ISDIR(m) ((m&0xf000)==EXT2_S_IFDIR)
 #define S_ISCHR(m) ((m&0xf000)==EXT2_S_IFCHR)
 #define S_ISBLK(m) ((m&0xf000)==EXT2_S_IFBLK)
-#define S_ISFIFO(m) ((m&0xf000)==EXT2_S_IFFIFO)
+#define S_ISFIFO(m) ((m&0xf000)==EXT2_S_IFIFO)
 #define S_ISLNK(m) ((m&0xf000)==EXT2_S_IFLNK)
 #define S_ISSOCK(m) ((m&0xf000)==EXT2_S_IFSOCK)
 
@@ -187,6 +189,10 @@ struct ext2_inode {
 
 typedef struct ext2_inode ext2_inode_t;
 
+#define EXT2_SNGL_IND   12
+#define EXT2_DBL_IND    13
+#define EXT2_TRIP_IND   14
+
 struct ext2_fs {
     uint8_t     *block_buffer;
     uint32_t    block_num_in_buffer;
@@ -211,13 +217,12 @@ struct ext2_dirent {
 
 typedef struct ext2_dirent ext2_dirent_t;
 
-// dump.c
-void dump(uint8_t *buf, size_t count, uint8_t print_zeroes);
+// ext2_dump.c
 void dump_ext2_bg(ext2_bg_t *bg, int bg_num, ext2_sb_t *sb);
 void dump_ext2_inode(ext2_inode_t *in, int in_num);
 void dump_ext2_sb(ext2_sb_t *sb);
 
-// endian.c
+// ext2_endian.c
 void ext2_sanitize_superblock(ext2_sb_t *src_sb, ext2_sb_t *dst_sb);
 void ext2_sanitize_bg(ext2_bg_t *src_bg, ext2_bg_t *dst_bg);
 void ext2_sanitize_inode(ext2_inode_t *src_in, ext2_inode_t *dst_in);
@@ -233,5 +238,5 @@ ext2_fs_t *ext2_umount(ext2_fs_t *fs);
 int is_ext2(ext2_sb_t *sb);
 
 // utils.c
-void printn(const char *pfx, const uint8_t *str, int len);
+// void printn(const char *pfx, const uint8_t *str, int len);
 

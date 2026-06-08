@@ -26,9 +26,8 @@ SOFTWARE.
 #include <machine.h>
 #include <errno.h>
 #include <string.h>
-
-#include "ext2.h"
-#include "disk.h"
+#include <ext2.h>
+#include <disk.h>
 
 void ext2_sanitize_superblock(ext2_sb_t *src_sb, ext2_sb_t *dst_sb) {
 #if __BYTE_ORDER__ != __ORDER_BIG_ENDIAN__
@@ -162,6 +161,13 @@ void ext2_sanitize_dirent(ext2_dirent_t *src_dp, ext2_dirent_t *dst_dp) {
     }
 #else
     dst_dp->inode = __builtin_bswap32(src_dp->inode);
-    dst_dp->rec_len = __builtin_bswap16(src_dp->rec_len);    
+    dst_dp->rec_len = __builtin_bswap16(src_dp->rec_len);
+    dst_dp->name_len = src_dp->name_len;
+    dst_dp->file_type = src_dp->file_type;
+    
+    for (int i=0; i<dst_dp->name_len; i++) {
+        dst_dp->name[i] = src_dp->name[i];
+    }
+
 #endif
 }

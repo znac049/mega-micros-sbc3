@@ -1,19 +1,7 @@
-LIB=machine
+LIB=nonstd
 LIBOBJECTS=\
-			$(DIR)/_cf.o \
-			$(DIR)/cf.o \
-			$(DIR)/disk.o \
-			$(DIR)/duart2.o \
-			$(DIR)/ext2.o \
-			$(DIR)/ext2_endian.o \
-			$(DIR)/leds.o \
-			$(DIR)/_misc.o \
-			$(DIR)/misc.o \
-			$(DIR)/pit.o \
-			$(DIR)/pre_main.o \
-			$(DIR)/safeio.o \
-			$(DIR)/_vectors.o \
-			$(DIR)/vectors.o \
+			$(DIR)/dump_mem.o \
+			$(DIR)/split_str.o \
 
 LIBINCLUDES=$(DIR)/include
 

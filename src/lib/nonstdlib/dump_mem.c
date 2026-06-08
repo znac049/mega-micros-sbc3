@@ -22,29 +22,47 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+#include <stdio.h>
+#include <ctype.h>
 
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned int uint32_t;
+void dump_mem(uint8_t *buf, size_t count, uint8_t print_zeroes) {
+    int all_zeroes = 0;
+    int printed_something = 0;
 
-typedef char int8_t;
-typedef short int16_t;
-typedef int int32_t;
+    printf("Memory at 0x%08x\n", buf);
 
-typedef unsigned int size_t;
-typedef unsigned int time_t;
+    for (size_t i=0; i<count; i+=16) {
+        all_zeroes = 1;
+        for (int x=0; x<16; x++) {
+            if (buf[i+x]) {
+                all_zeroes = 0;
+            }
+        }
 
-typedef unsigned short int mode_t;
+        if (!all_zeroes || print_zeroes) {
+            printf("%04x: ", i);
+            for (int x=0; x<16; x++) {
+                printf("%02x ", buf[i+x]);
+            }
 
-typedef unsigned char bool_t;
+            printf("    ");
+            for (int x=0; x<16; x++) {
+                char c = buf[i+x];
 
-#define TRUE 1
-#define FALSE 0
-#define YES 1
-#define NO 0
+                if ((c < ' ') || (c > '_'))
+                    c = '.';
 
-extern int isdigit(int c);
-extern int isspace(int c);
-extern int tolower(int c);
-extern int toupper(int c);
+                printf("%c", c);
+            }
+            printf("\n");
+
+            printed_something = 1;
+        }
+    }
+
+    if (!printed_something) {
+        printf("Data is all zeroes.\n");
+    }
+
+    printf("\n");
+}

@@ -24,27 +24,5 @@ SOFTWARE.
 
 #pragma once
 
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned int uint32_t;
-
-typedef char int8_t;
-typedef short int16_t;
-typedef int int32_t;
-
-typedef unsigned int size_t;
-typedef unsigned int time_t;
-
-typedef unsigned short int mode_t;
-
-typedef unsigned char bool_t;
-
-#define TRUE 1
-#define FALSE 0
-#define YES 1
-#define NO 0
-
-extern int isdigit(int c);
-extern int isspace(int c);
-extern int tolower(int c);
-extern int toupper(int c);
+extern void dump_mem(uint8_t *buf, size_t count, uint8_t print_zeroes);
+extern int split_str(char *s, char sep, char *bits[], int max_bits);

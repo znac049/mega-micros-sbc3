@@ -27,10 +27,8 @@ SOFTWARE.
 #include <machine.h>
 #include <errno.h>
 #include <string.h>
-#include <malloc.h>
-
-#include "ext2.h"
-#include "disk.h"
+#include <ext2.h>
+#include <disk.h>
 
 int ext2_read_fs_block(ext2_fs_t *fs, uint32_t block_num) {
     int res;
@@ -58,7 +56,7 @@ int ext2_read_fs_block(ext2_fs_t *fs, uint32_t block_num) {
 int ext2_read_block(ext2_fs_t *fs, uint32_t block_num, uint8_t *buffer) {
     int start_sector = (block_num) * fs->sectors_per_block;
 
-    printf("ext2_read_block %d, (sector %d)\n", block_num, start_sector);
+    // printf("ext2_read_block %d, (sector %d)\n", block_num, start_sector);
 
     for (int i=0; i< fs->sectors_per_block; i++) {
         int sec = partition_read(fs->part_num, start_sector+i, &buffer[i * CF_SECTOR_SIZE]);
@@ -174,7 +172,6 @@ int ext2_get_inode(ext2_fs_t *fs, uint32_t inode_num, ext2_inode_t *inode) {
     ent = (ext2_inode_t *)&fs->block_buffer[offset];
 
     ext2_sanitize_inode(ent, inode);
-    dump_ext2_inode(inode, inode_num);
     
     return 0;
 }
@@ -191,22 +188,25 @@ ext2_fs_t *ext2_mount(uint8_t part_num) {
 
     sb = malloc(sizeof(ext2_sb_t));
     if (sb == NULL) {
+        errno = ENOMEM;
         return NULL;
     }
 
     res = ext2_read_superblock(part_num, sb);
     if (res != 0) {
         free(sb);
+        errno = EIO;
         return NULL;
     }
 
     if (!is_ext2(sb)) {
-        printf("Not an ext2 filesystem!\n");
+        // printf("Not an ext2 filesystem!\n");
         free(sb);
+        errno = EIO;
         return NULL;
     }
 
-    dump_ext2_sb(sb);
+    // dump_ext2_sb(sb);
 
     // Calculate the number of block groups two different ways and check both
     // answers are the same.
@@ -221,8 +221,9 @@ ext2_fs_t *ext2_mount(uint8_t part_num) {
     }
 
     if (bg1 != bg2) {
-        printf("Number of Block groups calculations inconsistency: %d != %d.\n", bg1, bg2);
+        // printf("Number of Block groups calculations inconsistency: %d != %d.\n", bg1, bg2);
         free(sb);
+        errno = EGENERIC;
         return NULL;
     }
 
@@ -236,18 +237,18 @@ ext2_fs_t *ext2_mount(uint8_t part_num) {
     bg_ent = malloc(sizeof(uint32_t) * bg1);
 
     if ((fs == NULL) || (bg_ent == NULL) || (buffer == NULL)) {
-        printf("Out of memory.\n");
+        // printf("Out of memory.\n");
         free(fs);
         free(buffer);
         free(sb);
         free(bg_ent);
-
+        errno = ENOMEM;
         return NULL;
     }
 
     memset(bg_ent, 0, sizeof(uint32_t) * bg1);
 
-    printf("ext2_mount: all ok.\n");
+    // printf("ext2_mount: all ok.\n");
     // All good !
     fs->part_num = part_num;
     fs->sb = sb;
@@ -263,7 +264,7 @@ ext2_fs_t *ext2_mount(uint8_t part_num) {
 }
 
 ext2_fs_t *ext2_umount(ext2_fs_t *fs) {
-    printf("unmount ext2 filesystem on partition %d.\n", fs->part_num);
+    // printf("unmount ext2 filesystem on partition %d.\n", fs->part_num);
 
     free(fs->sb);
     free(fs->block_buffer);

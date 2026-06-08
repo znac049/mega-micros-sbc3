@@ -27,51 +27,8 @@ SOFTWARE.
 #include <errno.h>
 #include <string.h>
 #include <time.h>
-
-#include "ext2.h"
-#include "disk.h"
-
-void dump(uint8_t *buf, size_t count, uint8_t print_zeroes) {
-    int all_zeroes = 0;
-    int printed_something = 0;
-
-    printf("Memory at 0x%08x\n", buf);
-
-    for (size_t i=0; i<count; i+=16) {
-        all_zeroes = 1;
-        for (int x=0; x<16; x++) {
-            if (buf[i+x]) {
-                all_zeroes = 0;
-            }
-        }
-
-        if (!all_zeroes || print_zeroes) {
-            printf("%04x: ", i);
-            for (int x=0; x<16; x++) {
-                printf("%02x ", buf[i+x]);
-            }
-
-            printf("    ");
-            for (int x=0; x<16; x++) {
-                char c = buf[i+x];
-
-                if ((c < ' ') || (c > '_'))
-                    c = '.';
-
-                printf("%c", c);
-            }
-            printf("\n");
-
-            printed_something = 1;
-        }
-    }
-
-    if (!printed_something) {
-        printf("Data is all zeroes.\n");
-    }
-
-    printf("\n");
-}
+#include <ext2.h>
+#include <disk.h>
 
 struct fs_feature {
     int mask;
@@ -219,7 +176,23 @@ void dump_ext2_inode(ext2_inode_t *in, int in_num) {
 
     printf("  Blocks:            ");
     for (int i=0; i<15; i++) {
-        printf("%d%s", in->i_block[i], (i==14?"\n":", "));
+        switch (i) {
+            case EXT2_SNGL_IND:
+                printf("[%d], ", in->i_block[i]);
+                break;
+
+            case EXT2_DBL_IND:
+                printf("[[%d]], ", in->i_block[i]);
+                break;
+
+            case EXT2_TRIP_IND:
+                printf("[[[%d]]]\n", in->i_block[i]);
+                break;
+
+            default:
+                printf("%d, ", in->i_block[i]);
+                break;
+        }
     }
 
     printf("  Generation #:      %d\n", in->i_generation);

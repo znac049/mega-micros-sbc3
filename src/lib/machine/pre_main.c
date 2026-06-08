@@ -24,7 +24,10 @@ SOFTWARE.
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <machine.h>
+
+#define WITH_DISKS
 
 uint8_t cpu_type = CPU_68000;
 uint8_t cpu_speed_mhz = 33;
@@ -32,6 +35,9 @@ uint8_t cpu_speed_mhz = 33;
 FILE *stdin;
 FILE *stdout;
 FILE *stderr;
+
+filesystem_t _mounted_filesystems[MAX_FILESYSTEMS];
+uint8_t _num_mounted_filesystems = 0;
 
 static const char *cpus[] = {
     "68000/68008",
@@ -71,7 +77,11 @@ void pre_main(void) {
 
     cpu_speed_mhz = measure_cpu_clock();
 
-    if (running_in_rom) {
+#ifdef WITH_DISKS
+    cf_init();
+#endif
+
+    if (1 /*running_in_rom*/) {
         printf("%c[2J", 27);
         printf("%c[H", 27);
         printf("Mega-680x0 Computer System\n");
@@ -86,6 +96,37 @@ void pre_main(void) {
             printf("%s Processor running at ~%dMHz\n", cpus[cpu_type], cpu_speed_mhz);
         }
     }
+
+    // Attempt to mount all ext2 filesystems we can...
+    if (cf_drive_ready(0)) {
+        cf_info_t info;
+
+        if (cf_identify(0, &info) == 0) {
+            int res = read_partition_table(0);
+
+            printf("CF%d: %s\n", 0, info.model_number);
+
+            if (res != 0 && res != ENOMEM) {
+                printf("CF%d: no partitions found\n", 0);
+            }
+            else {
+                uint8_t num_parts = get_partition_count();
+
+                // Check each partition for an ext2 filesystem
+                for (uint8_t part=0; part<num_parts; part++) {
+                    disk_partition_t *dp = get_partition(part);
+                    ext2_fs_t *fs = ext2_mount(part);
+
+                    if (fs != NULL) {
+                        _mounted_filesystems[_num_mounted_filesystems].dp = dp;
+                        _mounted_filesystems[_num_mounted_filesystems].fs = fs;
+                        _num_mounted_filesystems++;
+                        printf("%s: ext2\n", dp->name);
+                    }
+                }
+            }
+        }
+    }
 }
 
 void post_main(int status) {
@@ -96,6 +137,10 @@ void post_main(int status) {
     // There may be data in the uart TX buffers. Force flush
     fflush(stdout);
     fflush(stderr);
+
+    for (int i=0; i<_num_mounted_filesystems; i++) {
+        ext2_umount(_mounted_filesystems[i].fs);
+    }
 
     _release_duart();
     _release_pit();

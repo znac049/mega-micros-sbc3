@@ -101,3 +101,4 @@ void _cf_wait_data(void);
 void cf_init(void);
 int cf_read(uint8_t drive_num, uint32_t sector, uint8_t *buffer);
 int cf_identify(uint8_t drive_num, cf_info_t *info);
+uint8_t cf_drive_ready(uint8_t drive_num);

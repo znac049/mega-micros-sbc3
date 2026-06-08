@@ -24,27 +24,27 @@ SOFTWARE.
 
 #pragma once
 
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned int uint32_t;
+#define MAX_PARTITIONS 4
+#define MAX_FILESYSTEMS MAX_PARTITIONS
 
-typedef char int8_t;
-typedef short int16_t;
-typedef int int32_t;
+struct disk_partition {
+    uint32_t            start_sector;
+    uint32_t            num_sectors;
+    uint8_t             flags;
+    uint8_t             id;
+    char                name[8];
+};
 
-typedef unsigned int size_t;
-typedef unsigned int time_t;
+typedef struct disk_partition disk_partition_t;
 
-typedef unsigned short int mode_t;
+struct disk_info {
+    uint8_t             num_partitions;
+    disk_partition_t    partitions[MAX_PARTITIONS];
+};
 
-typedef unsigned char bool_t;
+typedef struct disk_info disk_info_t;
 
-#define TRUE 1
-#define FALSE 0
-#define YES 1
-#define NO 0
-
-extern int isdigit(int c);
-extern int isspace(int c);
-extern int tolower(int c);
-extern int toupper(int c);
+uint8_t get_partition_count(void);
+int partition_read(uint8_t part_num, uint32_t sector, uint8_t *buffer);
+int read_partition_table(uint8_t drive_num);
+disk_partition_t *get_partition(int part_num);

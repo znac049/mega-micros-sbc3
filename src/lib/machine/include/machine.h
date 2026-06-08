@@ -30,6 +30,9 @@ SOFTWARE.
 #include <cf.h>
 #include <vectors.h>
 #include <cb.h>
+#include <disk.h>
+#include <ext2.h>
+#include <fs.h>
 
 typedef short lock_state_t;
 
