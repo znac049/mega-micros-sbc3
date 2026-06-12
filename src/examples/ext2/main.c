@@ -30,8 +30,6 @@ SOFTWARE.
 #include <ext2.h>
 #include <nonstd.h>
 
-#include "dir.h"
-
 extern filesystem_t _mounted_filesystems[MAX_FILESYSTEMS];
 extern uint8_t _num_mounted_filesystems;
 

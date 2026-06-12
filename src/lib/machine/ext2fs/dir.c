@@ -22,16 +22,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <malloc.h>
 #include <nonstd.h>
 #include <ext2.h>
-#include "dir.h"
 
 
-static void dump_dirent (ext2_dirent_t *ent) {
+void dump_dirent (ext2_dirent_t *ent) {
     printf("\nDirectory entry:\n");
     printf(" inode #:    %d\n", ent->inode);
     printf(" record len: %d\n", ent->rec_len);

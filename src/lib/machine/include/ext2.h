@@ -217,12 +217,40 @@ struct ext2_dirent {
 
 typedef struct ext2_dirent ext2_dirent_t;
 
-// ext2_dump.c
+struct ext2_dir {
+    ext2_inode_t    *inode;
+    uint32_t        block_index;
+    uint32_t        offset;
+    ext2_dirent_t   dirent;
+    ext2_fs_t       *fs;
+};
+
+typedef struct ext2_dir ext2_dir_t;
+
+struct ext2_block_follower {
+    ext2_fs_t       *fs;
+    uint32_t        inode_num;
+    ext2_inode_t    inode;
+    uint32_t        direct_offset;
+    uint32_t        single_offset;
+    uint32_t        double_offset;
+    uint32_t        triple_offset;
+};
+
+typedef struct ext2_block_follower ext2_block_follower_t;
+
+// dir.c
+int ext2_closedir(ext2_dir_t *dirp);
+ext2_dir_t *ext2_opendir(ext2_fs_t *fs, const char *name);
+ext2_dirent_t *ext2_readdir(ext2_dir_t *dirp);
+void ext2_rewinddir(ext2_dir_t *dirp);
+
+// dump.c
 void dump_ext2_bg(ext2_bg_t *bg, int bg_num, ext2_sb_t *sb);
 void dump_ext2_inode(ext2_inode_t *in, int in_num);
 void dump_ext2_sb(ext2_sb_t *sb);
 
-// ext2_endian.c
+// endian.c
 void ext2_sanitize_superblock(ext2_sb_t *src_sb, ext2_sb_t *dst_sb);
 void ext2_sanitize_bg(ext2_bg_t *src_bg, ext2_bg_t *dst_bg);
 void ext2_sanitize_inode(ext2_inode_t *src_in, ext2_inode_t *dst_in);
@@ -236,6 +264,9 @@ int ext2_get_inode(ext2_fs_t *fs, uint32_t inode_num, ext2_inode_t *inode);
 ext2_fs_t *ext2_mount(uint8_t part_num);
 ext2_fs_t *ext2_umount(ext2_fs_t *fs);
 int is_ext2(ext2_sb_t *sb);
+
+// file.c
+int ext2_file_reader(ext2_fs_t *fs, uint32_t inode_num);
 
 // utils.c
 // void printn(const char *pfx, const uint8_t *str, int len);

@@ -22,22 +22,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
-
-#include <dirent.h>
+#include <ctype.h>
 #include <ext2.h>
 
-struct ext2_dir {
-    ext2_inode_t    *inode;
-    uint32_t        block_index;
-    uint32_t        offset;
-    ext2_dirent_t   dirent;
-    ext2_fs_t       *fs;
-};
-
-typedef struct ext2_dir ext2_dir_t;
-
-int ext2_closedir(ext2_dir_t *dirp);
-ext2_dir_t *ext2_opendir(ext2_fs_t *fs, const char *name);
-ext2_dirent_t *ext2_readdir(ext2_dir_t *dirp);
-void ext2_rewinddir(ext2_dir_t *dirp);
+int ext2_file_reader(ext2_fs_t *fs, uint32_t inode_num) {
+    return -1;
+}

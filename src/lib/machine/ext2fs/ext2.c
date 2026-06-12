@@ -30,43 +30,6 @@ SOFTWARE.
 #include <ext2.h>
 #include <disk.h>
 
-int ext2_read_fs_block(ext2_fs_t *fs, uint32_t block_num) {
-    int res;
-    
-    // Do we already have that block?
-    if ((fs->block_num_in_buffer == block_num) &&
-        (fs->block_in_buffer_valid == 1)) {
-            // printf("block %d already in the buffer\n", block_num);
-            return 0;
-    }
-
-    res = ext2_read_block(fs, block_num, fs->block_buffer);
-    
-    if (res == 0) {
-        fs->block_num_in_buffer = block_num;
-        fs->block_in_buffer_valid = 1;
-    }
-    else {
-        fs->block_in_buffer_valid = 0;
-    }
-
-    return res;
-}
-
-int ext2_read_block(ext2_fs_t *fs, uint32_t block_num, uint8_t *buffer) {
-    int start_sector = (block_num) * fs->sectors_per_block;
-
-    // printf("ext2_read_block %d, (sector %d)\n", block_num, start_sector);
-
-    for (int i=0; i< fs->sectors_per_block; i++) {
-        int sec = partition_read(fs->part_num, start_sector+i, &buffer[i * CF_SECTOR_SIZE]);
-
-        sec++;
-    }
-
-    return 0;
-}
-
 static int ext2_read_superblock(uint8_t part_num, ext2_sb_t *sb) {
     uint8_t buf[CF_SECTOR_SIZE];
 

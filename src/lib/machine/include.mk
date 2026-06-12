@@ -4,8 +4,6 @@ LIBOBJECTS=\
 			$(DIR)/cf.o \
 			$(DIR)/disk.o \
 			$(DIR)/duart2.o \
-			$(DIR)/ext2.o \
-			$(DIR)/ext2_endian.o \
 			$(DIR)/leds.o \
 			$(DIR)/_misc.o \
 			$(DIR)/misc.o \
@@ -13,7 +11,7 @@ LIBOBJECTS=\
 			$(DIR)/pre_main.o \
 			$(DIR)/safeio.o \
 			$(DIR)/_vectors.o \
-			$(DIR)/vectors.o \
+			$(DIR)/vectors.o
 
 LIBINCLUDES=$(DIR)/include
 
@@ -28,3 +26,6 @@ LIBS := $(LIBS) $(DIR)/$(BINARY)
 $(DIR)/$(BINARY): $(LIBOBJECTS)
 	$(AR) $(ARFLAGS) rs $@ $^
 	$(RANLIB) $@
+
+
+include $(DIR)/ext2fs/include.mk
