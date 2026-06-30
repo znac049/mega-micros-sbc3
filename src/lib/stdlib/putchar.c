@@ -26,10 +26,16 @@ SOFTWARE.
 #include <duart.h>
 
 int putchar(int c) {
+#if 0
   if (c == '\n') {
     fputc('\r', stdout);
   }
 
   fputc(c, stdout);
   return c;
+#else
+  xr68681_device.chardev.putchar(c, 0);
+
+  return c;
+#endif
 }

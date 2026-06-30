@@ -22,19 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <duart.h>
+#pragma once
 
-int getchar(void) {
-#if 0
-    int c = fread(&c, 1, 1, stdin);
-
-    return c;
-#else
-    return xr68681_device.chardev.getchar(0);
-#endif
-}
-
-int char_available(void) {
-    // Horrible, horrible, horrible!
-    return xr68681_device.chardev.char_available(0);
-}
+#include <string.h>

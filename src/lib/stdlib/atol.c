@@ -22,7 +22,47 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-long int atol(const char *str) {
+#include <stdio.h>
+#include <ctype.h>
+#include <stdlib.h>
+#include <limits.h>
+
+long atol(const char *str) {
+    if (str == NULL) {
+        return 0; // Null pointer safety
+    }
+
+    // Skip leading whitespace
+    while (isspace((unsigned char)*str)) {
+        str++;
+    }
+
+    // Handle optional sign
+    int sign = 1;
+    if (*str == '+' || *str == '-') {
+        if (*str == '-') {
+            sign = -1;
+        }
+        str++;
+    }
+
+    long result = 0;
+    while (isdigit((unsigned char)*str)) {
+        int digit = *str - '0';
+
+        // Check for overflow before multiplying
+        if (result > (LONG_MAX - digit) / 10) {
+            return (sign == 1) ? LONG_MAX : LONG_MIN;
+        }
+
+        result = result * 10 + digit;
+        str++;
+    }
+
+    return result * sign;
+}
+
+long int old_atol(const char *str) {
 	long res = 0;
     long neg = 0;
 

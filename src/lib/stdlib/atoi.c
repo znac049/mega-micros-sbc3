@@ -22,7 +22,47 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <stdlib.h>
+#include <limits.h>
+
 int atoi(const char *str) {
+    if (str == NULL) {
+        return 0; // Null pointer safety
+    }
+
+    // Skip leading whitespace
+    while (isspace((unsigned char)*str)) {
+        str++;
+    }
+
+    // Handle optional sign
+    int sign = 1;
+    if (*str == '+' || *str == '-') {
+        if (*str == '-') {
+            sign = -1;
+        }
+        str++;
+    }
+
+    long result = 0; // Use long to detect overflow before casting to int
+
+    // Convert digits
+    while (isdigit((unsigned char)*str)) {
+        int digit = *str - '0';
+
+        // Check for overflow before multiplying/adding
+        if (result > (LONG_MAX - digit) / 10) {
+            return (sign == 1) ? INT_MAX : INT_MIN;
+        }
+
+        result = result * 10 + digit;
+        str++;
+    }
+
+    return (int)(sign * result);
+}
+
+int old_atoi(const char *str) {
 	int res = 0;
     int neg = 0;
 
