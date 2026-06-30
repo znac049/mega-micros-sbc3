@@ -29,6 +29,7 @@ SOFTWARE.
 
 int atoi(const char *nptr);
 long atol(const char *nptr);
+void *calloc(size_t nmemb, size_t size);
 void exit(int);
 char *getenv(const char *name);
 void heap_print_free(void);

@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <limits.h>
 
 extern uint32_t _end;
 
@@ -129,4 +130,15 @@ void free(void *ptr)
             block->next = NULL;
         }
     }
+}
+
+void *calloc(size_t nmemb, size_t size) {
+    long long nbytes = (long long)nmemb * (long long)size;
+
+    if (nbytes > LONG_MAX) {
+        // overflow
+        return NULL;
+    }
+
+    return malloc((size_t)nbytes);
 }
