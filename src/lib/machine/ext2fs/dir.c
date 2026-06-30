@@ -87,7 +87,7 @@ static uint32_t find_dir_inode_in(ext2_fs_t *fs, uint32_t parent_inode_num, cons
 
             if (ent.file_type == EXT2_FT_DIR) {
                 if (names_match(dir_name, ent.name, ent.name_len)) {
-                    printf("BINGO!\n");
+                    printf("BINGO! in=%d, rl=%d, nl=%d\n", ent.inode, ent.rec_len, ent.name_len);
                     return ent.inode;
                 }
             }
@@ -99,8 +99,8 @@ static uint32_t find_dir_inode_in(ext2_fs_t *fs, uint32_t parent_inode_num, cons
     return parent_inode_num;
 }
 
-ext2_dir_t *ext2_opendir(ext2_fs_t *fs, const char *name) {
-    ext2_dir_t *dirp;
+ext2_dirp_t *ext2_opendir(ext2_fs_t *fs, const char *name) {
+    ext2_dirp_t *dirp;
     char name_copy[EXT2_MAX_PATH_LEN];
     char *s = name_copy;
     char *dirv[EXT2_MAX_DIR_DEPTH];
@@ -123,17 +123,25 @@ ext2_dir_t *ext2_opendir(ext2_fs_t *fs, const char *name) {
         }
     }
 
-    dirp = malloc(sizeof(ext2_dir_t));
+    dirp = malloc(sizeof(ext2_dirp_t));
 
     if (dirp == NULL) {
         errno = ENOMEM;
         return NULL;
     }
 
-    dirp->inode = malloc(sizeof(ext2_inode_t));
-    dirp->offset = 0;
-    dirp->block_index = 0;
+    dirp->bf = malloc(sizeof(ext2_block_follower_t));
+    dirp->buffer = malloc(fs->block_size);
     dirp->fs = fs;
+    dirp->offset = 0;
+
+    if ((dirp->buffer == NULL) || (dirp->bf == NULL)) {
+        free(dirp->bf);
+        free(dirp->buffer);
+        free(dirp);
+        errno = ENOMEM;
+        return NULL;
+    }
 
     // do stuff
     if (dirc) {
@@ -144,33 +152,25 @@ ext2_dir_t *ext2_opendir(ext2_fs_t *fs, const char *name) {
     }
 
     printf("The final dir inode # is %d\n", dir_inode_num);
-    if (ext2_get_inode(fs, dir_inode_num, dirp->inode) != 0) {
-        printf("Failed to read directory inode %d\n", dir_inode_num);
-        free(dirp->inode);
-        free(dirp);
-        return NULL;
-    }
-
-    printf("Retrieved directory inode:\n");
-    dump_ext2_inode(dirp->inode, dir_inode_num);
+    ext2_init_block_follower(fs, dir_inode_num, dirp->bf);
 
     return dirp;
 }
 
-int ext2_closedir(ext2_dir_t *dirp) {
+int ext2_closedir(ext2_dirp_t *dirp) {
     if (dirp == NULL) {
         errno = EBADF;
         return -1;
     }
 
-    free(dirp->inode);
+    free(dirp->bf);
+    free(dirp->buffer);
     free(dirp);
 
     return 0;
 }
 
-ext2_dirent_t *ext2_readdir(ext2_dir_t *dirp) {
-    uint32_t block_num = dirp->inode->i_block[dirp->block_index];
+ext2_dirent_t *ext2_readdir(ext2_dirp_t *dirp) {
     uint8_t *buf = dirp->fs->block_buffer;
 
     if (dirp == NULL) {
@@ -179,24 +179,21 @@ ext2_dirent_t *ext2_readdir(ext2_dir_t *dirp) {
     }
 
     // do stuff
+    if (dirp->offset == 0) {
+        uint32_t block_num = ext2_get_next_block_num(dirp->bf);
 
-    // printf("Read next directory entry... bi=%d, offset=%d\n", dirp->block_index, dirp->offset);
-    // printf("Data will be in block %d\n", block_num);
+        if (block_num == 0) {
+            return NULL;
+        }
 
-    if (dirp->block_index >= EXT2_SNGL_IND) {
-        printf("in ext2_readdir(): single/dbl/triple indirect inode blocks not coded yet!\n");
-        return NULL;
+        printf("Grab dir block %d\n", block_num);
+        if (ext2_read_fs_block(dirp->fs, block_num) != 0) {
+            printf("Failed to read block %d\n", block_num);
+            return NULL;
+        }
     }
 
-    if (block_num == 0) {
-        return NULL;
-    }
-
-    if (ext2_read_fs_block(dirp->fs, block_num) != 0) {
-        printf("Failed to read block %d\n", dirp->inode->i_block[dirp->block_index]);
-        return NULL;
-    }
-
+    printf("dirent offset=%d\n", dirp->offset);
     ext2_sanitize_dirent((ext2_dirent_t *)&buf[dirp->offset], &dirp->dirent);
     // dump_dirent((ext2_dirent_t *)&buf[dirp->offset]);
 
@@ -204,20 +201,17 @@ ext2_dirent_t *ext2_readdir(ext2_dir_t *dirp) {
     dirp->offset += dirp->dirent.rec_len;
     if (dirp->offset >= dirp->fs->block_size) {
         dirp->offset = 0;
-        dirp->block_index++;
     }
-
-    // printf("Next entry is at bi=%d, offset=%d\n", dirp->block_index, dirp->offset);
 
     return &dirp->dirent;
 }
 
-void ext2_rewinddir(ext2_dir_t *dirp) {
+void ext2_rewinddir(ext2_dirp_t *dirp) {
     if (dirp == NULL) {
         errno = EBADF;
         return;
     }
 
+    ext2_reset_block_follower(dirp->bf);
     dirp->offset = 0;
-    dirp->block_index = 0;
 }

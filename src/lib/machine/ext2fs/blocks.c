@@ -67,21 +67,39 @@ int ext2_read_block(ext2_fs_t *fs, uint32_t block_num, uint8_t *buffer) {
     return 0;
 }
 
-uint32_t ext2_get_first_block_num(ext2_fs_t *fs, uint32_t inode_num, ext2_block_follower_t *bf) {
-    bf->fs = fs;
-    bf->inode_num = inode_num;
+int ext2_read_blocks(ext2_fs_t *fs, uint32_t block_num, int num_blocks, uint8_t *buffer) {
+    uint8_t *buf = buffer;
 
-    if (ext2_get_inode(fs, inode_num, &bf->inode) != 0) {
-        printf("Panic!!!!\n");
-        return 0;
+    for (int i=0; i<num_blocks; i++) {
+        if (ext2_read_block(fs, block_num+i, buf) != 0) {
+            return i;
+        }
+
+        buf += fs->block_size;
     }
 
-    bf->direct_offset = 1;
+    return num_blocks;
+}
+
+void ext2_reset_block_follower(ext2_block_follower_t *bf) {
+    bf->direct_offset = 0;
     bf->single_offset = 0;
     bf->double_offset = 0;
     bf->triple_offset = 0;
+}
 
-    return bf->inode.i_block[0];
+int ext2_init_block_follower(ext2_fs_t *fs, uint32_t inode_num, ext2_block_follower_t *bf) {
+    bf->fs = fs;
+    bf->inode_num = inode_num;
+
+    ext2_reset_block_follower(bf);
+
+    printf("Grab inode %d\n", inode_num);
+    if (ext2_get_inode(fs, inode_num, &bf->inode) != 0) {
+        return -1;
+    }
+
+    return 0;
 }
 
 uint32_t ext2_get_next_block_num(ext2_block_follower_t *bf) {

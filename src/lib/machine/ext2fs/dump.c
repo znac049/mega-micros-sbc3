@@ -151,13 +151,14 @@ void dump_ext2_bg(ext2_bg_t *bg, int bg_num, ext2_sb_t *sb) {
     uint32_t first_block = bg_num * sb->s_blocks_per_group;
 
     printf("\nGroup %d: (Blocks %d-%d\n", bg_num, bg_num * sb->s_blocks_per_group, ((bg_num + 1) * sb->s_blocks_per_group) - 1);
-    printf("  Block Bitmap at %d (+%d)\n", first_block + bg->bg_block_bitmap, bg->bg_block_bitmap);
-    printf("  Inode Bitmap at %d (+%d)\n", first_block + bg->bg_inode_bitmap, bg->bg_inode_bitmap);
-    printf("  Inode Table at %d-%d (+%d)\n", first_block + bg->bg_inode_table, first_block + bg->bg_inode_table + num_inode_blocks - 1, bg->bg_inode_table);
+    if (ext2_has_superblock(bg_num) == YES) {
+        printf("  %s superblock at %d, Group descriptors at %d-%d\n", (bg_num == 0)?"Primary":"Backup", first_block, first_block+1, first_block+1);  // TODO: Fix end of bgdt
+    }
+    printf("  Block Bitmap at %d (+%d)\n", bg->bg_block_bitmap, bg->bg_block_bitmap - first_block);
+    printf("  Inode Bitmap at %d (+%d)\n", bg->bg_inode_bitmap, bg->bg_inode_bitmap - first_block);
+    printf("  Inode Table at %d-%d (+%d)\n", bg->bg_inode_table, bg->bg_inode_table + num_inode_blocks - 1, bg->bg_inode_table - first_block);
     printf("  %d free blocks, %d free inodes, %d directories\n", 
         bg->bg_free_blocks_count, bg->bg_free_inodes_count, bg->bg_used_dirs_count);   
-    // printf("  Free blocks: ????\n");
-    // printf("  Free inodes: ????\n");
 }
 
 void dump_ext2_inode(ext2_inode_t *in, int in_num) {

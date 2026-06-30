@@ -203,6 +203,7 @@ struct ext2_fs {
     uint32_t    block_size;
     uint8_t     sectors_per_block;
     uint32_t    *bg_ent;
+    ext2_bg_t   *bgdt;
 };
 
 typedef struct ext2_fs ext2_fs_t;
@@ -217,15 +218,6 @@ struct ext2_dirent {
 
 typedef struct ext2_dirent ext2_dirent_t;
 
-struct ext2_dir {
-    ext2_inode_t    *inode;
-    uint32_t        block_index;
-    uint32_t        offset;
-    ext2_dirent_t   dirent;
-    ext2_fs_t       *fs;
-};
-
-typedef struct ext2_dir ext2_dir_t;
 
 struct ext2_block_follower {
     ext2_fs_t       *fs;
@@ -239,11 +231,31 @@ struct ext2_block_follower {
 
 typedef struct ext2_block_follower ext2_block_follower_t;
 
+
+struct ext2_dirp {
+    ext2_block_follower_t   *bf;
+    ext2_dirent_t           dirent;
+    ext2_fs_t               *fs;
+    uint8_t                 *buffer;
+    uint32_t                offset;
+};
+
+typedef struct ext2_dirp ext2_dirp_t;
+
+
+// block.c
+int ext2_read_block(ext2_fs_t *fs, uint32_t block_num, uint8_t *buffer);
+int ext2_read_blocks(ext2_fs_t *fs, uint32_t block_num, int num_blocks, uint8_t *buffer);
+int ext2_read_fs_block(ext2_fs_t *fs, uint32_t block_num);
+int ext2_init_block_follower(ext2_fs_t *fs, uint32_t inode_num, ext2_block_follower_t *bf);
+void ext2_reset_block_follower(ext2_block_follower_t *bf);
+uint32_t ext2_get_next_block_num(ext2_block_follower_t *bf);
+
 // dir.c
-int ext2_closedir(ext2_dir_t *dirp);
-ext2_dir_t *ext2_opendir(ext2_fs_t *fs, const char *name);
-ext2_dirent_t *ext2_readdir(ext2_dir_t *dirp);
-void ext2_rewinddir(ext2_dir_t *dirp);
+int ext2_closedir(ext2_dirp_t *dirp);
+ext2_dirp_t *ext2_opendir(ext2_fs_t *fs, const char *name);
+ext2_dirent_t *ext2_readdir(ext2_dirp_t *dirp);
+void ext2_rewinddir(ext2_dirp_t *dirp);
 
 // dump.c
 void dump_ext2_bg(ext2_bg_t *bg, int bg_num, ext2_sb_t *sb);
@@ -257,13 +269,12 @@ void ext2_sanitize_inode(ext2_inode_t *src_in, ext2_inode_t *dst_in);
 void ext2_sanitize_dirent(ext2_dirent_t *src_dp, ext2_dirent_t *dst_dp);
 
 // ext2.c
-ext2_bg_t *ext2_get_blockgroup_descriptor(ext2_fs_t *fs, uint32_t blockgroup_num, ext2_bg_t *bg);
-int ext2_read_block(ext2_fs_t *fs, uint32_t block_num, uint8_t *buffer);
-int ext2_read_fs_block(ext2_fs_t *fs, uint32_t block_num);
+ext2_bg_t *ext2_get_bg(ext2_fs_t *fs, uint32_t blockgroup_num);
 int ext2_get_inode(ext2_fs_t *fs, uint32_t inode_num, ext2_inode_t *inode);
 ext2_fs_t *ext2_mount(uint8_t part_num);
 ext2_fs_t *ext2_umount(ext2_fs_t *fs);
 int is_ext2(ext2_sb_t *sb);
+bool_t ext2_has_superblock(uint32_t bg_num);
 
 // file.c
 int ext2_file_reader(ext2_fs_t *fs, uint32_t inode_num);
