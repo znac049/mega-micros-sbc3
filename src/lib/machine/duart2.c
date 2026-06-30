@@ -325,7 +325,7 @@ void buffered_flush(duart_port_t *channel) {
 }
 
 int safe_rx_char(duart_port_t *channel) {
-    while ((*channel->sr_csr_reg && SR_RX_READY) == 0) {
+    while ((*channel->sr_csr_reg & SR_RX_READY) == 0) {
         ;
     }
 
@@ -339,7 +339,7 @@ int safe_rx_available(duart_port_t *channel) {
 }
 
 void safe_tx_char(int ch, duart_port_t *channel) {
-    while ((*channel->sr_csr_reg && SR_TX_READY) == 0) {
+    while ((*channel->sr_csr_reg & SR_TX_READY) == 0) {
         ;
     }
 
