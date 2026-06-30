@@ -66,7 +66,7 @@ static int measure_cpu_clock(void) {
 
     // printf("Clock speed is %dMHz\n", count / 1760);
 
-    return count / 1760;
+    return count / 1780;
 }
 
 void pre_main(void) {
