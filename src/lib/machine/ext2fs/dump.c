@@ -91,19 +91,19 @@ void dump_ext2_sb(ext2_sb_t *sb) {
     printf("  Filesystem features:     ", sb->s_feature_compat);
     for (int i=0; compat_features[i].mask; i++) {
         if (sb->s_feature_compat & compat_features[i].mask) {
-            printf("%s ", compat_features[i].feature);
+            printf("%s(c) ", compat_features[i].feature);
         }
     }
 
     for (int i=0; incompat_features[i].mask; i++) {
         if (sb->s_feature_incompat & incompat_features[i].mask) {
-            printf("%s ", incompat_features[i].feature);
+            printf("%s(i) ", incompat_features[i].feature);
         }
     }
 
     for (int i=0; ro_features[i].mask; i++) {
         if (sb->s_feature_ro_compat & ro_features[i].mask) {
-            printf("%s ", ro_features[i].feature);
+            printf("%s(ro) ", ro_features[i].feature);
         }
     }
     printf("\n");
@@ -150,7 +150,7 @@ void dump_ext2_bg(ext2_bg_t *bg, int bg_num, ext2_sb_t *sb) {
     uint32_t num_inode_blocks = sb->s_inodes_per_group / inodes_per_block;
     uint32_t first_block = bg_num * sb->s_blocks_per_group;
 
-    printf("\nGroup %d: (Blocks %d-%d\n", bg_num, bg_num * sb->s_blocks_per_group, ((bg_num + 1) * sb->s_blocks_per_group) - 1);
+    printf("\nBlock Group %d: (Blocks %d-%d\n", bg_num, bg_num * sb->s_blocks_per_group, ((bg_num + 1) * sb->s_blocks_per_group) - 1);
     if (ext2_has_superblock(bg_num) == YES) {
         printf("  %s superblock at %d, Group descriptors at %d-%d\n", (bg_num == 0)?"Primary":"Backup", first_block, first_block+1, first_block+1);  // TODO: Fix end of bgdt
     }

@@ -199,9 +199,8 @@ ext2_fs_t *ext2_mount(uint8_t part_num) {
     fs->bgdt = bgdt;
 
     // Read the Block Group Descriptor Table...
-    printf("Reading the Blok Group Descriptor Table\n");
     num_bgdt_blocks = (fs->num_blockgroups * sizeof(ext2_bg_t)) / fs->block_size; 
-    printf("Gonna read %d blocks for the bgdt (%d-%d)\n", num_bgdt_blocks+1, 1, 1+num_bgdt_blocks);
+    // printf("Gonna read %d blocks for the bgdt (%d-%d)\n", num_bgdt_blocks+1, 1, 1+num_bgdt_blocks);
     if (ext2_read_blocks(fs, 1, num_bgdt_blocks+1, (uint8_t *)bgdt) != (num_bgdt_blocks+1)) {
         free(fs);
         free(buffer);
