@@ -37,6 +37,27 @@ SOFTWARE.
 extern filesystem_t _mounted_filesystems[MAX_FILESYSTEMS];
 extern uint8_t _num_mounted_filesystems;
 
+bool_t is_command(const char *cmd, const char *target, int min_target_len) {
+    int cmd_len = strlen(cmd);
+    int target_len = strlen(target);
+
+    if (min_target_len == 0) {
+        min_target_len = target_len;
+    }
+
+    if ((cmd_len > target_len) || (cmd_len < min_target_len)) {
+        return NO;
+    }
+
+    for (int i=0; i<cmd_len; i++) {
+        if (tolower(cmd[i]) != tolower(target[i])) {
+            return NO;
+        }
+    }
+
+    return YES;
+}
+
 int cf_present(void) {
     /* 
      * Poll the status register: if no card is present, this will
@@ -59,7 +80,7 @@ void do_sbinfo(int argc) {
     ext2_fs_t *fs = _mounted_filesystems[0].fs;
 
     if (argc != 1) {
-        printf("usage: sbinfo\n");
+        printf("usage: show super\n");
         return;
     }
 
@@ -72,7 +93,7 @@ void do_bginfo(int argc, char *argv[]) {
     uint32_t bg_num;
 
     if (argc != 2) {
-        printf("usage: bginfo <ext2 block group num>\n");
+        printf("usage: show bg <ext2 block group num>\n");
         return;
     }
 
@@ -85,13 +106,13 @@ void do_bginfo(int argc, char *argv[]) {
     dump_ext2_bg(bg, bg_num, fs->sb);
 }
 
-void do_inodeinfo(int argc, char *argv[]) {
+void do_inode(int argc, char *argv[]) {
     ext2_fs_t *fs = _mounted_filesystems[0].fs;
     ext2_inode_t inode;
     uint32_t inode_num;
 
     if (argc != 2) {
-        printf("usage: inode <ext2 inode num>\n");
+        printf("usage: show inode <ext2 inode num>\n");
         return;
     }
 
@@ -104,13 +125,13 @@ void do_inodeinfo(int argc, char *argv[]) {
     dump_ext2_inode(&inode, inode_num);
 }
 
-void do_dump(int argc, char *argv[]) {
+void do_block(int argc, char *argv[]) {
     ext2_fs_t *fs = _mounted_filesystems[0].fs;
     uint32_t block_num;
     int res;
 
     if (argc != 2) {
-        printf("usage: dump <ext2 block num>\n");
+        printf("usage: show block <ext2 block num>\n");
         return;
     }
 
@@ -140,32 +161,47 @@ void do_vars(int argc) {
     printf("  Inodes per Block: %d\n", fs->block_size / fs->sb->s_inode_size);
 }
 
+void handle_show_command(int argc, char *argv[]) {
+    register const char *cmd = argv[1];
+
+    if (argc == 1) {
+        printf("show accepts the following arguments: \n");
+        printf("  bg <num>       show info about Block group <num>\n");
+        printf("  block <num>    dump disk block <num>\n");
+        printf("  inode <num>    dump inode <num>\n");
+        printf("  super          dump the primary superblock\n");
+        printf("\n");
+    }
+    else if (is_command(cmd, "bg", 0) == YES) {
+        do_bginfo(argc-1, &argv[1]);
+    }
+    else if (is_command(cmd, "block", 2) == YES) {
+        do_block(argc-1, &argv[1]);
+    }
+    else if (is_command(cmd, "inode", 2) == YES) {
+        do_inode(argc-1, &argv[1]);
+    }
+    else if (is_command(cmd, "super", 2) == YES) {
+        do_sbinfo(argc-1);
+    }
+}
+
 void handle_command(int argc, char *argv[]) {
-    if (strcasecmp(argv[0], "quit") == 0) {
+    register const char *cmd = argv[0];
+
+    if (is_command(cmd, "quit", 1) == YES) {
         printf("\nBye.\n");
         exit(0);
     }
-    else if (strcasecmp(argv[0], "bginfo") == 0) {
-        do_bginfo(argc, argv);
+    else if (is_command(cmd, "show", 2) == YES) {
+        handle_show_command(argc, argv);
     }
-    else if (strcasecmp(argv[0], "dump") == 0) {
-        do_dump(argc, argv);
-    }
-    else if (strcasecmp(argv[0], "inode") == 0) {
-        do_inodeinfo(argc, argv);
-    }
-    else if (strcasecmp(argv[0], "sbinfo") == 0) {
-        do_sbinfo(argc);
-    }
-    else if (strcasecmp(argv[0], "vars") == 0) {
+    else if (is_command(cmd, "vars", 2) == YES) {
         do_vars(argc);
     }
-    else if (strcasecmp(argv[0], "help") == 0) {
+    else if (is_command(cmd, "help", 2) == YES) {
         printf("Commands are:\n");
-        printf("  bginfo <ext2 block group number>\n");
-        printf("  dump <ext2 block number>\n");
-        printf("  inode <ext2 inode num>\n");
-        printf("  sbinfo\n");
+        printf("  show [ bg <num> | inode <num> | super | block <num> | ? ]\n");
         printf("  vars\n");
         printf("  quit\n\n");
     }
@@ -201,13 +237,10 @@ int main(void) {
             int argc = split_str(cmd_line, ' ', argv, MAX_ARGS);
 
             if (argc) {
-                // printf("CMD: '%s'\n", argv[0]);
                 handle_command(argc, argv);
             }
         }
     }
-
-    printf("\n\nBye.\n");
 
     return 0;
 }

@@ -2,7 +2,7 @@
 #include <machine.h>
 
 int main(void) {
-    _getchar();
+    getchar();
 
     return 0;
 }

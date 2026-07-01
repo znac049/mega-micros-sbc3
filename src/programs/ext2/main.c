@@ -52,8 +52,9 @@ int cf_present(void) {
 }
 
 void list_dir(const char *dir_name) {
+#if 1
     ext2_fs_t *fs = _mounted_filesystems[0].fs;
-    ext2_dir_t *dirp = ext2_opendir(fs, dir_name);
+    ext2_dirp_t *dirp = ext2_opendir(fs, dir_name);
     ext2_dirent_t *ent;
 
     printf("Directory '%s':\n", dir_name);
@@ -87,6 +88,23 @@ void list_dir(const char *dir_name) {
     }
 
     ext2_closedir(dirp);
+#else
+    ext2_fs_t *fs = _mounted_filesystems[0].fs;
+    ext2_block_follower_t bf;
+
+    printf("Directory '%s':\n", dir_name);
+
+
+
+    if (ext2_init_block_follower(fs, 2, &bf) != 0) {
+        printf("bf_init(..., 2, ...) failed\n");
+        return;
+    }
+
+    for (uint32_t block = ext2_get_next_block_num(&bf); block != 0; block = ext2_get_next_block_num(&bf)) {
+        printf("Next block=%d\n", block);
+    }
+#endif
 }
 
 int main(void) {
@@ -98,6 +116,7 @@ int main(void) {
     if (_num_mounted_filesystems) {
         list_dir("");
         list_dir("etc");
+        list_dir("bob/built/lib");
     }
 
     return 0;
