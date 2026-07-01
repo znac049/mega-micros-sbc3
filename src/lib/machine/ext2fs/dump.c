@@ -107,6 +107,7 @@ void dump_ext2_sb(ext2_sb_t *sb) {
         }
     }
     printf("\n");
+    
     printf("  Filesystem state:        ");
     switch(sb->s_state) {
         case 1:     printf("clean\n"); break;
