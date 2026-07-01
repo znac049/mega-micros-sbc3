@@ -2,6 +2,7 @@ LIB=machine
 LIBOBJECTS=\
 			$(DIR)/_cf.o \
 			$(DIR)/cf.o \
+			$(DIR)/cpu.o \
 			$(DIR)/disk.o \
 			$(DIR)/duart2.o \
 			$(DIR)/leds.o \

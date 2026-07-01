@@ -51,27 +51,9 @@ static void _init_streams(void) {
 	stderr = fopen("AUX:", "w");
 }
 
-static int measure_cpu_clock(void) {
-    uint32_t pre_start = ticks() + 2;
-    uint32_t end_tick = pre_start + 100;
-    uint32_t count = 0;
-
-    while (pre_start != ticks()) {
-        ;
-    }
-
-    while (ticks() <= end_tick) {
-        count++;
-    }
-
-    // printf("Clock speed is %dMHz\n", count / 1760);
-
-    return count / 1780;
-}
-
 void pre_main(void) {
     _claim_pit();
-    _claim_duart();
+    _claim_duart(NO, NO);
     _init_heap();
     _init_streams();
 

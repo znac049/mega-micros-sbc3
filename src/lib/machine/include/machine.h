@@ -83,6 +83,7 @@ extern uint8_t cpu_type;
 
 
 int detect_cpu_type(void);
+int measure_cpu_clock(void);
 
 int peek(uint8_t *addr);
 int poke(uint8_t *addr, uint8_t val);

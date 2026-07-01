@@ -114,7 +114,7 @@ typedef struct duart_port duart_port_t;
 
 extern system_io_device_t xr68681_device;
 
-void _claim_duart(void);
+void _claim_duart(bool_t rx_ints, bool_t tx_ints);
 void _release_duart(void);
 
 void clear_led(int);

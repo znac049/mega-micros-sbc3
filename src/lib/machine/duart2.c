@@ -31,13 +31,14 @@ SOFTWARE.
 
 #define XR68681 1            /* We're using the enhanced duart */
 
-#if defined(RX_INTS) || defined(TX_INTS)
 static unsigned int saved_isr = 0;
-#endif
 
 static duart_port_t channel_a;
 static duart_port_t channel_b;
 static duart_port_t *channels[] = {&channel_a, &channel_b};
+
+static bool_t use_rx_ints = NO;
+static bool_t use_tx_ints = NO;
 
 system_io_device_t xr68681_device;
 
@@ -70,10 +71,10 @@ static inline void init_duart_channel(duart_port_t *channel) {
     *channel->cmd_reg = CR_ENABLE_RX;
     NOP();
 
-#if !defined(TX_INTS)
-    *channel->cmd_reg = CR_ENABLE_TX;
-    NOP();
-#endif
+    if (use_tx_ints == NO) {
+        *channel->cmd_reg = CR_ENABLE_TX;
+        NOP();
+    }
 
     // RTS Rx handshaking is taken care of in code, not hardware
     *channel->mode_regs = 0x93;         // MR1: RX Handshake, No Parity, 8-bits
@@ -84,61 +85,59 @@ static inline void init_duart_channel(duart_port_t *channel) {
 }
 
 static inline void handle_channel_irq(uint8_t interrupt_status_reg, duart_port_t *channel) {
-#if defined(RX_INTS)
     /* Character received interrupt? */
-    if (interrupt_status_reg & ISR_RX_READY) {
-        pit_set_bits_a(1);
-        register volatile uint8_t status = *channel->sr_csr_reg;
+    if (use_rx_ints == YES) {
+        if (interrupt_status_reg & ISR_RX_READY) {
+            pit_set_bits_a(1);
+            register volatile uint8_t status = *channel->sr_csr_reg;
 
-        if (status & SR_RX_READY) {
-            uint8_t ch = *channel->data_reg;
+            if (status & SR_RX_READY) {
+                uint8_t ch = *channel->data_reg;
 
-            if (_buf_is_full(&channel->rx_buff)) {
-                // This shouldn't happen - yeah, right!
-                channel->rx_overruns++;
-                *duart_opr_reset = channel->rts_bit;        // Deassert CTS
-            }
-            else {            
-                _buf_put_char(&channel->rx_buff, ch);
+                if (_buf_is_full(&channel->rx_buff)) {
+                    // This shouldn't happen - yeah, right!
+                    channel->rx_overruns++;
+                    *duart_opr_reset = channel->rts_bit;        // Deassert CTS
+                }
+                else {            
+                    _buf_put_char(&channel->rx_buff, ch);
 
-                // Handshake ?
-                if (_buf_free_space(&channel->rx_buff) < 10) {
-                    *duart_opr_reset = channel->rts_bit;    // Deassert CTS
+                    // Handshake ?
+                    if (_buf_free_space(&channel->rx_buff) < 10) {
+                        *duart_opr_reset = channel->rts_bit;    // Deassert CTS
+                    }
                 }
             }
         }
     }
-#endif
 
-#if defined(TX_INTS)
-    /* Character transmitted interrupt? */
-    if (interrupt_status_reg & ISR_TX_READY) {
-        uint8_t ch = _buf_get_char(&channel->tx_buff);
+    if (use_tx_ints == YES) {
+        /* Character transmitted interrupt? */
+        if (interrupt_status_reg & ISR_TX_READY) {
+            uint8_t ch = _buf_get_char(&channel->tx_buff);
 
-        pit_set_bits_a(2);
-        if (ch == -1) {
-            // no more chars in buffer
-            register volatile uint8_t status = *channel->sr_csr_reg;
+            pit_set_bits_a(2);
+            if (ch == -1) {
+                // no more chars in buffer
+                register volatile uint8_t status = *channel->sr_csr_reg;
 
-            if (status & SR_TX_EMPTY) {
-                *channel->cmd_reg = CR_DISABLE_TX;
+                if (status & SR_TX_EMPTY) {
+                    *channel->cmd_reg = CR_DISABLE_TX;
+                }
+            }
+            else {
+                *channel->data_reg = ch;
             }
         }
-        else {
-            *channel->data_reg = ch;
-        }
     }
-#endif
 }
 
-#if defined(RX_INTS) || defined(TX_INTS)
 ISR duart_irq_handler() {
     register uint8_t interrupt_status_reg = *duart_isr;
 
     handle_channel_irq(interrupt_status_reg, &channel_a);
     handle_channel_irq(interrupt_status_reg >> 4, &channel_b);
 }
-#endif
 
 static void pre_init_duart(void) {
     channel_a.mode_regs = duart_mr1a;
@@ -157,37 +156,28 @@ static void pre_init_duart(void) {
     channel_b.rts_bit = 2;
     channel_b.rx_overruns = 0;
 
-#if defined(RX_INTS)
-    _buf_init(&channel_a.rx_buff, 0);
-    _buf_init(&channel_b.rx_buff, 0);
-#endif
+    if (use_rx_ints == YES) {
+        _buf_init(&channel_a.rx_buff, 0);
+        _buf_init(&channel_b.rx_buff, 0);
+    }
 
-#if defined(TX_INTS)
-    _buf_init(&channel_a.tx_buff, 0);
-    _buf_init(&channel_b.tx_buff, 0);
-#endif
+    if (use_tx_ints == YES) {
+        _buf_init(&channel_a.tx_buff, 0);
+        _buf_init(&channel_b.tx_buff, 0);
+    }
 
     *duart_acr = 0x00;  // Baud rate table: set 1
 }
 
-void _claim_duart(void) {
+void _claim_duart(bool_t rx_ints, bool_t tx_ints) {
     uint16_t saved_sr;
-#if defined(RX_INTS) || defined(TX_INTS)
     uint8_t duart_vector_number = *duart_ivr;   /* Grab the vector number used by the duart */
-#endif
+
+    use_rx_ints = rx_ints;
+    use_tx_ints = tx_ints;
 
     *pit_paddr = 0xff;  // All outputs
     *pit_pbddr = 0xff;  // All outputs
-
-#if 1
-    pit_set_a(255);
-    pit_set_b(255);
-
-    idle_for_ticks(400);
-
-    pit_set_a(0);
-    pit_set_b(0);
-#endif
 
     pre_init_duart();
 
@@ -201,17 +191,19 @@ void _claim_duart(void) {
     xr68681_device.chardev.putchar = xr68681_putchar;
     xr68681_device.chardev.flush = xr68681_flush;
 
-#if defined(RX_INTS) || defined(TX_INTS)
-    saved_isr = set_isr_handler(duart_vector_number, (unsigned int)duart_irq_handler);
-    *duart_imr = 0 
-#  if defined(RX_INTS)
-                | ISR_RX_READY
-#  endif
-#  if defined(TX_INTS)
-                 | ISR_TX_READY
-#  endif
-                ;
-#endif
+    if ((use_rx_ints == YES) || (use_tx_ints == YES)) {
+        uint8_t imr = 0;
+
+        saved_isr = set_isr_handler(duart_vector_number, (unsigned int)duart_irq_handler);
+        if (use_rx_ints == YES) {
+            imr |= ISR_RX_READY;
+        }
+
+        if (use_tx_ints) {
+            imr |= ISR_TX_READY;
+        }
+        *duart_imr = imr;
+    }
 
     UNLOCK(saved_sr);
 }
@@ -245,9 +237,7 @@ static inline void release_duart_channel(duart_port_t *channel) {
 
 void _release_duart(void) {
     uint16_t saved_sr;
-#if defined(RX_INTS) || defined(TX_INTS)
     uint8_t duart_vector_number = *duart_ivr;   /* Grab the vector number used by the duart */
-#endif
 
     LOCK(saved_sr);
 
@@ -256,9 +246,9 @@ void _release_duart(void) {
     release_duart_channel(&channel_a);
     release_duart_channel(&channel_b);
 
-#if defined(RX_INTS) || defined(TX_INTS)
-    set_isr_handler(duart_vector_number, saved_isr);
-#endif
+    if ((use_rx_ints == YES) || (use_tx_ints == YES)) {
+        set_isr_handler(duart_vector_number, saved_isr);
+    }
 
     UNLOCK(saved_sr);
 }
@@ -359,33 +349,34 @@ int xr68681_getchar(uint8_t minor) {
     if (minor >= 2)
         return -1;
 
-#if defined(RX_INTS)
-    return buffered_rx_char(channels[minor]);
-#else
+    if (use_rx_ints == YES) {
+        return buffered_rx_char(channels[minor]);
+    }
+
     return safe_rx_char(channels[minor]);
-#endif
 }
 
 int xr68681_char_available(uint8_t minor) {
     if (minor >= 2)
         return -1;
 
-#if defined(RX_INTS)
-    return buffered_rx_available(channels[minor]);
-#else
+    if (use_rx_ints == YES) {
+        return buffered_rx_available(channels[minor]);
+    }
+
     return safe_rx_available(channels[minor]);
-#endif
 }
 
 void xr68681_putchar(int ch, uint8_t minor) {
     if (minor >= 2)
         return;
 
-#if defined(TX_INTS)
-    buffered_tx_char(ch, channels[minor]);
-#else
-    safe_tx_char(ch, channels[minor]);
-#endif
+    if (use_tx_ints == YES) {
+        buffered_tx_char(ch, channels[minor]);
+    } 
+    else {
+        safe_tx_char(ch, channels[minor]);
+    }
 
     pit_set_b(ch);
 }
@@ -394,11 +385,12 @@ int xr68681_flush(uint8_t minor) {
     if (minor >= 2)
         return -1;
 
-#if defined(TX_INTS)
-    buffered_flush(channels[minor]);
-#else
-    safe_flush(channels[minor]);
-#endif
+    if (use_tx_ints == YES) {
+        buffered_flush(channels[minor]);
+    } 
+    else {
+        safe_flush(channels[minor]);
+    }
 
     return 0;
 }
