@@ -17,9 +17,10 @@ REMOTE_USER=bob@192.168.1.76
 REMOTE_DIR=OneDrive/1_Srec
 
 SYSINCDIR?=$(MEGA_MICROS_DIR)/built/include
-SYSLIBDIR?=$(MEGA_MICROS_DIR)/built/lib
+SYSLIBDIR?=$(MEGA_MICROS_DIR)/built/lib -L$(MEGA_MICROS_DIR)/built/ld
 
 LDSCRIPT?=$(MEGA_MICROS_DIR)/built/ld/program.ld
+ROM_LDSCRIPT?=$(MEGA_MICROS_DIR)/built/ld/rom_program.ld
 
 DEFINES=
 FLAGS=-ffreestanding -ffunction-sections -fdata-sections -fomit-frame-pointer	\
@@ -34,7 +35,9 @@ GCC_LIBS?=$(shell $(CC) --print-search-dirs \
 LIBS=$(EXTRA_LIBS) -lmega -lgcc
 ASFLAGS=-mcpu=$(CPU) -march=$(ARCH)
 VASMFLAGS=-Felf -m$(CPU) -quiet -Lnf $(DEFINES)
-LDFLAGS=-T $(LDSCRIPT) -L $(SYSLIBDIR) -Map=$(MAP) -z noexecstack --gc-sections --oformat=elf32-m68k $(EXTRA_LDFLAGS)
+COMMON_LDFLAGS=-L$(SYSLIBDIR) -Map=$(MAP) -z noexecstack --gc-sections --oformat=elf32-m68k $(EXTRA_LDFLAGS)
+LDFLAGS=$(COMMON_LDFLAGS) -T$(LDSCRIPT) 
+ROM_LDFLAGS=$(COMMON_LDFLAGS) -T$(ROM_LDSCRIPT) 
 
 GCC_68K_PFX=m68k-linux-gnu
 CC=$(GCC_68K_PFX)-gcc
@@ -49,9 +52,6 @@ VASM=vasmm68k_mot
 RM=rm -f
 CP=cp
 LSOF=lsof
-KERMIT=kermit
-SERIAL?=/dev/modem
-BAUD?=230400
 
 # GCC-version-specific settings
 ifneq ($(findstring GCC,$(shell $(CC) --version 2>/dev/null)),)
@@ -91,11 +91,14 @@ PROGRAM_BASENAME=$(shell basename $(CURDIR))
 
 # Set other output files using output basname
 ELF=$(PROGRAM_BASENAME).elf
+ROM_ELF=$(PROGRAM_BASENAME)_rom.elf
 BINARY=$(PROGRAM_BASENAME).bin
 SREC=$(PROGRAM_BASENAME).srec
+ROM_SREC=$(PROGRAM_BASENAME)_rom.srec
 DISASM=$(PROGRAM_BASENAME).dis
 MAP=$(PROGRAM_BASENAME).map
 SYM=$(PROGRAM_BASENAME).sym
+ROM_SYM=$(PROGRAM_BASENAME)_rom.sym
 
 # Assume source files in Makefile directory are source files for project
 CSOURCES=$(wildcard *.c)
@@ -112,17 +115,28 @@ TO_CLEAN=$(OBJECTS) $(ELF) $(BINARY) $(SREC) $(MAP) $(SYM) $(DISASM) $(addsuffix
 
 all: $(BINARY) $(SREC) $(DISASM)
 
+rom: $(ROM_ELF) $(ROM_SREC)
+
 $(ELF) : $(OBJECTS) $(ROM_OBJ)
 	$(LD) $(LDFLAGS) $(GCC_LIBS) $^ $(LIBS) -o $(ELF)
 	$(NM) --numeric-sort $(ELF) >$(SYM)
 	$(SIZE) $(ELF)
 	-chmod a-x $(ELF)
 
+$(ROM_ELF) : $(OBJECTS) $(ROM_OBJ)
+	$(LD) $(ROM_LDFLAGS) $(GCC_LIBS) $^ $(LIBS) -o $(ROM_ELF)
+	$(NM) --numeric-sort $(ROM_ELF) >$(ROM_SYM)
+	$(SIZE) $(ROM_ELF)
+	-chmod a-x $(ROM_ELF)
+
 $(BINARY) : $(ELF)
 	$(OBJCOPY) -O binary $(ELF) $(BINARY)
 
 $(SREC) : $(ELF)
 	$(OBJCOPY) -O srec $(ELF) $(SREC)
+
+$(ROM_SREC) : $(ROM_ELF)
+	$(OBJCOPY) -O srec $(ROM_ELF) $(ROM_SREC)
 
 $(DISASM) : $(ELF)
 	$(OBJDUMP) --disassemble -S $(ELF) >$(DISASM)
@@ -151,12 +165,8 @@ disasm: $(DISASM)
 dump: $(BINARY)
 	hexdump -C $(BINARY)
 
-# upload binary to rosco (if ready and kermit present)
-load: $(BINARY)
-	$(KERMIT) -i -l $(SERIAL) -b $(BAUD) -s $(BINARY)
-
 install: all
 	scp $(SREC) $(REMOTE_USER):$(REMOTE_DIR)
 
 # Makefile magic (for "phony" targets that are not real files)
-.PHONY: all clean disasm dump load install
+.PHONY: all rom clean disasm dump install

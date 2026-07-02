@@ -20,4 +20,16 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-	include crt0.inc
+    section .pretext,code
+
+    dc.l    _INITIAL_STACK
+    dc.l    _start
+
+	dc.l    _data_start
+	dc.l 	_data_end
+	
+    dc.b    'Bob Rocks!'
+    dc.l    $dead
+
+
+    include crt0.inc
