@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
 #include <machine.h>
 
 #include "newmon.h"
@@ -19,12 +21,12 @@ static int bus_error_occurred = 0;
 
 #define POKE(addr, val) *(uint8_t *)addr = val
 
-// Handle bus error while we're checking emory
+// Handle bus error while we're checking memory
 static ISR bus_error(void) {
     bus_error_occurred = 1;
 }
 
-static inline void banner(void) {
+static void banner(void) {
     printf("%c[2J", 27);
     printf("%c[H");
     printf("Mega-68030 Computer System\n");
@@ -42,7 +44,7 @@ static inline void banner(void) {
     printf("RAM found at [ 0x00000000 - 0x%08x ]\n", end_of_ram);
 }
 
-static inline void probe_ram(void) {
+static void probe_ram(void) {
     unsigned int addr = MEMORY_INC;
     unsigned int old_handler = set_isr_handler(VEC_BUS_ERROR, (unsigned int)bus_error);
 
@@ -70,14 +72,18 @@ static inline void probe_ram(void) {
     end_of_ram = addr;
 }
 
-void main(void) {
-    _claim_duart();
+static void setup(void) {
+    _claim_duart(NO, NO);
 
     probe_ram();
     set_default_vectors();
 
     _claim_pit();
     _init_heap();
+}
+
+void main(void) {
+    setup();
 
     banner();
 
