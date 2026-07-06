@@ -20,4 +20,52 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-	include crt0.inc
+_start::
+; Setup the stack and frame pointer
+	move.l  #_INITIAL_STACK,sp
+
+* Init BSS
+	move.l 	#_bss_start,a0
+ibloop:	
+    cmp.l	#_bss_end,a0
+	beq		ibdone
+	clr.b   (a0)+
+	bra.s   ibloop
+
+ibdone:
+	bsr		pre_main
+
+; invoke main() 
+	bsr	    main
+	bra     done
+
+exit::
+	move.l  4(sp),d0		; grab exit code
+done:
+	move.l  d0,-(sp)
+	bsr		post_main
+	move.l  (sp)+,d0
+
+; ...and pass control to the monitor
+	move.b #228,d7
+	trap #14
+
+
+get_heap_start::
+	move.l	a0,-(sp)
+	lea		_bss_end,a0
+	addq.l  #4,a0
+	move.l  a0,d0
+	and.l	#$fffffffc,d0
+	move.l	(sp)+,a0
+	rts
+
+
+	section	.data,data
+
+running_in_rom::
+	dc.b	0
+
+	end
+
+

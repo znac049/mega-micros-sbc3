@@ -15,7 +15,6 @@ SECTIONS
   .text.init ALIGN(4) :
   {
     _init_start = .;
-    ASCIZ "_TEXT_INIT"
     KEEP(*(.init))              /* KEEP() "anchors" section for gc-sections */
     _init_end = .;
   } > TEXT_REGION
@@ -23,7 +22,6 @@ SECTIONS
   .text.postinit ALIGN(4) :
   {
     _postinit_start = .;
-    ASCIZ "_TEXT_POSTINIT"
     KEEP(*(.postinit))          /* KEEP() "anchors" section for gc-sections */
     . = ALIGN(4);               /* long align for init.S copying */
     _postinit_end = .;
@@ -32,7 +30,6 @@ SECTIONS
   .text ALIGN(4) :
   {
     _code_start = .;
-    ASCIZ "_TEXT"
     *(.text*)
     _code_end = .;
   } > TEXT_REGION
@@ -40,7 +37,6 @@ SECTIONS
   .text ALIGN(4) :
   {
     _rodata_start = .;
-    ASCIZ "_RODATA"
     *(.rodata*)
     _rodata_end = .;
   } > TEXT_REGION
@@ -48,7 +44,6 @@ SECTIONS
   .ctors ALIGN(4) :             /* Constructors */
   {
     _ctors_start = .;
-    ASCIZ "_CTORS"
     KEEP(*(.ctors))           /* Run in reverse order, so non-priority ones go first  */
     KEEP(*(SORT(.ctors.*)))   /* followed by ctors with priority */
     _ctors_end = .;
@@ -57,26 +52,24 @@ SECTIONS
   .dtors ALIGN(4) :             /* Destructors */
   {
     _dtors_start = .;
-    ASCIZ "_DTORS"
     KEEP(*(SORT(.dtors.*)))   /* dtors with priority go first */
     KEEP(*(.dtors))           /* Followed by non-priority ones */
     _dtors_end = .;
   } > TEXT_REGION
 
   d_start = DEFINED(DATA_START) ? DATA_START : _dtors_end ;
-  .data d_start :
+  .data d_start : AT(_dtors_end)
   {
     _data_start = .;
-    ASCIZ "_DATA"
     *(.data*)
     . = ALIGN(4);               /* long align for init.S copying */
     _data_end = .;
   } > DATA_REGION
+  _data_load_start = LOADADDR(.data);
 
   .bss ALIGN(4) :
   {
     _bss_start = .;
-    ASCIZ "_BSS"
     *(.bss*)
     *(COMMON)
     . = ALIGN(4);               /* long align for kinit clearing */
