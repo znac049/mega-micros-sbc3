@@ -36,7 +36,8 @@ long strtol(const char *nptr, char **endptr, int base)
 	if (*nptr == '-') {
 		sign = -1;
 		nptr++;
-	} else if (*nptr == '0') {
+	} 
+	else if (*nptr == '0') {
 		if (nptr[1] == 'x') {
 			base = 16;
 			nptr += 2;
@@ -44,6 +45,10 @@ long strtol(const char *nptr, char **endptr, int base)
 			base = 8;
 			nptr++;
 		}
+	}
+	else if (*nptr == '$') {
+		base = 16;
+		nptr++;
 	}
 
 	for (; 1; nptr++) {

@@ -41,8 +41,6 @@ extern FILE *stdin;
 extern FILE *stdout;
 extern FILE *stderr;
 
-#define EOF -1
-
 int char_available(void);
 int fclose(FILE *stream);
 int fflush(FILE *stream);
