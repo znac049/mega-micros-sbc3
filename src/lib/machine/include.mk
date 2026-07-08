@@ -11,6 +11,7 @@ LIBOBJECTS=\
 			$(DIR)/pit.o \
 			$(DIR)/pre_main.o \
 			$(DIR)/safeio.o \
+			$(DIR)/_traps.o \
 			$(DIR)/_vectors.o \
 			$(DIR)/vectors.o
 
