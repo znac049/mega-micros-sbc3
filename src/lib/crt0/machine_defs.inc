@@ -77,6 +77,8 @@ pit_cntrm::     		equ     PIT_BASE+48
 pit_cntrl::     		equ     PIT_BASE+50
 pit_tsr::       		equ     PIT_BASE+52
 
+pit_cnt_vec             equ     84
+
 
 ; xr68681 duart
 ;

@@ -21,8 +21,8 @@
 ; SOFTWARE.
 
         include "machine_defs.inc"
-        
-VECTOR_BASE equ 0                       ; Address to copy the vetor table into
+
+VECTOR_BASE equ 8                       ; Address to copy the vector table into
 
        section .pretext,code
 
@@ -57,12 +57,12 @@ vectors::
 
         dc.l    _not_handled        	;  24 - Spurious interrupt
         dc.l    _not_handled        	;  25 - Level 1 interrupt autovector
-        dc.l    _not_handled        	;  26 - Level 1 interrupt autovector
-        dc.l    _not_handled        	;  27 - Level 1 interrupt autovector
-        dc.l    _not_handled        	;  28 - Level 1 interrupt autovector
-        dc.l    _not_handled        	;  29 - Level 1 interrupt autovector
-        dc.l    _not_handled        	;  30 - Level 1 interrupt autovector
-        dc.l    _not_handled        	;  31 - Level 1 interrupt autovector
+        dc.l    _not_handled        	;  26 - Level 2 interrupt autovector
+        dc.l    _not_handled        	;  27 - Level 3 interrupt autovector
+        dc.l    _not_handled        	;  28 - Level 4 interrupt autovector
+        dc.l    _not_handled        	;  29 - Level 5 interrupt autovector
+        dc.l    _not_handled        	;  30 - Level 6 interrupt autovector
+        dc.l    _not_handled        	;  31 - Level 7 interrupt autovector
 
         dc.l    _not_handled        	;  32 - TRAP #0 instruction
         dc.l    _not_handled        	;  33 - TRAP #1 instruction
@@ -120,7 +120,7 @@ vectors::
         dc.l    _not_handled        	;  81
         dc.l    _not_handled        	;  82
         dc.l    _not_handled        	;  83
-        dc.l    _not_handled        	;  84
+        dc.l    _not_handled    	;  84
         dc.l    _not_handled        	;  85
         dc.l    _not_handled        	;  86
         dc.l    _not_handled        	;  87
@@ -300,8 +300,10 @@ _start::
 ; Setup the stack and frame pointer
 	move.l  #_INITIAL_STACK,sp
 
+
 ; Initialise PIT ports A and B as outputs
-        lea.l   PIT_BASE,a5
+;
+        lea     PIT_BASE,a5
         move.b  #$FF,d0                 ; All bits are outputs
         move.b  d0,pit_paddr_o(a5)      ; Port A
         move.b  d0,pit_pbddr_o(a5)      ; Port B
@@ -310,21 +312,26 @@ _start::
         move.b  #$FE,d0
         move.b  d0,pit_padr_o(a5)
 
+
+
 ; copy the vector table into RAM at VECTOR_BASE
-        lea.l   vectors,a0
-        move.l  #VECTOR_BASE,a1
-        move.w  #255,d0
+;
+        lea     vectors+8,a0
+        lea     VECTOR_BASE,a1
+        move.w  #253,d0
 cpvec:
         move.l  (a0)+,d1
         move.l  d1,(a1)+
-        dbra    d0,cpvec
+        dbeq    d0,cpvec
 
 ; Light a single LED on port A
         move.b  #$FD,d0
         move.b  d0,pit_padr_o(a5)
 
 
+
 ; relocate the data section into RAM
+;
         move.l  #_data_load_start,a0
         move.l  #_data_start,a1
 cpdata:
@@ -337,11 +344,14 @@ cpdata:
         move.b  #$FB,d0
         move.b  d0,pit_padr_o(a5)
 
-* Init BSS
+
+
+; Init BSS
+;
     	move.l 	#_bss_start,a0
 ibloop:	
         cmp.l	#_bss_end,a0
-        beq		ibdone
+        beq	ibdone
         clr.l   (a0)+
         bra.s   ibloop
 
@@ -352,7 +362,7 @@ ibdone:
 
 
 ; invoke main() 
-        bsr	    main
+        bsr	main
         bra     done
 
 ; We're running in ROM, so exit should never get called.
@@ -360,11 +370,12 @@ exit::
     	move.l  4(sp),d0
 done:
         move.b  running_in_rom,d0
-        bra     done                       ; Don't know what else to do!
+        bra     done                            ; Don't know what else to do!
+
 
 get_heap_start::
         move.l	a0,-(sp)
-        lea		_bss_end,a0
+        lea	_bss_end,a0
         addq.l  #4,a0
         move.l  a0,d0
         and.l	#$fffffffc,d0
@@ -374,9 +385,12 @@ get_heap_start::
 
 ; default "do nothing" exception handler
 _not_handled::
-       rte
+        rte
+
 
     	section	.data,data
+
+
 
 running_in_rom::
     	dc.b	1

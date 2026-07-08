@@ -96,6 +96,7 @@ BINARY=$(PROGRAM_BASENAME).bin
 SREC=$(PROGRAM_BASENAME).srec
 ROM_SREC=$(PROGRAM_BASENAME)_rom.srec
 DISASM=$(PROGRAM_BASENAME).dis
+ROM_DISASM=$(PROGRAM_BASENAME)_rom.dis
 MAP=$(PROGRAM_BASENAME).map
 SYM=$(PROGRAM_BASENAME).sym
 ROM_SYM=$(PROGRAM_BASENAME)_rom.sym
@@ -115,7 +116,7 @@ TO_CLEAN=$(OBJECTS) $(ELF) $(BINARY) $(SREC) $(MAP) $(SYM) $(DISASM) $(addsuffix
 
 all: $(BINARY) $(SREC) $(DISASM)
 
-rom: $(ROM_ELF) $(ROM_SREC)
+rom: $(ROM_ELF) $(ROM_SREC) $(ROM_DISASM)
 
 $(ELF) : $(OBJECTS) $(ROM_OBJ)
 	$(LD) $(LDFLAGS) $(GCC_LIBS) $^ $(LIBS) -o $(ELF)
@@ -140,6 +141,9 @@ $(ROM_SREC) : $(ROM_ELF)
 
 $(DISASM) : $(ELF)
 	$(OBJDUMP) --disassemble -S $(ELF) >$(DISASM)
+
+$(ROM_DISASM) : $(ROM_ELF)
+	$(OBJDUMP) --disassemble -S $(ROM_ELF) >$(ROM_DISASM)
 
 $(OBJECTS): Makefile
 
