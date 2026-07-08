@@ -22,12 +22,85 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <ctype.h>
+#include <stddef.h>
+#include <string.h>
+#include <nonstd.h>
 #include <machine.h>
 
-static volatile char zob[5] = {'1', '2', '3', '4', '5'};
+#include "micromon.h"
+
+#define MAX_LINE 512
+#define MAX_ARGS 32
+
+static int major = 0;
+static int minor = 1;
+static char *tag = "alpha";
+
+void setup(void) {
+    _claim_pit();
+
+    setup_duart();
+    set_isr_handler(32, (unsigned int)trap0_handler);
+}
+
+bool_t is_command(const char *cmd, const char *target, int min_target_len) {
+    int cmd_len = strlen(cmd);
+    int target_len = strlen(target);
+
+    if (min_target_len == 0) {
+        min_target_len = target_len;
+    }
+
+    if ((cmd_len > target_len) || (cmd_len < min_target_len)) {
+        return NO;
+    }
+
+    for (int i=0; i<cmd_len; i++) {
+        if (tolower(cmd[i]) != tolower(target[i])) {
+            return NO;
+        }
+    }
+
+    return YES;
+}
+
+void handle_command(int argc, char *argv[]) {
+    register const char *cmd = argv[0];
+
+    argc += 0;
+
+    if (is_command(cmd, "quit", 1) == YES) {
+        kprintf("\nYou can't quit from the monitor!.\n");
+    }
+    else if (is_command(cmd, "help", 2) == YES) {
+        kprintf("Commands are:\n");
+        kprintf("  show [ bg <num> | inode <num> | super | block <num> | ? ]\n");
+        kprintf("  vars\n");
+        kprintf("  quit\n\n");
+    }
+    else {
+        kprintf("Unrecognised command.\n");
+    }
+}
 
 void main(void) {
+    char cmd_line[MAX_LINE];
+
+    setup();
+
+    kprintf("MicroMon v%d.%d-%s starting.\n", major, minor, tag);
+
     while (1) {
-        *pit_pbdr = ~zob[2]; 
+        kprintf("# ");
+
+        if (kgets(cmd_line) != NULL) {
+            char *argv[MAX_ARGS];
+            int argc = split_str(cmd_line, ' ', argv, MAX_ARGS);
+
+            if (argc) {
+                handle_command(argc, argv);
+            }
+        }
     }
 }
