@@ -22,21 +22,49 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+#include <stdio.h>
+#include <ctype.h>
 
-// dump.c
-extern void dump(uint8_t *buf, size_t count, uint8_t print_zeroes);
+#include "micromon.h"
 
-// kio.c
-extern void setup_duart(void);
-extern int kgetchar(void);
-extern char *kgets(char *s);
-extern int kputchar(int c);
-extern int kputs(const char *s);
-extern int kprintf(const char *format, ...);
+void dump(uint8_t *buf, size_t count, uint8_t print_zeroes) {
+    int all_zeroes = 0;
+    int printed_something = 0;
 
-// memory.c
-extern uint32_t get_ram_size(void);
+    kprintf("Memory at 0x%08x\n", buf);
 
-// syscall.asm
-extern unsigned int trap0_handler(int call_num, int arg1, int arg2);
+    for (size_t i=0; i<count; i+=16) {
+        all_zeroes = 1;
+        for (int x=0; x<16; x++) {
+            if (buf[i+x]) {
+                all_zeroes = 0;
+            }
+        }
+
+        if (!all_zeroes || print_zeroes) {
+            kprintf("%08x: ", buf+i);
+            for (int x=0; x<16; x++) {
+                kprintf("%02x ", buf[i+x]);
+            }
+
+            kprintf("    ");
+            for (int x=0; x<16; x++) {
+                char c = buf[i+x];
+
+                if ((c < ' ') || (c > '_'))
+                    c = '.';
+
+                kprintf("%c", c);
+            }
+            kprintf("\n");
+
+            printed_something = 1;
+        }
+    }
+
+    if (!printed_something) {
+        kprintf("Data is all zeroes.\n");
+    }
+
+    kprintf("\n");
+}

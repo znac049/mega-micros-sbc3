@@ -24,6 +24,7 @@ SOFTWARE.
 
 #include <ctype.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 #include <nonstd.h>
 #include <machine.h>
@@ -37,11 +38,21 @@ static int major = 0;
 static int minor = 1;
 static char *tag = "alpha";
 
+static uint32_t saved_dump_address = 0;
+static size_t saved_dump_count = 512;
+
 void setup(void) {
+    uint8_t *ram_end = (uint8_t *)0x3fffff; //get_ram_size();
+
     _claim_pit();
 
     setup_duart();
     set_isr_handler(32, (unsigned int)trap0_handler);
+
+    kprintf("Mega-Micros SBC-3 Computer System\n");
+    kprintf("MicroMon v%d.%d-%s starting.\n", major, minor, tag);
+    kprintf("RAM: 0x00000000 - 0x%08x\n", ram_end);
+
 }
 
 bool_t is_command(const char *cmd, const char *target, int min_target_len) {
@@ -65,6 +76,23 @@ bool_t is_command(const char *cmd, const char *target, int min_target_len) {
     return YES;
 }
 
+void do_dump(int argc, char *argv[]) {
+    if (argc > 3) {
+        kprintf("usage: dump [<start_address> [<count>]]\n");
+        return;
+    }
+
+    if (argc == 2) {
+        saved_dump_address = strtol(argv[1], NULL, 10);
+    }
+
+    if (argc == 3) {
+        saved_dump_count = strtol(argv[2], NULL, 10);
+    }
+
+    dump((uint8_t *)saved_dump_address, saved_dump_count, NO);
+}
+
 void handle_command(int argc, char *argv[]) {
     register const char *cmd = argv[0];
 
@@ -75,9 +103,11 @@ void handle_command(int argc, char *argv[]) {
     }
     else if (is_command(cmd, "help", 2) == YES) {
         kprintf("Commands are:\n");
-        kprintf("  show [ bg <num> | inode <num> | super | block <num> | ? ]\n");
-        kprintf("  vars\n");
+        kprintf("  dump [<start_address> [<count>]]\n");
         kprintf("  quit\n\n");
+    }
+    else if (is_command(cmd, "dump", 2) == YES) {
+        do_dump(argc, argv);
     }
     else {
         kprintf("Unrecognised command.\n");
@@ -88,8 +118,6 @@ void main(void) {
     char cmd_line[MAX_LINE];
 
     setup();
-
-    kprintf("MicroMon v%d.%d-%s starting.\n", major, minor, tag);
 
     while (1) {
         kprintf("# ");

@@ -22,21 +22,34 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+#include <stddef.h>
+#include <ctype.h>
+#include <machine.h>
 
-// dump.c
-extern void dump(uint8_t *buf, size_t count, uint8_t print_zeroes);
+#include "micromon.h"
 
-// kio.c
-extern void setup_duart(void);
-extern int kgetchar(void);
-extern char *kgets(char *s);
-extern int kputchar(int c);
-extern int kputs(const char *s);
-extern int kprintf(const char *format, ...);
+#define SKIP_SIZE 4096
 
-// memory.c
-extern uint32_t get_ram_size(void);
+uint32_t get_ram_size(void) {
+    uint8_t *test_addr = (uint8_t *)SKIP_SIZE;
+    uint8_t *last_good_addr = (uint8_t *)-1;
+    int val = peek(test_addr);
 
-// syscall.asm
-extern unsigned int trap0_handler(int call_num, int arg1, int arg2);
+    while (val != -1) {
+        last_good_addr = test_addr;
+        test_addr += SKIP_SIZE;
+        val = peek(test_addr);
+    }
+
+    for (int i=0; i<SKIP_SIZE; i++) {
+        if (peek(last_good_addr) == -1) {
+            last_good_addr--;
+
+            return (uint32_t)last_good_addr;
+        }
+
+        last_good_addr++;
+    }
+
+    return (uint32_t)last_good_addr;
+}

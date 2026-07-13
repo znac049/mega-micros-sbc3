@@ -27,12 +27,12 @@ num_syscalls equ     (t0ct_end-trap0_call_table)/4
 
 trap0_handler::
         movem.l d1-d7/a0-a6,-(sp)
-        move.l  d0,d1
-        cmp.l   #num_syscalls,d1
+        move.l  d0,d5
+        cmp.l   #num_syscalls,d5
         bhs     t0h_bad_num
-        lsl.l   #2,d1
+        lsl.l   #2,d5
         lea     trap0_call_table,a0
-        move.l  (a0,d1.w),a0
+        move.l  (a0,d5.w),a0
         jsr     (a0)
         bra     t0h_done
 
