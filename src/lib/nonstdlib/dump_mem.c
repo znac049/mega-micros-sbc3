@@ -28,25 +28,42 @@ SOFTWARE.
 void dump_mem(uint8_t *buf, size_t count, uint8_t print_zeroes) {
     int all_zeroes = 0;
     int printed_something = 0;
-
+    
     printf("Memory at 0x%08x\n", buf);
 
     for (size_t i=0; i<count; i+=16) {
-        all_zeroes = 1;
-        for (int x=0; x<16; x++) {
-            if (buf[i+x]) {
-                all_zeroes = 0;
+        int needed = 16;
+        int skip = 0;
+
+        if ((i + 16) > count) {
+            needed = count - i;
+            skip = 16 - needed;
+        }
+
+        if (print_zeroes) {
+            all_zeroes = 0;
+        }
+        else {
+            all_zeroes = 1;
+            for (int x=0; x<needed; x++) {
+                if (buf[i+x]) {
+                    all_zeroes = 0;
+                }
             }
         }
 
         if (!all_zeroes || print_zeroes) {
             printf("%04x: ", i);
-            for (int x=0; x<16; x++) {
+            for (int x=0; x<needed; x++) {
                 printf("%02x ", buf[i+x]);
             }
 
+            for (int x=0; x<skip; x++) {
+                printf("   ");
+            }
+
             printf("    ");
-            for (int x=0; x<16; x++) {
+            for (int x=0; x<needed; x++) {
                 char c = buf[i+x];
 
                 if ((c < ' ') || (c > '_'))

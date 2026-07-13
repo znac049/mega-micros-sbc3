@@ -26,3 +26,27 @@ SOFTWARE.
 
 #define MAX_LINE    512
 #define MAX_ARGS    32
+
+struct ds1307_time {
+    uint8_t seconds;   /* 0-59 */
+    uint8_t minutes;   /* 0-59 */
+    uint8_t hours;     /* 0-23 (24-hour mode assumed) */
+    uint8_t day;       /* 1-7, day of week (chip-defined numbering) */
+    uint8_t date;      /* 1-31 */
+    uint8_t month;     /* 1-12 */
+    uint8_t year;      /* 0-99, add 2000 */
+};
+
+typedef struct ds1307_time ds1307_time_t;
+
+// ds1307.c
+extern int ds1307_read_time(ds1307_time_t *t);
+extern int ds1307_read_nvram(int addr, uint8_t *buf, size_t num_bytes);
+extern int ds1307_write_nvram(int addr, uint8_t *buf, size_t num_bytes);
+
+// i2c.c
+extern void i2c_init(void);
+extern void i2c_start(void);
+extern void i2c_stop(void);
+extern int i2c_write_byte(uint8_t byte);
+extern uint8_t i2c_read_byte(int nack);

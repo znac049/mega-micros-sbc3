@@ -7,6 +7,7 @@
 *.lst
 *.romlst
 *.srec
+*.hex
 *~
 \#*
 3rdParty-tools/*

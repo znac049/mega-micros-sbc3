@@ -33,6 +33,7 @@ SOFTWARE.
 
 #include "disktool.h"
 
+static const char *dayNames[8] = {"?", "Sunday", "Monday", "Tuesday", "Wednesday","Thursday", "Friday", "Saturday"};
 
 extern filesystem_t _mounted_filesystems[MAX_FILESYSTEMS];
 extern uint8_t _num_mounted_filesystems;
@@ -74,6 +75,50 @@ int cf_present(void) {
     }
 
     return 0;
+}
+
+void do_rtc(int argc, char *argv[]) {
+    ds1307_time_t t;
+    int status;
+ 
+    if ((argc < 1) || (argc > 2)) {
+        printf("usage: show rtc [nvram]\n");
+        return;
+    }
+
+    if ((argc > 1) && (is_command(argv[1], "help", 2) == YES)) {
+        printf("show rtc accepts the following sub-commands:\n");
+        printf("  <no arg>              read and print the time.\n");
+        printf("  nvram                 dump the contents of the nvram (56 bytes)\n");
+    }
+    else if (argc == 1) {
+        // Display the date and time
+        status = ds1307_read_time(&t);
+        if (status < 0) {
+            printf("DS1307: no ACK from device -- check address/wiring/pull-ups\n");
+        }
+    
+        printf("DS1307 date and time: %s 20%02u-%02u-%02u %02u:%02u:%02u\n",
+            dayNames[t.day], t.year, t.month, t.date,
+            t.hours, t.minutes, t.seconds);
+    
+        if (status == 1)
+            printf("Warning: clock-halt (CH) bit is set -- oscillator is "
+                "stopped, time above is not advancing until the clock "
+                "is (re)started.\n");
+    }
+    else if (is_command(argv[1], "nvram", 2) == YES) {
+        uint8_t nvram[56];
+
+        if (ds1307_read_nvram(0, nvram, 56) != 56) {
+            printf("Failed to read RTC nvram!\n");
+            return;
+        }
+
+        printf("RTC nvram:\n");
+        dump_mem(nvram, 56, YES);
+    }
+ 
 }
 
 void do_sbinfo(int argc) {
@@ -161,15 +206,63 @@ void do_vars(int argc) {
     printf("  Inodes per Block: %d\n", fs->block_size / fs->sb->s_inode_size);
 }
 
+void handle_rtc_command(int argc, char *argv[]) {
+    register const char *cmd = argv[1];
+
+    if ((argc == 1) || (is_command(cmd, "help", 2) == YES)) {
+        printf("rtc accepts the following sub-commands: \n");
+        printf("  erase             erase the contents of the rtc's nvram\n");
+        printf("  time hh:mm[:ss]   set the time in the rtc\n");
+        printf("\n");
+    }
+    else if (is_command(cmd, "time", 2) == YES) {
+        printf("Bob hasn't coded that, tey!!!\n");
+    }
+    else if (is_command(cmd, "erase", 2) == YES) {
+        uint8_t ram[56];
+        int res;
+
+        memset(ram, 0xff, 56);
+        ram[0] = 0xb0;
+        ram[1] = 0xba;
+
+        printf("Erasing rtc nvram...");
+
+        res = ds1307_write_nvram(0, ram, 56);
+
+        printf("\n");
+
+        if (res != 56) {
+            printf("ERROR! Erase failed.\n");
+        } 
+        else {
+            printf("Success.\n");
+        }
+    }
+    else {
+        printf("'%s' is not a valid sub-command.\n", argv[1]);
+    }
+}
+
+void handle_set_command(int argc, char *argv[]) {
+    register const char *cmd = argv[1];
+
+    if ((argc == 1) || (is_command(cmd, "help", 2) == YES)) {
+        printf("set accepts the following sub-commands: \n");
+        printf("\n");
+    }
+}
+
 void handle_show_command(int argc, char *argv[]) {
     register const char *cmd = argv[1];
 
-    if (argc == 1) {
-        printf("show accepts the following arguments: \n");
-        printf("  bg <num>       show info about Block group <num>\n");
-        printf("  block <num>    dump disk block <num>\n");
-        printf("  inode <num>    dump inode <num>\n");
-        printf("  super          dump the primary superblock\n");
+    if ((argc == 1) || (is_command(cmd, "help", 2) == YES)) {
+        printf("show accepts the following sub-commands:\n");
+        printf("  bg <num>          show info about Block group <num>\n");
+        printf("  block <num>       dump disk block <num>\n");
+        printf("  inode <num>       dump inode <num>\n");
+        printf("  rtc [nvram]       show rtc related data\n");
+        printf("  super             dump the primary superblock\n");
         printf("\n");
     }
     else if (is_command(cmd, "bg", 0) == YES) {
@@ -180,6 +273,9 @@ void handle_show_command(int argc, char *argv[]) {
     }
     else if (is_command(cmd, "inode", 2) == YES) {
         do_inode(argc-1, &argv[1]);
+    }
+    else if (is_command(cmd, "rtc", 2) == YES) {
+        do_rtc(argc-1, &argv[1]);
     }
     else if (is_command(cmd, "super", 2) == YES) {
         do_sbinfo(argc-1);
@@ -192,6 +288,12 @@ void handle_command(int argc, char *argv[]) {
     if (is_command(cmd, "quit", 1) == YES) {
         printf("\nBye.\n");
         exit(0);
+    }
+    else if (is_command(cmd, "rtc", 2) == YES) {
+        handle_rtc_command(argc, argv);
+    }
+    else if (is_command(cmd, "set", 2) == YES) {
+        handle_set_command(argc, argv);
     }
     else if (is_command(cmd, "show", 2) == YES) {
         handle_show_command(argc, argv);
@@ -223,6 +325,8 @@ int main(void) {
         printf("No valid filesystems found.\n");
         exit(2);
     }
+
+    i2c_init();
 
     printf("Disktool v1.0.\n");
     
