@@ -29,7 +29,7 @@ SOFTWARE.
 #include <machine.h>
 #include <nonstd.h>
 
-#include "disktool.h"
+#include "testtool.h"
 
 #define DS1307_ADDR   0x68u
  

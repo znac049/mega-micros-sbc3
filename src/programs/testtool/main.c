@@ -31,7 +31,7 @@ SOFTWARE.
 #include <ext2.h>
 #include <nonstd.h>
 
-#include "disktool.h"
+#include "testtool.h"
 
 static const char *dayNames[8] = {"?", "Sunday", "Monday", "Tuesday", "Wednesday","Thursday", "Friday", "Saturday"};
 
@@ -328,7 +328,7 @@ int main(void) {
 
     i2c_init();
 
-    printf("Disktool v1.0.\n");
+    printf("TestTool v1.0.\n\n");
     
     while (running == YES) {
         printf("# ");

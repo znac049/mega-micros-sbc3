@@ -31,7 +31,7 @@ SOFTWARE.
 #include <ext2.h>
 #include <nonstd.h>
 
-#include "disktool.h"
+#include "testtool.h"
 
 #define PIT_BASE   0xAF0001UL
 
