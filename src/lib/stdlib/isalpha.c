@@ -22,18 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
-
 #include <ctype.h>
-#include <stddef.h>
 
-void *memcpy(void *dest, const void *src, size_t n);
-void *memset(void *s, int c, size_t n);
-int strcasecmp(const char *s1, const char *s2);
-char *strcat(char *dst, const char *src);
-char *strchr(const char *s, int c);
-int strcmp(const char *s1, const char *s2);
-char *strcpy(char *dst, const char *src);
-size_t strlen(const char *str);
-char *strncpy(char *dst, const char *src, size_t dsize);
-char *strrchr(const char *s, int c);
+int isalpha(int c) {
+    return ((tolower(c) >= 'a') && (tolower(c) <= 'z'));
+}

@@ -20,9 +20,12 @@ LIBOBJECTS=$(DIR)/atoi.o \
 			$(DIR)/getenv.o \
 			$(DIR)/gets.o \
 			$(DIR)/gmtime.o \
+			$(DIR)/isalnum.o \
+			$(DIR)/isalpha.o \
 			$(DIR)/isatty.o \
 			$(DIR)/isdigit.o \
 			$(DIR)/isspace.o \
+			$(DIR)/isxdigit.o \
 			$(DIR)/itoa.o \
 			$(DIR)/localtime.o \
 			$(DIR)/malloc.o \
@@ -38,6 +41,7 @@ LIBOBJECTS=$(DIR)/atoi.o \
 			$(DIR)/snprintf.o \
 			$(DIR)/srand.o \
 			$(DIR)/sscanf.o \
+			$(DIR)/strcat.o \
 			$(DIR)/strchr.o \
 			$(DIR)/strcasecmp.o \
 			$(DIR)/strcmp.o \
