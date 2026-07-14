@@ -1,4 +1,4 @@
-/* 
+/*
 MIT License
 
 Copyright (c) 2026 Bob Green
@@ -134,7 +134,7 @@ static void lex_number(parser_t *p, token_t *tok) {
         if (p->src[p->pos] == '0') {
             p->pos++;
         }
-        
+
         hex_start = p->pos;
         while (p->pos < p->len && isxdigit((unsigned char)p->src[p->pos])) {
             p->pos++;
@@ -214,51 +214,50 @@ static void next_token(parser_t *p) {
         p->cur.ident = p->src + s;
         p->cur.ident_len = p->pos - s;
         p->cur.pos = start;
-        
         return;
     }
 
     switch (c) {
         case '+':
-             p->pos++; 
-             p->cur.type = TOK_PLUS;    
-             p->cur.pos = start; 
+             p->pos++;
+             p->cur.type = TOK_PLUS;
+             p->cur.pos = start;
              return;
 
-        case '-': 
-            p->pos++; 
-            p->cur.type = TOK_MINUS;   
-            p->cur.pos = start; 
+        case '-':
+            p->pos++;
+            p->cur.type = TOK_MINUS;
+            p->cur.pos = start;
             return;
 
-        case '*': 
-            p->pos++; 
-            p->cur.type = TOK_STAR;    
-            p->cur.pos = start; 
+        case '*':
+            p->pos++;
+            p->cur.type = TOK_STAR;
+            p->cur.pos = start;
             return;
 
-        case '/': 
-            p->pos++; 
-            p->cur.type = TOK_SLASH;   
-            p->cur.pos = start; 
+        case '/':
+            p->pos++;
+            p->cur.type = TOK_SLASH;
+            p->cur.pos = start;
             return;
 
-        case '%': 
-            p->pos++; 
-            p->cur.type = TOK_PERCENT; 
-            p->cur.pos = start; 
+        case '%':
+            p->pos++;
+            p->cur.type = TOK_PERCENT;
+            p->cur.pos = start;
             return;
 
-        case '(': 
-            p->pos++; 
-            p->cur.type = TOK_LPAREN;  
-            p->cur.pos = start; 
+        case '(':
+            p->pos++;
+            p->cur.type = TOK_LPAREN;
+            p->cur.pos = start;
             return;
 
-        case ')': 
-            p->pos++; 
-            p->cur.type = TOK_RPAREN;  
-            p->cur.pos = start; 
+        case ')':
+            p->pos++;
+            p->cur.type = TOK_RPAREN;
+            p->cur.pos = start;
             return;
 
         case '<':
@@ -288,16 +287,6 @@ static void next_token(parser_t *p) {
     p->cur.type = TOK_END; /* stop parsing further, error already set */
     p->cur.pos = start;
 }
-
-/* ------------------------------------------------------------------ */
-/* Parser / evaluator (recursive descent, precedence climbing)         */
-/*                                                                      */
-/*   shift    := additive (('<<' | '>>') additive)*                    */
-/*   additive := term (('+' | '-') term)*                              */
-/*   term     := unary (('*' | '/' | '%') unary)*                      */
-/*   unary    := ('+' | '-')? primary                                  */
-/*   primary  := NUMBER | IDENT | '(' shift ')'                        */
-/* ------------------------------------------------------------------ */
 
 static long parse_primary(parser_t *p) {
     if (p->err) {
@@ -363,12 +352,12 @@ static long parse_unary(parser_t *p) {
 
     if (p->cur.type == TOK_MINUS) {
         next_token(p);
-    
+
         return -parse_unary(p);
     }
     else if (p->cur.type == TOK_PLUS) {
         next_token(p);
-        
+
         return parse_unary(p);
     }
 
@@ -407,7 +396,7 @@ static long parse_term(parser_t *p) {
                 set_error(p, EXPR_ERR_DIVISION_BY_ZERO, op_pos);
                 return 0;
             }
-            
+
             lhs = (long)(li % ri);
         }
     }
@@ -515,34 +504,34 @@ expr_error_t expr_evaluate(const char *expression, long *result, int *error_pos)
 
 const char *expr_error_string(expr_error_t err) {
     switch (err) {
-        case EXPR_OK:                    
+        case EXPR_OK:
             return "no error";
 
-        case EXPR_ERR_EMPTY_EXPRESSION:  
+        case EXPR_ERR_EMPTY_EXPRESSION:
             return "empty expression";
 
-        case EXPR_ERR_UNEXPECTED_CHAR:   
+        case EXPR_ERR_UNEXPECTED_CHAR:
             return "unexpected character";
 
-        case EXPR_ERR_SYNTAX:            
+        case EXPR_ERR_SYNTAX:
             return "syntax error, expected a value";
 
-        case EXPR_ERR_UNBALANCED_PARENS: 
+        case EXPR_ERR_UNBALANCED_PARENS:
             return "unbalanced parentheses";
 
-        case EXPR_ERR_UNKNOWN_CONSTANT:  
+        case EXPR_ERR_UNKNOWN_CONSTANT:
             return "unknown constant";
 
-        case EXPR_ERR_DIVISION_BY_ZERO:  
+        case EXPR_ERR_DIVISION_BY_ZERO:
             return "division by zero";
 
-        case EXPR_ERR_TRAILING_TOKENS:   
+        case EXPR_ERR_TRAILING_TOKENS:
             return "unexpected trailing input";
 
-        case EXPR_ERR_BAD_SHIFT:         
+        case EXPR_ERR_BAD_SHIFT:
             return "shift amount must be between 0 and 63";
 
-        default:                         
+        default:
             return "unknown error";
     }
 }
