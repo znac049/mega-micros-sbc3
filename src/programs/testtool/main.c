@@ -32,6 +32,7 @@ SOFTWARE.
 #include <nonstd.h>
 
 #include "testtool.h"
+#include "expr.h"
 
 static const char *dayNames[8] = {"?", "Sunday", "Monday", "Tuesday", "Wednesday","Thursday", "Friday", "Saturday"};
 
@@ -282,12 +283,38 @@ void handle_show_command(int argc, char *argv[]) {
     }
 }
 
+void handle_eval_command(int argc, char *argv[]) {
+    char exp[MAX_LINE];
+    expr_error_t res;
+    long val;
+    int error_pos;
+
+    exp[0] = EOS;
+
+    for (int i=1; i<argc; i++) {
+        strcat(exp, argv[i]);
+        strcat(exp, " ");
+    }
+
+    printf("Expression string: '%s'\n", exp);
+    res = expr_evaluate(exp, &val, &error_pos);
+    if (res != EXPR_OK) {
+        printf("Failed to parse expression '%s'\n%s\n\n", exp, expr_error_string(res));
+    }
+    else {
+        printf("-> %d (0x%08x)\n", val, val);
+    }
+}
+
 void handle_command(int argc, char *argv[]) {
     register const char *cmd = argv[0];
 
     if (is_command(cmd, "quit", 1) == YES) {
         printf("\nBye.\n");
         exit(0);
+    }
+    else if (is_command(cmd, "eval", 2) == YES) {
+        handle_eval_command(argc, argv);
     }
     else if (is_command(cmd, "rtc", 2) == YES) {
         handle_rtc_command(argc, argv);
