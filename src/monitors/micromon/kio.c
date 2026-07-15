@@ -138,6 +138,10 @@ int kputchar(int c) {
     return c;
 }
 
+bool_t kchar_available(void) {
+    return safe_rx_available(channels[0]);
+}
+
 char *kgets(char *s) {
     int ch;
     int i = 0;

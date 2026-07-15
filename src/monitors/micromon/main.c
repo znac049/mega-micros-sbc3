@@ -31,15 +31,9 @@ SOFTWARE.
 
 #include "micromon.h"
 
-#define MAX_LINE 512
-#define MAX_ARGS 32
-
 static int major = 0;
-static int minor = 1;
-static char *tag = "alpha";
-
-static uint32_t saved_dump_address = 0;
-static size_t saved_dump_count = 512;
+static int minor = 2;
+static int MAGIC_BUILD_NUMBER = 19;
 
 void setup(void) {
     uint8_t *ram_end = (uint8_t *)0x3fffff; //get_ram_size();
@@ -50,7 +44,7 @@ void setup(void) {
     set_isr_handler(32, (unsigned int)trap0_handler);
 
     kprintf("Mega-Micros SBC-3 Computer System\n");
-    kprintf("MicroMon v%d.%d-%s starting.\n", major, minor, tag);
+    kprintf("MicroMon v%d.%d.%03d starting.\n", major, minor, MAGIC_BUILD_NUMBER);
     kprintf("RAM: 0x00000000 - 0x%08x\n", ram_end);
 
 }
@@ -76,21 +70,14 @@ bool_t is_command(const char *cmd, const char *target, int min_target_len) {
     return YES;
 }
 
-void do_dump(int argc, char *argv[]) {
-    if (argc > 3) {
-        kprintf("usage: dump [<start_address> [<count>]]\n");
-        return;
+bool_t is_blank(const char *str) {
+    while (*str) {
+        if (!isblank(*str++)) {
+            return NO;
+        }
     }
 
-    if (argc == 2) {
-        saved_dump_address = strtol(argv[1], NULL, 10);
-    }
-
-    if (argc == 3) {
-        saved_dump_count = strtol(argv[2], NULL, 10);
-    }
-
-    dump((uint8_t *)saved_dump_address, saved_dump_count, NO);
+    return YES;
 }
 
 void handle_command(int argc, char *argv[]) {
@@ -98,19 +85,37 @@ void handle_command(int argc, char *argv[]) {
 
     argc += 0;
 
-    if (is_command(cmd, "quit", 1) == YES) {
-        kprintf("\nYou can't quit from the monitor!.\n");
-    }
-    else if (is_command(cmd, "help", 2) == YES) {
-        kprintf("Commands are:\n");
-        kprintf("  dump [<start_address> [<count>]]\n");
-        kprintf("  quit\n\n");
-    }
-    else if (is_command(cmd, "dump", 2) == YES) {
-        do_dump(argc, argv);
-    }
-    else {
-        kprintf("Unrecognised command.\n");
+    if (is_blank(cmd) == NO) {
+        if (is_command(cmd, "quit", 1) == YES) {
+            kprintf("\nYou can't quit from the monitor!.\n");
+        }
+        else if (is_command(cmd, "help", 2) == YES) {
+            kprintf("Commands are:\n");
+            kprintf("  dump [<start_address> [<count>]]\n");
+            kprintf("  eval <expression>\n");
+            kprintf("  go <address>]\n");
+            kprintf("  load\n");
+            kprintf("  rtc (erase) | (time [hh:mm[:ss]]) | (date [yyyy:mm:dd])\n");
+            kprintf("  quit\n\n");
+        }
+        else if (is_command(cmd, "dump", 2) == YES) {
+            handle_dump_command(argc, argv);
+        }
+        else if (is_command(cmd, "go", 2) == YES) {
+            handle_go_command(argc, argv);
+        }
+        else if (is_command(cmd, "eval", 2) == YES) {
+            handle_eval_command(argc, argv);
+        }
+        else if (is_command(cmd, "load", 2) == YES) {
+            handle_load_command(argc, argv);
+        }
+        else if (is_command(cmd, "rtc", 2) == YES) {
+            handle_rtc_command(argc, argv);
+        }
+        else {
+            kprintf("Unrecognised command.\n");
+        }
     }
 }
 

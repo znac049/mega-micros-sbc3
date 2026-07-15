@@ -24,19 +24,73 @@ SOFTWARE.
 
 #pragma once
 
+#define MAX_LINE 512
+#define MAX_ARGS 32
+
+#define OK 0
+#define NOT_OK -1
+
+struct ds1307_time {
+    uint8_t seconds;   /* 0-59 */
+    uint8_t minutes;   /* 0-59 */
+    uint8_t hours;     /* 0-23 (24-hour mode assumed) */
+    uint8_t day;       /* 1-7, day of week (chip-defined numbering) */
+    uint8_t date;      /* 1-31 */
+    uint8_t month;     /* 1-12 */
+    uint8_t year;      /* 0-99, add 2000 */
+};
+
+typedef struct ds1307_time ds1307_time_t;
+
+
+// go_cmd.c
+extern uint32_t go_address;
+void handle_go_command(int argc, char *argv[]);
+
+// ds1307.c
+int ds1307_read(int addr, uint8_t *buf, size_t num_bytes);
+int ds1307_write(int addr, uint8_t *buf, size_t num_bytes);
+int ds1307_read_time(ds1307_time_t *t);
+int ds1307_write_time(ds1307_time_t *t);
+int ds1307_read_nvram(int addr, uint8_t *buf, size_t num_bytes);
+int ds1307_write_nvram(int addr, uint8_t *buf, size_t num_bytes);
+
 // dump.c
-extern void dump(uint8_t *buf, size_t count, uint8_t print_zeroes);
+void dump(uint8_t *buf, size_t count, uint8_t print_zeroes, const char *heading, bool_t absolute_addresses);
+
+// dump_cmd.c
+void handle_dump_command(int argc, char *argv[]);
+
+// eval_cmd.c
+void handle_eval_command(int argc, char *argv[]);
+
+// i2c.c
+void i2c_init(void);
+void i2c_start(void);
+void i2c_stop(void);
+int i2c_write_byte(uint8_t byte);
+uint8_t i2c_read_byte(int nack);
 
 // kio.c
-extern void setup_duart(void);
-extern int kgetchar(void);
-extern char *kgets(char *s);
-extern int kputchar(int c);
-extern int kputs(const char *s);
-extern int kprintf(const char *format, ...);
+void setup_duart(void);
+bool_t kchar_available(void);
+int kgetchar(void);
+char *kgets(char *s);
+int kputchar(int c);
+int kputs(const char *s);
+int kprintf(const char *format, ...);
+
+// load.c
+void handle_load_command(int argc, char *argv[]);
+
+// main.c
+bool_t is_command(const char *cmd, const char *target, int min_target_len);
 
 // memory.c
-extern uint32_t get_ram_size(void);
+uint32_t get_ram_size(void);
+
+// rtc_cmd.c
+void handle_rtc_command(int argc, char *argv[]);
 
 // syscall.asm
-extern unsigned int trap0_handler(int call_num, int arg1, int arg2);
+unsigned int trap0_handler(int call_num, int arg1, int arg2);

@@ -23,32 +23,69 @@ SOFTWARE.
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <ctype.h>
 
 #include "micromon.h"
 
-void dump(uint8_t *buf, size_t count, uint8_t print_zeroes) {
+void dump(uint8_t *buf, size_t count, uint8_t print_zeroes, const char *heading, bool_t absolute_addresses) {
     int all_zeroes = 0;
     int printed_something = 0;
 
-    kprintf("Memory at 0x%08x\n", buf);
+    if (heading != NULL) {
+        kprintf("%s:\n", heading);
+    }
+    else {
+        kprintf("Memory at 0x%08x\n", buf);
+    }
 
     for (size_t i=0; i<count; i+=16) {
-        all_zeroes = 1;
-        for (int x=0; x<16; x++) {
-            if (buf[i+x]) {
-                all_zeroes = 0;
+        int needed = 16;
+        int skip = 0;
+
+        if ((i + 16) > count) {
+            needed = count - i;
+            skip = 16 - needed;
+        }
+
+        if (print_zeroes) {
+            all_zeroes = 0;
+        }
+        else {
+            all_zeroes = 1;
+            for (int x=0; x<needed; x++) {
+                if (buf[i+x]) {
+                    all_zeroes = 0;
+                }
             }
         }
 
         if (!all_zeroes || print_zeroes) {
-            kprintf("%08x: ", buf+i);
-            for (int x=0; x<16; x++) {
+            if (absolute_addresses == YES) {
+                kprintf("=%08x: ", buf+i);
+            }
+            else {
+                if (count <= 256) {
+                    kprintf("+%02x: ", i);
+                }
+                else if (count < 65536) {
+                    kprintf("+%04x: ", i);
+                }
+                else {
+                    kprintf("+%08x: ", i);
+                }
+            }
+
+            for (int x=0; x<needed; x++) {
                 kprintf("%02x ", buf[i+x]);
             }
 
+            for (int x=0; x<skip; x++) {
+                kprintf("   ");
+            }
+
             kprintf("    ");
-            for (int x=0; x<16; x++) {
+            for (int x=0; x<needed; x++) {
                 char c = buf[i+x];
 
                 if ((c < ' ') || (c > '_'))

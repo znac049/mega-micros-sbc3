@@ -8,6 +8,8 @@
 *.romlst
 *.srec
 *.hex
+*.bak
+zz*
 *~
 \#*
 3rdParty-tools/*
