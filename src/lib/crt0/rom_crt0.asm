@@ -337,7 +337,7 @@ cpvec:
 cpdata:
         move.l  (a0)+,d1
         move.l  d1,(a1)+
-        cmp.l   #_data_end,a0
+        cmp.l   #_data_end,a1
         blt     cpdata
 
 ; Light a single LED on port A
