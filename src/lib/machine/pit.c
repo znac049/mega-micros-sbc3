@@ -72,6 +72,18 @@ uint32_t ticks(void) {
     return pit_ticks;
 }
 
+uint32_t reset_ticks(void) {
+    int saved_state;
+
+    LOCK(saved_state);
+
+    pit_ticks = 0;
+
+    UNLOCK(saved_state);
+
+    return pit_ticks;
+}
+
 void idle_for_ticks(uint32_t t) {
     uint32_t end_tick = pit_ticks + t;
 

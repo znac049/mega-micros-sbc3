@@ -50,9 +50,11 @@ typedef short lock_state_t;
 	__asm("move.w	%%sr, %0\n" : "=dm" ((saved)));	\
 }
 
+#if 0
 #define RESTORE_STATUS(saved) {					\
 	__asm("move.w	%0, %%sr\n" : : "dm" ((saved)) :);	\
 }
+#endif
 
 #define LOCK(saved) {					\
 	__asm("move.w	%%sr, %0\n" : "=dm" ((saved)));	\

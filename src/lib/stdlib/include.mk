@@ -23,6 +23,7 @@ LIBOBJECTS=$(DIR)/atoi.o \
 			$(DIR)/isalnum.o \
 			$(DIR)/isalpha.o \
 			$(DIR)/isatty.o \
+			$(DIR)/isblank.o \
 			$(DIR)/isdigit.o \
 			$(DIR)/isspace.o \
 			$(DIR)/isxdigit.o \
