@@ -29,53 +29,13 @@ SOFTWARE.
 
 #include "expr.h"
 
-struct constant {
-    const char *name;
-    long value;
-};
-
-typedef struct constant constant_t;
-
-typedef enum {
-    TOK_END,
-    TOK_NUMBER,
-    TOK_PLUS,
-    TOK_MINUS,
-    TOK_STAR,
-    TOK_SLASH,
-    TOK_PERCENT,
-    TOK_SHL,
-    TOK_SHR,
-    TOK_LPAREN,
-    TOK_RPAREN,
-    TOK_IDENT
-} token_type_t;
-
-struct token {
-    token_type_t type;
-    long number;         /* valid when type == TOK_NUMBER */
-    const char *ident;     /* valid when type == TOK_IDENT  */
-    size_t ident_len;
-    int pos;                /* offset in source, for error reporting */
-};
-
-typedef struct token token_t;
-
-struct parser {
-    const char *src;
-    size_t len;
-    size_t pos;
-    token_t cur;
-    expr_error_t err;
-    int err_pos;
-};
-
-typedef struct parser parser_t;
-
 static const constant_t constants[] = {
-    {"CF_BASE",    0xAD0001},
+    {"ACRTC_BASE", 0xAB0001},
     {"DUART_BASE", 0xAD0001},
+    {"CF_BASE",    0xAE0000},
     {"PIT_BASE",   0xAF0001},
+    {"ROM_BASE",   0xC00000},
+    {"RAM_BASE",   0},
 };
 
 #define NUM_CONSTANTS (sizeof(constants) / sizeof(constant_t))

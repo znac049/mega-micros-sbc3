@@ -24,25 +24,6 @@ SOFTWARE.
 
 #pragma once
 
-/*
- * expr.h - tiny arithmetic expression parser/evaluator
- *
- * Supports:
- *   Operators : +  -  *  /  %  <<  >>   (unary + and - too)
- *   Grouping  : ( )
- *   Constants : PI, E, TAU, PHI  (case-insensitive)
- *   Numbers   : 12   3.14   .5   2e10   0x1F
- *
- * Precedence (highest to lowest), matching C's own rules:
- *   1. unary + / -
- *   2. *  /  %
- *   3. binary + -
- *   4. <<  >>
- *
- * % , << and >> operate on the truncated (long long) value of
- * their operands, same as you'd expect from integer bitwise ops.
- */
-
 typedef enum {
     EXPR_OK = 0,
     EXPR_ERR_EMPTY_EXPRESSION,   /* "" or NULL was passed in            */
@@ -55,15 +36,49 @@ typedef enum {
     EXPR_ERR_BAD_SHIFT           /* negative or absurd shift amount     */
 } expr_error_t;
 
-/*
- * Evaluate `expression` and store the result in *result.
- *
- * Returns EXPR_OK on success.
- * On failure, returns an error code and, if error_pos is not NULL,
- * stores the character offset into `expression` where the problem
- * was detected (useful for printing a "^" pointer under the input).
- */
-expr_error_t expr_evaluate(const char *expression, long *result, int *error_pos);
+struct constant {
+    const char *name;
+    long value;
+};
 
-/* Human-readable description of an expr_error_t value. */
+typedef struct constant constant_t;
+
+typedef enum {
+    TOK_END,
+    TOK_NUMBER,
+    TOK_PLUS,
+    TOK_MINUS,
+    TOK_STAR,
+    TOK_SLASH,
+    TOK_PERCENT,
+    TOK_SHL,
+    TOK_SHR,
+    TOK_LPAREN,
+    TOK_RPAREN,
+    TOK_IDENT
+} token_type_t;
+
+struct token {
+    token_type_t type;
+    long number;         /* valid when type == TOK_NUMBER */
+    const char *ident;     /* valid when type == TOK_IDENT  */
+    size_t ident_len;
+    int pos;                /* offset in source, for error reporting */
+};
+
+typedef struct token token_t;
+
+struct parser {
+    const char *src;
+    size_t len;
+    size_t pos;
+    token_t cur;
+    expr_error_t err;
+    int err_pos;
+};
+
+typedef struct parser parser_t;
+
+
+expr_error_t expr_evaluate(const char *expression, long *result, int *error_pos);
 const char *expr_error_string(expr_error_t err);

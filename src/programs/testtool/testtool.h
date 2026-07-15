@@ -44,9 +44,34 @@ extern int ds1307_read_time(ds1307_time_t *t);
 extern int ds1307_read_nvram(int addr, uint8_t *buf, size_t num_bytes);
 extern int ds1307_write_nvram(int addr, uint8_t *buf, size_t num_bytes);
 
+// dump.c
+extern void handle_dump_command(int argc, char *argv[]);
+
+// eval.c.c
+extern void handle_eval_command(int argc, char *argv[]);
+
+// ext2.c
+extern void handle_bginfo_subcommand(int argc, char *argv[]);
+extern void handle_block_subcommand(int argc, char *argv[]);
+extern void handle_inode_subcommand(int argc, char *argv[]);
+extern void handle_sbinfo_subcommand(int argc);
+
 // i2c.c
 extern void i2c_init(void);
 extern void i2c_start(void);
 extern void i2c_stop(void);
 extern int i2c_write_byte(uint8_t byte);
 extern uint8_t i2c_read_byte(int nack);
+
+// main.c
+bool_t is_command(const char *cmd, const char *target, int min_target_len);
+
+// rtc.c
+extern void handle_rtc_command(int argc, char *argv[]);
+extern void handle_rtc_subcommand(int argc, char *argv[]);
+
+// show.c
+extern void handle_show_command(int argc, char *argv[]);
+
+// vars.c
+extern void handle_vars_command(int argc);
