@@ -53,7 +53,7 @@ void dump_mem(uint8_t *buf, size_t count, uint8_t print_zeroes) {
         }
 
         if (!all_zeroes || print_zeroes) {
-            printf("%04x: ", i);
+            printf("%08x: ", buf+i);
             for (int x=0; x<needed; x++) {
                 printf("%02x ", buf[i+x]);
             }

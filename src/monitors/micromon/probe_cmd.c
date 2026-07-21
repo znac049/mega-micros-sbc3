@@ -32,37 +32,11 @@ SOFTWARE.
 #include "micromon.h"
 #include "expr.h"
 
-uint32_t go_address = 0x40000;
+static void do_probe_cmd(void) {
+    get_ram_size();
+}
 
-void handle_go_command(int argc, char *argv[]) {
-    long val;
-    expr_error_t res;
-    int error_pos;
-    register const char *cmd = argv[1];
-    int exit_code = 0;
-    int (*fn)(void);
-
-
-    if ((argc == 1) || ((argc == 2) && is_command(cmd, "help", 2) == YES)) {
-        kprintf("usage:\n");
-        kprintf("  go [<address>]       run code.\n");
-        return;
-    }
-
-    if (argc == 2) {
-        res = expr_evaluate(argv[1], &val, &error_pos);
-        if (res != EXPR_OK) {
-            kprintf("Couldn't evaluate expression: '%s'\n", argv[1]);
-            return;
-        }
-
-        go_address = val;
-    }
-
-    kprintf("Launching code at 0x%08x\n", go_address);
-    fn = (int (*)(void))go_address;
-    exit_code = fn();
-    if (exit_code) {
-        kprintf("Code exited with %d\n", exit_code);
-    }
+void handle_probe_command(int argc) {
+    kprintf("argc=%d\n", argc);
+    do_probe_cmd();
 }

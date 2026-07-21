@@ -32,37 +32,50 @@ SOFTWARE.
 #include "micromon.h"
 #include "expr.h"
 
-uint32_t go_address = 0x40000;
-
-void handle_go_command(int argc, char *argv[]) {
-    long val;
+static void do_baud_cmd(int argc, char *argv[]) {
+    uint32_t baud;
     expr_error_t res;
     int error_pos;
-    register const char *cmd = argv[1];
-    int exit_code = 0;
-    int (*fn)(void);
 
-
-    if ((argc == 1) || ((argc == 2) && is_command(cmd, "help", 2) == YES)) {
-        kprintf("usage:\n");
-        kprintf("  go [<address>]       run code.\n");
+    if (argc != 3) {
+        kprintf("usage: %s baud <baudrate>\n", argv[0]);
         return;
     }
 
-    if (argc == 2) {
-        res = expr_evaluate(argv[1], &val, &error_pos);
-        if (res != EXPR_OK) {
-            kprintf("Couldn't evaluate expression: '%s'\n", argv[1]);
-            return;
+    res = expr_evaluate(argv[2], (long *)&baud, &error_pos);
+    if (res == EXPR_OK) {
+        int port = 0;
+
+        if (strcasecmp(argv[0], "usb2") == 0) {
+            port = 1;
         }
 
-        go_address = val;
+        kprintf("Setting baudrate on %s to %d...\n", argv[0], baud);
+        if (bios_set_baud(port, baud) == NOT_OK) {
+            kprintf("FAILED.\n");
+        }
+        else {
+            kprintf("Success.\n");
+        }
     }
+    else {
+        kprintf("Couldn't evaluate baud rate expression: '%s'\n", argv[2]);
+        return;
+    }
+}
 
-    kprintf("Launching code at 0x%08x\n", go_address);
-    fn = (int (*)(void))go_address;
-    exit_code = fn();
-    if (exit_code) {
-        kprintf("Code exited with %d\n", exit_code);
+void handle_usb_command(int argc, char *argv[]) {
+    register const char *cmd = argv[1];
+
+    if ((argc == 1) || ((argc == 2) && is_command(cmd, "help", 2) == YES)) {
+        kprintf("%s accepts the following sub-commands: \n", argv[0]);
+        kprintf("  baud <baudrate>       set the baudrate\n");
+        kprintf("\n");
+    }
+    else if (is_command(cmd, "baud", 2) == YES) {
+        do_baud_cmd(argc, argv);
+    }
+    else {
+        kprintf("'%s' is not a valid sub-command.\n", argv[1]);
     }
 }

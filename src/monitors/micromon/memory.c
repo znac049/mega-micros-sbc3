@@ -30,19 +30,30 @@ SOFTWARE.
 
 #define SKIP_SIZE 4096
 
+extern volatile uint8_t bus_error_flag;
+
 uint32_t get_ram_size(void) {
     uint8_t *test_addr = (uint8_t *)SKIP_SIZE;
     uint8_t *last_good_addr = (uint8_t *)-1;
-    int val = peek(test_addr);
+    int val;
+    
+    bus_error_flag = 0;
+    val = *test_addr;
 
-    while (val != -1) {
+    while (bus_error_flag == 0) {
         last_good_addr = test_addr;
         test_addr += SKIP_SIZE;
-        val = peek(test_addr);
+        val = *test_addr;
+        kprintf("peek(0x%08x) => %d (%d)\n", test_addr, val, bus_error_flag);
     }
 
+    kprintf("Homing in...\n");
+    bus_error_flag = 0;
     for (int i=0; i<SKIP_SIZE; i++) {
-        if (peek(last_good_addr) == -1) {
+        val = *last_good_addr;
+        kprintf("peek(0x%08x) => %d (%d)\n", test_addr, val, bus_error_flag);
+
+        if (bus_error_flag) {
             last_good_addr--;
 
             return (uint32_t)last_good_addr;
