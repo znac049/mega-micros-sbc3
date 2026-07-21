@@ -30,7 +30,7 @@ VECTOR_BASE equ 8                       ; Address to copy the vector table into
 vectors::
         dc.l    _INITIAL_STACK      	;   0
         dc.l    _start              	;   1
-        dc.l    _not_handled        	;   2 - Bus Error
+        dc.l    _bus_err_exception    	;   2 - Bus Error
         dc.l    _not_handled        	;   3 - Address Error
         dc.l    _not_handled        	;   4 - Illegal instruction
         dc.l    _not_handled        	;   5 - Divide by 0
@@ -332,13 +332,16 @@ cpvec:
 
 ; relocate the data section into RAM
 ;
-        move.l  #_data_load_start,a0
-        move.l  #_data_start,a1
+        move.l  #_data_load_start,a0    ; Where to copy from
+        move.l  #_d_start,a1            ; where to copy to
+        move.l  #_data_length,d0        ; Number of bytes to copy
+        subq.l  #1,d0
+
+; we copy 16 bytes at a time
 cpdata:
         move.l  (a0)+,d1
         move.l  d1,(a1)+
-        cmp.l   #_data_end,a1
-        blt     cpdata
+        dbra    d0,cpdata               
 
 ; Light a single LED on port A
         move.b  #$FB,d0
@@ -387,6 +390,10 @@ get_heap_start::
 _not_handled::
         rte
 
+; BUS ERROR handler - set a flag
+_bus_err_exception::
+        move.b  #1,bus_error_flag
+        rte
 
     	section	.data,data
 
@@ -394,6 +401,9 @@ _not_handled::
 
 running_in_rom::
     	dc.b	1
+
+bus_error_flag::
+        dc.b    0
 
     	end
 

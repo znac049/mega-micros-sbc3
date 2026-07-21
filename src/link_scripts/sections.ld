@@ -57,15 +57,17 @@ SECTIONS
     _dtors_end = .;
   } > TEXT_REGION
 
-  d_start = DEFINED(DATA_START) ? DATA_START : _dtors_end ;
-  .data d_start : AT(_dtors_end)
+  _d_start = DEFINED(DATA_START) ? DATA_START : _dtors_end ;
+  .data _d_start : AT(_dtors_end)
   {
+    . = ALIGN(4);
     _data_start = .;
     *(.data*)
     . = ALIGN(4);               /* long align for init.S copying */
     _data_end = .;
   } > DATA_REGION
   _data_load_start = LOADADDR(.data);
+  _data_length = .-_data_start;
 
   .bss ALIGN(4) :
   {
