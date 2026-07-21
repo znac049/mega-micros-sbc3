@@ -30,12 +30,29 @@ static unsigned int saved_pit_isr=0;
 static unsigned int saved_pit_counter=0;
 
 static volatile unsigned int pit_ticks = 0;
+static volatile unsigned int seconds_ticks = 0;
 
 static uint8_t pit_port_a = 0;
 static uint8_t pit_port_b = 0;
 
 ISR pit_isr_handler(void) {
+    static uint8_t zob = 0;
+
     pit_ticks++;
+    seconds_ticks++;
+
+
+    if (seconds_ticks > 1000) {
+        if (zob & 1) {
+            *duart_opr_set = 128;
+        }
+        else {
+            *duart_opr_reset = 128;
+        }
+
+        seconds_ticks = 0;
+        zob++;
+    }
 
     *pit_tsr = 1;
 }

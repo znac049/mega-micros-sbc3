@@ -55,6 +55,7 @@ SOFTWARE.
 #define duart_rbb           ((volatile uint8_t*) duart_base+22)
 #define duart_tbb           ((volatile uint8_t*) duart_base+22)
 #define duart_ivr           ((volatile uint8_t*) duart_base+24)
+#define duart_ip            ((volatile uint8_t*) duart_base+26)
 #define duart_opcr          ((volatile uint8_t*) duart_base+26)
 #define duart_start_counter ((volatile uint8_t*) duart_base+28)
 #define duart_opr_set       ((volatile uint8_t*) duart_base+28)
