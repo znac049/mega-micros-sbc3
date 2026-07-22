@@ -64,9 +64,10 @@ t0h_done
 	section	.data,data
 
 trap0_call_table::
-        dc.l    sys_status               ; 0
-        dc.l    $deadface
-        dc.l    42
+        dc.l    bios_putchar
+        dc.l    bios_getchar
+        dc.l    bios_char_available
+        dc.l    bios_exit
 t0ct_end     
 
         end
