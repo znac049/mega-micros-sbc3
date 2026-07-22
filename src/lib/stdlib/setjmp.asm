@@ -22,9 +22,10 @@
 
     	section .text,code
 
-ofs_pc	equ		44
-ofs_sp	equ		48
-ofs_sr	equ		52
+offs_a6	equ		56
+offs_sp	equ		60
+offs_ra	equ		64
+offs_sr	equ		68
 
 ; int setjmp(jmp_buf env)
 ; Stack on entry:
@@ -32,14 +33,18 @@ ofs_sr	equ		52
 ;   4(sp)  env
 
 setjmp::
-		movea.l 4(sp),a0					; env -> a0
+		movem.l	a1/a6,-(sp)		
+		movea.l 12(sp),a6					; env -> a6
 
-		movem.l d2-d7/a2-a6,(a0)
+		movem.l d0-d7/a0-a5,(a6)			; a6 has been trashed
 
-		move.l  (sp),ofs_pc(a0)				; stash return address
-		lea     4(sp),a1
-		move.l  a1,ofs_sp(a0)           	; stash SP as it will be right after setjmp returns
-		move.w  ccr,ofs_sr(a0)
+		move.l	4(sp),offs_a6(a6)			; original a6
+		move.l  8(sp),offs_ra(a6)			; stash return address
+		lea     12(sp),a1					; sp just prior to the call to setjmp()
+		move.l  a1,offs_sp(a6)           	; stash SP as it will be right after setjmp returns
+		move.w  ccr,offs_sr(a6)
+
+		movem.l	(sp)+,a1/a6					; restore original a1/a6
 
 		moveq   #0,d0                     	; the direct call always returns 0
 		rts
@@ -52,19 +57,25 @@ setjmp::
 ;   8(sp)  val
 
 longjmp::
-		movea.l 4(sp),a0
-		move.l  8(sp),d1
+		movea.l 4(sp),a6					; env -> a6
 
-		tst.l   d1
-		bne.s   lj_ok
-		moveq   #1,d1						; Special case of longjmp being called with 0:
-											; e.g. longjmp(env, 0) must make setjmp. Return 1 instead
+		movem.l	d0-d7/a0-a5,(a0)			; start restoring machine state - will trash a1 -> env
+
+		move.l  8(sp),d0					; return code passed to longjmp()
+
+		tst.l   d0
+		bne     lj_ok
+		moveq   #1,d0						; Special case of longjmp being called with 0:
+											; e.g. longjmp(env, 0) must make setjmp() return 1 instead
 lj_ok
-		movem.l (a0),d2-d7/a2-a6     		; restore the saved state
-		move.w  ofs_sr(a0),ccr
-		move.l  d1,d0                     	; return value from setjmp
+		movea.l offs_sp(a6),a0
+		movea.l a0,sp 						; restore the stack pointer     
 
-		movea.l ofs_sp(a0),a1
-		movea.l ofs_pc(a0),a0
-		movea.l a1,sp                     	; reinstate the stack as per the call to setjmp...
-		jmp     (a0)                       	; ...and magic happens
+		movea.l ofs_ra(a6),a0
+		move.l	a0,-(sp);					; push the return address
+
+		move.w  offs_sr(a6),ccr				; Restore CCR
+		
+		move.l	offs_a6(a6),a6				; Finally restore a6 itself
+
+		rts									; Fall through hyperspace...
