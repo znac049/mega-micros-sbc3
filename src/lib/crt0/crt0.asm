@@ -22,7 +22,7 @@
 
 _start::
 ; Setup the stack and frame pointer
-	move.l  #_INITIAL_STACK,sp
+	; move.l  #_INITIAL_STACK,sp
 
 * Init BSS
 	move.l 	#_bss_start,a0
@@ -33,22 +33,21 @@ ibloop:
 	bra.s   ibloop
 
 ibdone:
-	bsr		pre_main
+;	bsr		pre_main
 
 ; invoke main() 
 	bsr	    main
-	bra     done
+; bra     done
 
-exit::
-	move.l  4(sp),d0		; grab exit code
-done:
+; exit::
+; 	move.l  4(sp),d0		; grab exit code
+; done:
 	move.l  d0,-(sp)
-	bsr		post_main
+;	bsr		post_main
 	move.l  (sp)+,d0
 
 ; ...and pass control to the monitor
-	move.b #228,d7
-	trap #14
+	rts
 
 
 get_heap_start::

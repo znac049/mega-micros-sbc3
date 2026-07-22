@@ -10,7 +10,7 @@ int printf(const char *format, ...) {
 	res = vsnprintf(buffer, sizeof(buffer), format, args);
 	va_end(args);
 
-	fputs(buffer, stdout);
+	puts(buffer);
 
 	return res;
 }

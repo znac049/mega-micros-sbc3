@@ -7,6 +7,7 @@ LIBOBJECTS=$(DIR)/atoi.o \
 			$(DIR)/ctime.o \
 			$(DIR)/err.o \
 			$(DIR)/errno.o \
+			$(DIR)/exit.o \
 			$(DIR)/fclose.o \
 			$(DIR)/fflush.o \
 			$(DIR)/fgetc.o \
@@ -39,6 +40,7 @@ LIBOBJECTS=$(DIR)/atoi.o \
 			$(DIR)/puts.o \
 			$(DIR)/rand.o \
 			$(DIR)/read.o \
+			$(DIR)/setjmp.o \
 			$(DIR)/snprintf.o \
 			$(DIR)/srand.o \
 			$(DIR)/sscanf.o \

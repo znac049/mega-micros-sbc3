@@ -80,14 +80,27 @@ typedef short lock_state_t;
 #define CPU_68020 2
 #define CPU_68030 3
 
+// BIOS calls
+#define BIOS_PUTCHAR		0
+#define BIOS_GETCHAR		1
+#define BIOS_CHAR_AVAILABLE	2
+#define BIOS_EXIT			3
+
+#define NUM_BIOS_CALLS		4
+
 extern uint8_t running_in_rom;
 extern uint8_t cpu_type;
+extern volatile uint8_t bus_error_flag;
 
 
 int detect_cpu_type(void);
 int measure_cpu_clock(void);
 
-int trap0(int num, int arg1, int arg2, int arg3);
+// bios_call.c
+int bios_call(int call_num, int arg1, int arg2, int arg3);
+
+// traps.c
+long trap0(long syscall_num, long arg1, long arg2, long arg3);
 
 int peek(uint8_t *addr);
 int poke(uint8_t *addr, uint8_t val);

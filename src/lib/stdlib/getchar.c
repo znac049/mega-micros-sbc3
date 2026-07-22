@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <duart.h>
+#include <machine.h>
 
 int getchar(void) {
 #if 0
@@ -30,11 +30,10 @@ int getchar(void) {
 
     return c;
 #else
-    return xr68681_device.chardev.getchar(0);
+    return bios_call(BIOS_GETCHAR, 0, 0, 0);
 #endif
 }
 
 int char_available(void) {
-    // Horrible, horrible, horrible!
-    return xr68681_device.chardev.char_available(0);
+    return bios_call(BIOS_CHAR_AVAILABLE, 0, 0, 0);
 }

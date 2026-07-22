@@ -23,3 +23,12 @@ SOFTWARE.
 */
 
 #pragma once
+
+typedef struct {
+    long regs[13];   /* D2-D7, A2-A6, PC, SP  (13 * 4 = 52 bytes) */
+    short sr;         /* status register */
+    short _pad;
+} jmp_buf[1];
+ 
+int  setjmp(jmp_buf env);
+void longjmp(jmp_buf env, int val) __attribute__((noreturn));

@@ -105,17 +105,14 @@ struct duart_port {
     volatile uint8_t *cmd_reg;
     volatile uint8_t *acr_reg;
     volatile uint8_t *data_reg;
-    circular_buffer_t rx_buff;
-    circular_buffer_t tx_buff;
     uint8_t rts_bit;
-    uint8_t rx_overruns;
 };
 
 typedef struct duart_port duart_port_t;
 
 extern system_io_device_t xr68681_device;
 
-void _claim_duart(bool_t rx_ints, bool_t tx_ints);
+void _claim_duart(void);
 void _release_duart(void);
 
 void clear_led(int);

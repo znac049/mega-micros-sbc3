@@ -293,6 +293,13 @@ vectors::
         dc.l    _not_handled        	; 254
         dc.l    _not_handled            ; 255
 
+; Jump table for system calls. Remove this once we have sytem calls via TRAP #n
+syscalls::
+        dc.l    bios_putchar
+        dc.l    bios_getchar
+        dc.l    bios_char_available
+        dc.l    bios_exit
+
 
     section .text,code
 
@@ -337,7 +344,7 @@ cpvec:
         move.l  #_data_length,d0        ; Number of bytes to copy
         subq.l  #1,d0
 
-; we copy 16 bytes at a time
+; 
 cpdata:
         move.l  (a0)+,d1
         move.l  d1,(a1)+
@@ -395,9 +402,8 @@ _bus_err_exception::
         move.b  #1,bus_error_flag
         rte
 
+
     	section	.data,data
-
-
 
 running_in_rom::
     	dc.b	1

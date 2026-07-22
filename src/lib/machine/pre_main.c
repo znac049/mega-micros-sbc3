@@ -27,7 +27,7 @@ SOFTWARE.
 #include <errno.h>
 #include <machine.h>
 
-#define WITH_DISKS
+#undef WITH_DISKS
 
 uint8_t cpu_type = CPU_68000;
 uint8_t cpu_speed_mhz = 33;
@@ -52,18 +52,17 @@ static void _init_streams(void) {
 }
 
 void pre_main(void) {
-    _claim_pit();
-    _claim_duart(NO, NO);
+    _claim_duart();
     _init_heap();
     _init_streams();
 
     cpu_speed_mhz = measure_cpu_clock();
 
-#ifdef WITH_DISKS
-    cf_init();
-#endif
+// #ifdef WITH_DISKS
+//     cf_init();
+// #endif
 
-    if (1 /*running_in_rom*/) {
+    if (0 /*running_in_rom*/) {
         printf("%c[2J", 27);
         printf("%c[H", 27);
         printf("Mega-680x0 Computer System\n");
@@ -79,36 +78,38 @@ void pre_main(void) {
         }
     }
 
-    // Attempt to mount all ext2 filesystems we can...
-    if (cf_drive_ready(0)) {
-        cf_info_t info;
+// #ifdef WITH_DISKS
+//     // Attempt to mount all ext2 filesystems we can...
+//     if (cf_drive_ready(0)) {
+//         cf_info_t info;
 
-        if (cf_identify(0, &info) == 0) {
-            int res = read_partition_table(0);
+//         if (cf_identify(0, &info) == 0) {
+//             int res = read_partition_table(0);
 
-            printf("CF%d: %s\n", 0, info.model_number);
+//             printf("CF%d: %s\n", 0, info.model_number);
 
-            if (res != 0 && res != ENOMEM) {
-                printf("CF%d: no partitions found\n", 0);
-            }
-            else {
-                uint8_t num_parts = get_partition_count();
+//             if (res != 0 && res != ENOMEM) {
+//                 printf("CF%d: no partitions found\n", 0);
+//             }
+//             else {
+//                 uint8_t num_parts = get_partition_count();
 
-                // Check each partition for an ext2 filesystem
-                for (uint8_t part=0; part<num_parts; part++) {
-                    disk_partition_t *dp = get_partition(part);
-                    ext2_fs_t *fs = ext2_mount(part);
+//                 // Check each partition for an ext2 filesystem
+//                 for (uint8_t part=0; part<num_parts; part++) {
+//                     disk_partition_t *dp = get_partition(part);
+//                     ext2_fs_t *fs = ext2_mount(part);
 
-                    if (fs != NULL) {
-                        _mounted_filesystems[_num_mounted_filesystems].dp = dp;
-                        _mounted_filesystems[_num_mounted_filesystems].fs = fs;
-                        _num_mounted_filesystems++;
-                        printf("%s: ext2\n", dp->name);
-                    }
-                }
-            }
-        }
-    }
+//                     if (fs != NULL) {
+//                         _mounted_filesystems[_num_mounted_filesystems].dp = dp;
+//                         _mounted_filesystems[_num_mounted_filesystems].fs = fs;
+//                         _num_mounted_filesystems++;
+//                         printf("%s: ext2\n", dp->name);
+//                     }
+//                 }
+//             }
+//         }
+//     }
+// #endif
 }
 
 void post_main(int status) {
@@ -120,10 +121,11 @@ void post_main(int status) {
     fflush(stdout);
     fflush(stderr);
 
-    for (int i=0; i<_num_mounted_filesystems; i++) {
-        ext2_umount(_mounted_filesystems[i].fs);
-    }
+// #if 0
+//     for (int i=0; i<_num_mounted_filesystems; i++) {
+//         ext2_umount(_mounted_filesystems[i].fs);
+//     }
+// #endif
 
     _release_duart();
-    _release_pit();
 }

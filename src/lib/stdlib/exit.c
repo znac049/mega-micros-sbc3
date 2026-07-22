@@ -22,20 +22,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <stdio.h>
+#include <stdlib.h>
 #include <machine.h>
 
-int putchar(int c) {
-#if 0
-  if (c == '\n') {
-    fputc('\r', stdout);
-  }
-
-  fputc(c, stdout);
-  return c;
-#else
-  bios_call(BIOS_PUTCHAR, 0, c, 0);
-
-  return c;
-#endif
+void exit(int code) {
+    bios_call(BIOS_EXIT, code, 0, 0);
 }

@@ -1,5 +1,6 @@
 LIB=machine
 LIBOBJECTS=\
+			$(DIR)/bios_call.o \
 			$(DIR)/_cf.o \
 			$(DIR)/cf.o \
 			$(DIR)/cpu.o \

@@ -28,6 +28,7 @@ SOFTWARE.
 #define EOF -1
 #define EOS '\0'
 
+#define BELL 7
 #define BS 8
 #define CR 13
 #define LF 10
