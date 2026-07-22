@@ -370,6 +370,7 @@ static int wait_for_char_available(uint32_t seconds) {
             kputchar(BS);
             kputchar(BS);
             kputchar(BS);
+            // kputchar(BELL);
             kprintf("%3d ", --seconds);
 
             target += TICKS_PER_SECOND;

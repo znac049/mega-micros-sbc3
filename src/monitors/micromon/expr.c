@@ -39,6 +39,8 @@ static const constant_t constants[] = {
     {"PIT_BASE",   0xAF0001},
     {"ROM_BASE",   0xC00000},
     {"RAM_BASE",   0},
+    {"YES",        1},
+    {"NO",         0},
 };
 
 #define NUM_CONSTANTS (sizeof(constants) / sizeof(constant_t))

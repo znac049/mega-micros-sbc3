@@ -28,11 +28,14 @@ SOFTWARE.
 #include <string.h>
 #include <nonstd.h>
 #include <machine.h>
+#include <setjmp.h>
 
 #include "micromon.h"
 #include "expr.h"
 
 uint32_t go_address = 0x40000;
+
+jmp_buf go_env;
 
 void handle_go_command(int argc, char *argv[]) {
     long val;
@@ -41,15 +44,15 @@ void handle_go_command(int argc, char *argv[]) {
     register const char *cmd = argv[1];
     int exit_code = 0;
     int (*fn)(void);
+    int go_res;
 
 
-    if ((argc == 1) || ((argc == 2) && is_command(cmd, "help", 2) == YES)) {
+    if ((argc == 2) && is_command(cmd, "help", 2) == YES) {
         kprintf("usage:\n");
         kprintf("  go [<address>]       run code.\n");
         return;
     }
-
-    if (argc == 2) {
+    else if (argc == 2) {
         res = expr_evaluate(argv[1], &val, &error_pos);
         if (res != EXPR_OK) {
             kprintf("Couldn't evaluate expression: '%s'\n", argv[1]);
@@ -59,10 +62,17 @@ void handle_go_command(int argc, char *argv[]) {
         go_address = val;
     }
 
-    kprintf("Launching code at 0x%08x\n", go_address);
-    fn = (int (*)(void))go_address;
-    exit_code = fn();
-    if (exit_code) {
-        kprintf("Code exited with %d\n", exit_code);
+    go_res = setjmp(go_env);
+    if (go_res == 0) {
+        // First call - invoke the user program
+        kprintf("Launching code at 0x%08x\n", go_address);
+        fn = (int (*)(void))go_address;
+        exit_code = fn();
+        if (exit_code) {
+            kprintf("Code exited with %d\n", exit_code);
+        }
+    }
+    else {
+        kprintf("User code failed with code %d\n", go_res);
     }
 }

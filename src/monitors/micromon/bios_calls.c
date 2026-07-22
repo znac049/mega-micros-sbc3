@@ -22,43 +22,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <stddef.h>
 #include <ctype.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <nonstd.h>
 #include <machine.h>
+#include <setjmp.h>
 
 #include "micromon.h"
 
-#define SKIP_SIZE 4096
-
-uint32_t get_ram_size(void) {
-    uint8_t *test_addr = (uint8_t *)SKIP_SIZE;
-    uint8_t *last_good_addr = (uint8_t *)-1;
-    int val;
-    
-    bus_error_flag = 0;
-    val = *test_addr;
-
-    while (bus_error_flag == 0) {
-        last_good_addr = test_addr;
-        test_addr += SKIP_SIZE;
-        val = *test_addr;
-        kprintf("peek(0x%08x) => %d (%d)\n", test_addr, val, bus_error_flag);
-    }
-
-    kprintf("Homing in...\n");
-    bus_error_flag = 0;
-    for (int i=0; i<SKIP_SIZE; i++) {
-        val = *last_good_addr;
-        kprintf("peek(0x%08x) => %d (%d)\n", test_addr, val, bus_error_flag);
-
-        if (bus_error_flag) {
-            last_good_addr--;
-
-            return (uint32_t)last_good_addr;
-        }
-
-        last_good_addr++;
-    }
-
-    return (uint32_t)last_good_addr;
+int bios_exit(int exit_code) {
+    // Pass control back to the monitor via the 'go' command handler
+    longjmp(go_env, exit_code);
 }

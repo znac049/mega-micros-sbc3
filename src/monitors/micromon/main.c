@@ -37,7 +37,7 @@ SOFTWARE.
 
 static int major = 0;
 static int minor = 3;
-static int MAGIC_BUILD_NUMBER = 126;
+static int MAGIC_BUILD_NUMBER = 155;
 
 // Link time variables
 extern uint32_t _d_start, _data_load_start, _data_length;
@@ -85,6 +85,7 @@ void setup(void) {
     setup_duart(is_xr, is_xr);
 
     set_isr_handler(32, (unsigned int)trap0_handler);
+    set_isr_handler(46, (unsigned int)trap14_handler);
 
     kprintf("\n\n\nMega-Micros SBC-3 Computer System\n");
     kprintf("MicroMon ROM V%d.%d_%03d starting.\n", major, minor, MAGIC_BUILD_NUMBER);
@@ -107,7 +108,7 @@ void setup(void) {
     pr_section("code  ", (uint32_t)&_code_start,    (uint32_t)&_code_end);
     pr_section("rodata", (uint32_t)&_rodata_start,  (uint32_t)&_rodata_end);
     pr_section("bss   ", (uint32_t)&_bss_start,     (uint32_t)&_bss_end);
-    kprintf   ("data   0x%08x   0x%08x   (relocated from 0x%08x)\n", 
+    kprintf   ("data   0x%06x   0x%06x               <-- relocated from 0x%08x\n", 
         (uint32_t)&_d_start, (uint32_t)&_d_start + (uint32_t)&_data_length, (uint32_t)&_data_load_start);
 
     kprintf("\nJumpers JB2: 0x%02x\n\n", jumpers);

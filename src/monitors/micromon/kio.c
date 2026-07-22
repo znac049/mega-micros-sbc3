@@ -74,7 +74,7 @@ static inline void handle_channel_irq(uint8_t interrupt_status_reg, kduart_port_
            // Any of the error bits set?
             if (status & 0xf0) {
                 // discard the character and set an error led
-                *duart_opr_set = 0x80;
+                *duart_opr_set = 0x40;
             }
             else {
                 // Is there room in the buffer?
@@ -83,10 +83,10 @@ static inline void handle_channel_irq(uint8_t interrupt_status_reg, kduart_port_
                     // side has ignored our RTS signal. Set an error led and drop the
                     // received char on the floor
                     *duart_opr_set = 0x40;
-                    *pit_pbdr = 0;
+                    // *pit_pbdr = 0;
                 }
                 else {
-                    *pit_pbdr = ~ch;
+                    // *pit_pbdr = ~ch;
 
                     channel->rx_buff[channel->rx_insert] = ch;
                     channel->rx_insert++;
@@ -100,11 +100,11 @@ static inline void handle_channel_irq(uint8_t interrupt_status_reg, kduart_port_
                     // Check that the buffer isn't filling up
                     if ((channel->rx_count == HIGH_WATER_MARK) && (channel->rts_asserted == YES)) {
                         // Deassert RTS
-                        *duart_opr_reset = 0x21; //channel->rts_bit;
+                        *duart_opr_reset = channel->rts_bit;
                         channel->rts_asserted = NO;
                     }
 
-                    *pit_padr = ~channel->rx_count;
+                    // *pit_padr = ~channel->rx_count;
                 }
             }
         // }
@@ -271,8 +271,8 @@ void setup_duart(int is_xr, int clk_dbl) {
     *duart_imr = 0x02;                  //  RX interrupts, channel A
 #endif
 
-    *pit_padr = 0;
-    *pit_pbdr = 0;
+    // *pit_padr = 0;
+    // *pit_pbdr = 0;
 }
 #ifndef RX_INTS
 static int polled_rx_char(kduart_port_t *channel) {
@@ -305,11 +305,11 @@ static int buffered_rx_char(kduart_port_t *channel) {
      channel->rx_count--;
      if ((channel->rx_count == LOW_WATER_MARK) && (channel->rts_asserted == NO)) {
         // ReAssert RTS
-        *duart_opr_set = 0x21; // channel->rts_bit;
+        *duart_opr_set = channel->rts_bit;
         channel->rts_asserted = YES;
      }
 
-     *pit_padr = ~channel->rx_count;
+    //  *pit_padr = ~channel->rx_count;
 
      UNLOCK(sr);
 

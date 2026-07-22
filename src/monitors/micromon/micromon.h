@@ -24,6 +24,8 @@ SOFTWARE.
 
 #pragma once
 
+#include <setjmp.h>
+
 #define MAX_LINE 512
 #define MAX_ARGS 32
 
@@ -46,11 +48,6 @@ struct ds1307_time {
 typedef struct ds1307_time ds1307_time_t;
 
 
-// go_cmd.c
-extern uint32_t go_address;
-void handle_go_command(int argc, char *argv[]);
-
-
 // ds1307.c
 int ds1307_read(int addr, uint8_t *buf, size_t num_bytes);
 int ds1307_write(int addr, uint8_t *buf, size_t num_bytes);
@@ -70,6 +67,12 @@ void handle_dump_command(int argc, char *argv[]);
 
 // eval_cmd.c
 void handle_eval_command(int argc, char *argv[]);
+
+
+// go_cmd.c
+extern uint32_t go_address;
+extern jmp_buf go_env;
+void handle_go_command(int argc, char *argv[]);
 
 
 // i2c.c
@@ -121,7 +124,8 @@ void handle_rtc_command(int argc, char *argv[]);
 
 
 // syscall.asm
-unsigned int trap0_handler(int call_num, int arg1, int arg2);
+unsigned int trap0_handler(int call_num, int arg1, int arg2, int arg3);
+unsigned int trap14_handler(int call_num, int arg1, int arg2);
 
 
 // usb_cmd.c
