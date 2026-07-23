@@ -26,16 +26,7 @@ SOFTWARE.
 #include <machine.h>
 
 int putchar(int c) {
-#if 0
-  if (c == '\n') {
-    fputc('\r', stdout);
-  }
+    do_trap0(BIOS_PUTCHAR, 0, c, 0);
 
-  fputc(c, stdout);
-  return c;
-#else
-  bios_call(BIOS_PUTCHAR, 0, c, 0);
-
-  return c;
-#endif
+    return c;
 }

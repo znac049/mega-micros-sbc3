@@ -96,6 +96,9 @@ extern volatile uint8_t bus_error_flag;
 int detect_cpu_type(void);
 int measure_cpu_clock(void);
 
+// crt0.asm
+int do_trap0(uint32_t syscall_num, uint32_t arg1, uint32_t arg2, uint32_t arg3);
+
 // bios_call.c
 int bios_call(int call_num, int arg1, int arg2, int arg3);
 

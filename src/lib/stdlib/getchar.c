@@ -25,15 +25,9 @@ SOFTWARE.
 #include <machine.h>
 
 int getchar(void) {
-#if 0
-    int c = fread(&c, 1, 1, stdin);
-
-    return c;
-#else
-    return bios_call(BIOS_GETCHAR, 0, 0, 0);
-#endif
+    return do_trap0(BIOS_GETCHAR, 0, 0, 0);
 }
 
 int char_available(void) {
-    return bios_call(BIOS_CHAR_AVAILABLE, 0, 0, 0);
+    return do_trap0(BIOS_CHAR_AVAILABLE, 0, 0, 0);
 }

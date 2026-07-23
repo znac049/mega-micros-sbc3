@@ -30,7 +30,6 @@ int puts(const char *str) {
     putchar(*str++);
   }
   
-  putchar('\r');
   putchar('\n');
 
   return 0;

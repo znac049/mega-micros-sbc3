@@ -26,5 +26,5 @@ SOFTWARE.
 #include <machine.h>
 
 void exit(int code) {
-    bios_call(BIOS_EXIT, code, 0, 0);
+    do_trap0(BIOS_EXIT, code, 0, 0);
 }

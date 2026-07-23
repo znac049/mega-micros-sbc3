@@ -71,7 +71,7 @@ lj_ok
 		movea.l offs_sp(a6),a0
 		movea.l a0,sp 						; restore the stack pointer     
 
-		movea.l ofs_ra(a6),a0
+		movea.l offs_ra(a6),a0
 		move.l	a0,-(sp);					; push the return address
 
 		move.w  offs_sr(a6),ccr				; Restore CCR

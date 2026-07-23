@@ -36,20 +36,32 @@ ibdone:
 ;	bsr		pre_main
 
 ; invoke main() 
+	move.l	4(sp),d0		; pass argc, argv to main()
+	move.l	8(sp),d1
+	movem.l	d0-d1,-(sp)
 	bsr	    main
 ; bra     done
 
 ; exit::
 ; 	move.l  4(sp),d0		; grab exit code
 ; done:
-	move.l  d0,-(sp)
+;	move.l  d0,-(sp)
 ;	bsr		post_main
-	move.l  (sp)+,d0
+;	move.l  (sp)+,d0
 
 ; ...and pass control to the monitor
 	rts
 
 
+; usage: do_trap0(syscall_number, arg1, arg2, arg)
+;
+do_trap0::
+	trap #0
+	rts
+
+
+; usage: get_heap_start()
+;
 get_heap_start::
 	move.l	a0,-(sp)
 	lea		_bss_end,a0
