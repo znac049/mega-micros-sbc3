@@ -51,6 +51,7 @@ LIBOBJECTS=$(DIR)/atoi.o \
 			$(DIR)/strcpy.o \
 			$(DIR)/streams.o \
 			$(DIR)/strlen.o \
+			$(DIR)/strncat.o \
 			$(DIR)/strncpy.o \
 			$(DIR)/strrchr.o \
 			$(DIR)/strtol.o \
