@@ -37,7 +37,7 @@ SOFTWARE.
 
 static int major = 0;
 static int minor = 3;
-static int MAGIC_BUILD_NUMBER = 155;
+static int MAGIC_BUILD_NUMBER = 215;
 
 // Link time variables
 extern uint32_t _d_start, _data_load_start, _data_length;
@@ -45,6 +45,28 @@ extern uint32_t _pretext_start, _postinit_end;
 extern uint32_t _code_start, _code_end;
 extern uint32_t _rodata_start, _rodata_end;
 extern uint32_t _bss_start, _bss_end;
+
+
+void handle_zob_command(int argc, char *argv[]);
+void print_help(int argc, char *argv[]);
+
+static command_t commands[] = {
+    {"help",        2, print_help},
+    {"disassemble", 3, handle_disasm_command},
+    {"dump",        2, handle_dump_command},
+    {"eval",        2, handle_eval_command},
+    {"go",          0, handle_go_command},
+    {"load",        2, handle_load_command},
+    {"probe",       3, handle_probe_command},
+    {"rtc",         3, handle_rtc_command},
+    {"usb1",        0, handle_usb_command},
+    {"usb2",        0, handle_usb_command},
+    {"zob",         0, handle_zob_command},
+};
+
+#define NUM_COMMANDS (sizeof(commands)/sizeof(command_t))
+
+static char *jumper_txt[6] = {"TxA EN", "TxB EN", "XR EN", "EMU Boot", "DIAG EN", "ACRTC MODE"};
 
 static void pr_section(const char *name, uint32_t start, uint32_t end) {
     kprintf("%15s 0x%06x   0x%06x   %d\n", name, start, end, end-start);
@@ -70,6 +92,7 @@ void setup(void) {
     uint8_t *ram_end = (uint8_t *)0x3fffff; //get_ram_size();
     uint8_t jumpers;
     int is_xr;
+    int list_started = NO;
 
     *pit_tivr = PIT_VECTOR_NUMBER;
     _claim_pit();
@@ -111,7 +134,17 @@ void setup(void) {
     kprintf   ("data   0x%06x   0x%06x               <-- relocated from 0x%08x\n", 
         (uint32_t)&_d_start, (uint32_t)&_d_start + (uint32_t)&_data_length, (uint32_t)&_data_load_start);
 
-    kprintf("\nJumpers JB2: 0x%02x\n\n", jumpers);
+    kprintf("\nJumpers JB2: ");
+    for (int i=0; i<6; i++) {
+        if (jumpers & (1<<i)) {
+            if (list_started == YES) {
+                kprintf(", ");
+            }
+            kprintf("%s", jumper_txt[i]);
+            list_started = YES;
+        }
+    }
+    kprintf("\n\n");
 }
 
 bool_t is_command(const char *cmd, const char *target, int min_target_len) {
@@ -143,6 +176,21 @@ bool_t is_blank(const char *str) {
     }
 
     return YES;
+}
+
+void print_help(int argc, char *argv[]) {
+    argc--;
+    argv++;
+
+    kprintf("Commands are:\n");
+    kprintf("  dump [<start_address> [<count>]]\n");
+    kprintf("  eval <expression>\n");
+    kprintf("  go <address>]\n");
+    kprintf("  load\n");
+    kprintf("  probe\n");
+    kprintf("  rtc (erase) | (time [hh:mm[:ss]]) | (date [yyyy:mm:dd])\n");
+    kprintf("  usb1|2 baud <baudrate>\n");
+    kprintf("  quit\n\n");
 }
 
 void handle_zob_command(int argc, char *argv[]) {
@@ -185,49 +233,19 @@ void handle_command(int argc, char *argv[]) {
 
     argc += 0;
 
-    if (is_blank(cmd) == NO) {
-        if (is_command(cmd, "quit", 1) == YES) {
-            kprintf("\nYou can't quit from the monitor!.\n");
-        }
-        else if (is_command(cmd, "help", 2) == YES) {
-            kprintf("Commands are:\n");
-            kprintf("  dump [<start_address> [<count>]]\n");
-            kprintf("  eval <expression>\n");
-            kprintf("  go <address>]\n");
-            kprintf("  load\n");
-            kprintf("  probe\n");
-            kprintf("  rtc (erase) | (time [hh:mm[:ss]]) | (date [yyyy:mm:dd])\n");
-            kprintf("  usb1|2 baud <baudrate>\n");
-            kprintf("  quit\n\n");
-        }
-        else if (is_command(cmd, "dump", 2) == YES) {
-            handle_dump_command(argc, argv);
-        }
-        else if (is_command(cmd, "go", 2) == YES) {
-            handle_go_command(argc, argv);
-        }
-        else if (is_command(cmd, "eval", 2) == YES) {
-            handle_eval_command(argc, argv);
-        }
-        else if (is_command(cmd, "load", 2) == YES) {
-            handle_load_command(argc, argv);
-        }
-        else if (is_command(cmd, "probe", 2) == YES) {
-            handle_probe_command(argc);
-        }
-        else if (is_command(cmd, "rtc", 2) == YES) {
-            handle_rtc_command(argc, argv);
-        }
-        else if ((is_command(cmd, "usb1", 0) == YES) || (is_command(cmd, "usb2", 0) == YES)) {
-            handle_usb_command(argc, argv);
-        }
-        else if (is_command(cmd, "zob", 2) == YES) {
-            handle_zob_command(argc, argv);
-        }
-        else {
-            kprintf("Unrecognised command.\n");
+    if (is_blank(cmd) == YES) {
+        return;
+    }
+
+    for (unsigned int i=0; i<NUM_COMMANDS; i++) {
+        if (is_command(cmd, commands[i].command, commands[i].min_required) == YES) {
+            // call the handler
+            commands[i].handler(argc, argv);
+            return;
         }
     }
+
+    kprintf("'%s': Unrecognised command.\n", argv[0]);
 }
 
 void main(void) {

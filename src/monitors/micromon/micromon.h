@@ -47,6 +47,18 @@ struct ds1307_time {
 
 typedef struct ds1307_time ds1307_time_t;
 
+struct command {
+    const char *command;
+    int min_required;
+    void (*handler)();
+};
+
+typedef struct command command_t;
+
+
+// diasm_cmd.c
+void handle_disasm_command(int argc, char *argv[]);
+
 
 // ds1307.c
 int ds1307_read(int addr, uint8_t *buf, size_t num_bytes);

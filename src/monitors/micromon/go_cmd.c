@@ -37,42 +37,78 @@ uint32_t go_address = 0x40000;
 
 jmp_buf go_env;
 
+static int do_the_business(int argc, char *argv[]) {
+    int (*fn)(const int, const char *[]) = (int (*)(const int, const char *[]))go_address;
+    int go_res;
+    
+    go_res = setjmp(go_env);
+    if (go_res == 0) {
+        int return_code;
+    
+        // First call - invoke the user program
+        kprintf("Launching code at 0x%08x\n", go_address);
+        return_code = fn(argc, (const char **)argv);
+        if (return_code) {
+            kprintf("\n---\nUser code exited with %d\n", return_code);
+        }
+        else {
+            kprintf("\n---\nExited.\n");
+        }
+
+        return return_code;
+    }
+    else {
+        // If we arrive here, it's because something has gone wrong
+        kprintf("\n---\nUser code exited with code %d\n", go_res-1);
+
+        return go_res - 1;
+    }
+}
+
 void handle_go_command(int argc, char *argv[]) {
     long val;
     expr_error_t res;
     int error_pos;
-    register const char *cmd = argv[1];
-    int exit_code = 0;
-    int (*fn)(void);
-    int go_res;
 
-
-    if ((argc == 2) && is_command(cmd, "help", 2) == YES) {
-        kprintf("usage:\n");
-        kprintf("  go [<address>]       run code.\n");
-        return;
+    kprintf("Args are:\n");
+    for (int i=0; i<argc; i++) {
+        kprintf("%d: '%s'\n", i, argv[i]);
     }
-    else if (argc == 2) {
-        res = expr_evaluate(argv[1], &val, &error_pos);
-        if (res != EXPR_OK) {
-            kprintf("Couldn't evaluate expression: '%s'\n", argv[1]);
-            return;
+
+    // Lose the 'go' arg
+    argc--;
+    argv++;
+
+    /* 
+     * Possibilities:
+     *   go
+     *   go <address>
+     *   go -- <args>
+     *   go <address> <args>
+     */
+    if (argc >= 1) {
+        if (strcmp(argv[0], "--") == 0) {
+            argc--;
+            argv++;
         }
+        else {
+            // if it evaluates successfully, assume its a start address
+            res = expr_evaluate(argv[1], &val, &error_pos);
+            // If it didn't evaluate, assume it's part of the program's arguments
+            if (res == EXPR_OK) {
+                // We're treating it as the start address, so don't pass it to the user code
+                argc--;
+                argv++;
 
-        go_address = val;
-    }
-
-    go_res = setjmp(go_env);
-    if (go_res == 0) {
-        // First call - invoke the user program
-        kprintf("Launching code at 0x%08x\n", go_address);
-        fn = (int (*)(void))go_address;
-        exit_code = fn();
-        if (exit_code) {
-            kprintf("Code exited with %d\n", exit_code);
+                go_address = val;
+            }
         }
     }
-    else {
-        kprintf("User code failed with code %d\n", go_res);
+
+    kprintf("Calling with ArgC=%d:\n", argc);
+    for (int i=0; i<argc; i++) {
+        kprintf("%d: '%s'\n", i, argv[i]);
     }
+
+    do_the_business(argc, argv);
 }
