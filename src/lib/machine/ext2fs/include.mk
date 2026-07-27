@@ -1,24 +1,13 @@
-LIB=machine
-
-SUBDIR := $(shell dirname $(lastword $(MAKEFILE_LIST)))
-
 LIBOBJECTS := $(LIBOBJECTS) \
-			$(SUBDIR)/blocks.o \
-			$(SUBDIR)/dir.o \
-			$(SUBDIR)/dump.o \
-			$(SUBDIR)/endian.o \
-			$(SUBDIR)/ext2.o \
-			$(SUBDIR)/file.o
+			blocks.o \
+			dir.o \
+			dump.o \
+			endian.o \
+			ext2.o \
+			file.o
 
-LIBINCLUDES=$(SUBDIR)/include
+LIBINCLUDES=$(DIR)/include
 
-# UPPERLIB := $(shell echo $(LIB) | tr '[:lower:]' '[:upper:]')
-# BINARY := lib$(LIB).a
+DIR := $(shell dirname $(lastword $(MAKEFILE_LIST)))
 CFLAGS  := $(CFLAGS) -I$(LIBINCLUDES)
 OBJECTS := $(OBJECTS) $(LIBOBJECTS)
-# INCLUDES := $(INCLUDES) $(SUBDIR)/include/*
-# LIBS := $(LIBS) $(DIR)/$(BINARY)
-
-$(DIR)/$(BINARY): $(LIBOBJECTS)
-	$(AR) $(ARFLAGS) rs $@ $^
-	$(RANLIB) $@

@@ -32,55 +32,85 @@ MKDIR_P=mkdir -p
 CP_R=cp -r
 
 INSTALL_DIR=$(MEGA_MICROS_DIR)/built
-INSTALL_LIB=$(INSTALL_DIR)/lib
-INSTALL_INC=$(INSTALL_DIR)/include
 
-UBERLIB=libmega.a
+ifeq ($(BAREMETAL),true)
+INSTALL_LIB=$(INSTALL_DIR)/lib/bare
+SCRIPT_DIR=../link_scripts/bare
+INSTALL_INC=$(INSTALL_DIR)/include
+OBJ_DIR=bare/
+DEFINES += -DBAREMETAL
+CRT0_OBJS=crt0.o rom_crt0.o
+else
+INSTALL_LIB=$(INSTALL_DIR)/lib/bios
+SCRIPT_DIR=../link_scripts/bios
+INSTALL_INC=$(INSTALL_DIR)/include
+OBJ_DIR=bios/
+DEFINES += -DUSEBIOS
+CRT0_OBJS=crt0.o
+endif
+
+TARGET_LIB=libmega.a
+USERLIB=$(OBJ_DIR)libmega.a
 
 # Avoid plain "make" building only the first target encountered, causing confusion
 decoy: all
 	@echo Please use \"make all\" to build all the libraries.
+
+VPATH = machine stdlib nonstdlib 
 
 include machine/include.mk
 include stdlib/include.mk
 include crt0/include.mk
 include nonstdlib/include.mk
 
-# Keep this at the end, or it'll error out _sometimes_ and we don't really know why...
-#include printf/include.mk
+$(info VPATH is $(VPATH))
 
-%.o : %.c
+ALL_OBJS += $(addprefix $(OBJ_DIR),$(OBJECTS))
+
+$(OBJ_DIR)%.o : %.c
 	$(CC) -c $(CFLAGS) $(EXTRA_CFLAGS) -o $@ $<
 
-%.o : %.cpp
+$(OBJ_DIR)%.o : %.cpp
 	$(CXX) -c $(CXXFLAGS) $(EXTRA_CXXFLAGS) -o $@ $<
 
-%.o : %.S
+$(OBJ_DIR)%.o : %.S
 	$(AS) $(ASFLAGS) -o $@ $<
 
-%.o : %.asm
+$(OBJ_DIR)%.o : %.asm
 	$(VASM) $(VASMFLAGS) -o $@ $<
 
-.PHONY: all install clean clobber decoy
+.PHONY: all bare bios build install actual_install clean actual_clean decoy 
 
-all: $(UBERLIB) $(LIBS)
+all: bare bios
 
-$(UBERLIB): $(filter-out **/printf-*.o, $(OBJECTS))
+build: $(USERLIB) $(ALL_OBJS) $(CRT0_OBJS)
+
+
+bare: $(USERLIB)
+	make build BAREMETAL=true
+
+bios:
+	make build BAREMETAL=false
+
+$(USERLIB): $(ALL_OBJS)
 	$(AR)	$(ARFLAGS) rs $@ $^
 	$(RANLIB) $@
 
-install: $(UBERLIB) $(LIBS)
+actual_install: $(USERLIB)
 	$(MKDIR_P) $(INSTALL_INC)
 	$(MKDIR_P) $(INSTALL_LIB)
 	$(MKDIR_P) $(INSTALL_DIR)/ld
 	$(CP_R) $(INCLUDES) $(INSTALL_INC)
-	$(CP_R) $(LIBS) $(INSTALL_LIB)
-	$(CP_R) $(UBERLIB) $(INSTALL_LIB)
-	$(CP_R) ../link_scripts/* $(INSTALL_DIR)/ld
+	$(CP_R) $(USERLIB) $(INSTALL_LIB)
+	$(CP_R) $(SCRIPT_DIR)/* $(INSTALL_LIB)
 
-clean: 
-	$(RM_F) $(OBJECTS) $(LIBS) $(UBERLIB)
+install:
+	make actual_install BAREMETAL=true
+	make actual_install BAREMETAL=false
 
-clobber: clean
-	$(RM_RF)	$(INSTALL_DIR)
+clean:
+	make actual_clean BAREMETAL=true
+	make actual_clean BAREMETAL=false
 
+actual_clean: 
+	$(RM_F) $(ALL_OBJS) $(USERLIB)

@@ -1,78 +1,77 @@
 LIB=stdlib
-LIBOBJECTS=$(DIR)/atoi.o \
-			$(DIR)/atol.o \
-			$(DIR)/asctime.o \
-			$(DIR)/chdir.o \
-			$(DIR)/close.o \
-			$(DIR)/ctime.o \
-			$(DIR)/err.o \
-			$(DIR)/errno.o \
-			$(DIR)/exit.o \
-			$(DIR)/fclose.o \
-			$(DIR)/fflush.o \
-			$(DIR)/fgetc.o \
-			$(DIR)/fgets.o \
-			$(DIR)/fprintf.o \
-			$(DIR)/fputc.o \
-			$(DIR)/fputs.o \
-			$(DIR)/fread.o \
-			$(DIR)/fwrite.o \
-			$(DIR)/getchar.o \
-			$(DIR)/getenv.o \
-			$(DIR)/gets.o \
-			$(DIR)/gmtime.o \
-			$(DIR)/isalnum.o \
-			$(DIR)/isalpha.o \
-			$(DIR)/isatty.o \
-			$(DIR)/isblank.o \
-			$(DIR)/isdigit.o \
-			$(DIR)/isspace.o \
-			$(DIR)/isxdigit.o \
-			$(DIR)/itoa.o \
-			$(DIR)/localtime.o \
-			$(DIR)/malloc.o \
-			$(DIR)/memcpy.o \
-			$(DIR)/memset.o \
-			$(DIR)/mktime.o \
-			$(DIR)/open.o \
-			$(DIR)/printf.o \
-			$(DIR)/putchar.o \
-			$(DIR)/puts.o \
-			$(DIR)/rand.o \
-			$(DIR)/read.o \
-			$(DIR)/setjmp.o \
-			$(DIR)/snprintf.o \
-			$(DIR)/srand.o \
-			$(DIR)/sscanf.o \
-			$(DIR)/strcat.o \
-			$(DIR)/strchr.o \
-			$(DIR)/strcasecmp.o \
-			$(DIR)/strcmp.o \
-			$(DIR)/strcpy.o \
-			$(DIR)/streams.o \
-			$(DIR)/strlen.o \
-			$(DIR)/strncat.o \
-			$(DIR)/strncpy.o \
-			$(DIR)/strrchr.o \
-			$(DIR)/strtol.o \
-			$(DIR)/tolower.o \
-			$(DIR)/toupper.o \
-			$(DIR)/vfprintf.o \
-			$(DIR)/vsnprintf.o \
-			$(DIR)/vsscanf.o \
-			$(DIR)/warn.o \
-			$(DIR)/write.o
+LIBOBJECTS=atoi.o \
+			atol.o \
+			asctime.o \
+			chdir.o \
+			close.o \
+			ctime.o \
+			err.o \
+			errno.o \
+			exit.o \
+			fclose.o \
+			fflush.o \
+			fgetc.o \
+			fgets.o \
+			fprintf.o \
+			fputc.o \
+			fputs.o \
+			fread.o \
+			fwrite.o \
+			getchar.o \
+			getenv.o \
+			gets.o \
+			gmtime.o \
+			isalnum.o \
+			isalpha.o \
+			isatty.o \
+			isblank.o \
+			isdigit.o \
+			isspace.o \
+			isxdigit.o \
+			itoa.o \
+			localtime.o \
+			malloc.o \
+			memcpy.o \
+			memset.o \
+			mktime.o \
+			open.o \
+			printf.o \
+			putchar.o \
+			puts.o \
+			rand.o \
+			read.o \
+			setjmp.o \
+			snprintf.o \
+			srand.o \
+			sscanf.o \
+			strcat.o \
+			strchr.o \
+			strcasecmp.o \
+			strcmp.o \
+			strcpy.o \
+			streams.o \
+			strlen.o \
+			strncat.o \
+			strncpy.o \
+			strrchr.o \
+			strtol.o \
+			tolower.o \
+			toupper.o \
+			vfprintf.o \
+			vsnprintf.o \
+			vsscanf.o \
+			warn.o \
+			write.o
 
 LIBINCLUDES=$(DIR)/include
 
-# ---===---
 DIR := $(shell dirname $(lastword $(MAKEFILE_LIST)))
-BINARY := lib$(LIB).a
+#BINARY := lib$(LIB).a
 CFLAGS  := $(CFLAGS) -I$(LIBINCLUDES) 
 OBJECTS := $(OBJECTS) $(LIBOBJECTS)
 INCLUDES := $(INCLUDES) $(DIR)/include/*
-LIBS := $(LIBS) $(DIR)/$(BINARY)
+#LIBS := $(LIBS) $(DIR)/$(BINARY)
 
-$(DIR)/$(BINARY): $(LIBOBJECTS)
-	$(AR) $(ARFLAGS) rs $@ $^
-	$(RANLIB) $@
+#$(DIR)/$(BINARY): $(LIBOBJECTS)
+#	$(AR) $(ARFLAGS) rs $@ $^
+#	$(RANLIB) $@

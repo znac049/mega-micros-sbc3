@@ -16,13 +16,27 @@ TUNE?=$(CPU)
 REMOTE_USER=bob@192.168.1.76
 REMOTE_DIR=OneDrive/1_Srec
 
+# We can build for bare metal or for bios
+BAREMETAL?=false
+
+ifeq ($(BAREMETAL),true)
 SYSINCDIR?=$(MEGA_MICROS_DIR)/built/include
-SYSLIBDIR?=$(MEGA_MICROS_DIR)/built/lib -L$(MEGA_MICROS_DIR)/built/ld
+SYSLIBDIR?=$(MEGA_MICROS_DIR)/built/lib/bare
 
-LDSCRIPT?=$(MEGA_MICROS_DIR)/built/ld/program.ld
-ROM_LDSCRIPT?=$(MEGA_MICROS_DIR)/built/ld/rom_program.ld
+LDSCRIPT?=$(MEGA_MICROS_DIR)/built/lib/bare/program.ld
+ROM_LDSCRIPT?=$(MEGA_MICROS_DIR)/built/lib/bare/rom_program.ld
 
-DEFINES=
+DEFINES=-DBAREMETAL
+else
+SYSINCDIR?=$(MEGA_MICROS_DIR)/built/include
+SYSLIBDIR?=$(MEGA_MICROS_DIR)/built/lib/bios
+
+LDSCRIPT?=$(MEGA_MICROS_DIR)/built/lib/bios/program.ld
+ROM_LDSCRIPT?=none
+
+DEFINES=-DUSEBIOS
+endif
+
 FLAGS=-ffreestanding -ffunction-sections -fdata-sections -fomit-frame-pointer	\
       -Wall -Wextra -Werror -Wno-unused-function -pedantic -I$(SYSINCDIR)			\
       -mcpu=$(CPU) -march=$(ARCH) -mtune=$(TUNE) -msoft-float -g -O2 $(DEFINES)
@@ -172,5 +186,8 @@ dump: $(BINARY)
 install: all
 	scp $(SREC) $(REMOTE_USER):$(REMOTE_DIR)
 
+zob:
+	echo BAREMETAL is $(BAREMETAL)
+
 # Makefile magic (for "phony" targets that are not real files)
-.PHONY: all rom clean disasm dump install
+.PHONY: all rom clean disasm dump install zob
