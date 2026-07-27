@@ -14,9 +14,16 @@ int vsnprintf(char *str, size_t size, const char *format, va_list ap)
 			char type;
 			char width = 0;
 			char zeropad = 0;
+			char rightpad = 0;
 			char numprefix = 0;
 			char length = sizeof(unsigned int);
 
+			// left or right padding?
+			if (format[j + 1] == '-') {
+				rightpad = 1;
+				j += 1;
+			}
+			
 			// Should it be zero padding or spaces
 			if (format[j + 1] == '0') {
 				zeropad = 1;
@@ -64,8 +71,27 @@ int vsnprintf(char *str, size_t size, const char *format, va_list ap)
 
 					s = va_arg(ap, const char *);
 					len = strlen(s);
+
+					if (width && (len < width)) {
+						if (!rightpad) {
+							// Padding before the string
+							for (int x=len; x<width; x++, i++) {
+								str[i] = ' ';
+							}
+						}
+					}
+
 					strncpy(&str[i], s, size - i - 1);
 					i += len;
+
+					if (width && (len < width)) {
+						if (rightpad) {
+							// Padding after the string
+							for (int x=len; x<width; x++, i++) {
+								str[i] = ' ';
+							}
+						}
+					}
 					break;
 			    }
 
@@ -91,7 +117,7 @@ int vsnprintf(char *str, size_t size, const char *format, va_list ap)
 					if (type == 'x' || type == 'X' || type == 'p') {
 						if (numprefix && d) {
 							str[i++] = '0';
-							str[i++] = 'x';
+							str[i++] = (type == 'x')?'x':'X';
 						}
 						radix = 16;
 					} else if (type == 'o') {
@@ -100,7 +126,7 @@ int vsnprintf(char *str, size_t size, const char *format, va_list ap)
 						radix = 8;
 					}
 
-					itoa_padded(d, &str[i], radix, width, zeropad, type == 'd' ? 1 : 0);
+					itoa_padded(d, &str[i], radix, width, zeropad, type == 'd' ? 1 : 0, type == 'x' ? 'a' : 'A');
 					i += strlen(&str[i]);
 					break;
 			    }
@@ -114,10 +140,10 @@ int vsnprintf(char *str, size_t size, const char *format, va_list ap)
 					d = va_arg(ap, double);
 					intpart = (long int)d;
 					floatpart = (d - intpart) * 100000000;
-					itoa_padded(intpart, &str[i], 10, width, zeropad, 1);
+					itoa_padded(intpart, &str[i], 10, width, zeropad, 1, 0);
 					i += strlen(&str[i]);
 					str[i++] = '.';
-					itoa_padded(floatpart, &str[i], 10, width, 1, 1);
+					itoa_padded(floatpart, &str[i], 10, width, 1, 1, 0);
 					break;
 				}
 

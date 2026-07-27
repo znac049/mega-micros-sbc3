@@ -35,7 +35,7 @@ char *getenv(const char *name);
 void heap_print_free(void);
 char *itoa(unsigned int value, char *string, int base);
 void _init_heap(void);
-char *itoa_padded(unsigned int value, char *string, int base, char width, char zeropad, char is_signed);
+char *itoa_padded(unsigned int value, char *string, int base, char width, char zeropad, char is_signed, char ten_char);
 void *malloc(size_t size);
 void free(void *ptr);
 int rand(void);

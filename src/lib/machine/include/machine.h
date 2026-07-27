@@ -85,8 +85,9 @@ typedef short lock_state_t;
 #define BIOS_GETCHAR		1
 #define BIOS_CHAR_AVAILABLE	2
 #define BIOS_EXIT			3
+#define BIOS_TICKS			4
 
-#define NUM_BIOS_CALLS		4
+#define NUM_BIOS_CALLS		5
 
 extern uint8_t running_in_rom;
 extern uint8_t cpu_type;

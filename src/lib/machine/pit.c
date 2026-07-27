@@ -29,21 +29,21 @@ SOFTWARE.
 static unsigned int saved_pit_isr=0;
 static unsigned int saved_pit_counter=0;
 
-static volatile unsigned int pit_ticks = 0;
-static volatile unsigned int seconds_ticks = 0;
+volatile unsigned int pit_ticks = 0;
+volatile unsigned int seconds_ticks = 0;
 
 static uint8_t pit_port_a = 0;
 static uint8_t pit_port_b = 0;
 
 ISR pit_isr_handler(void) {
-    static uint8_t zob = 0;
+    static uint8_t led_blink_counter = 0;
 
     pit_ticks++;
     seconds_ticks++;
 
 
     if (seconds_ticks > 1000) {
-        if (zob & 1) {
+        if (led_blink_counter & 1) {
             *duart_opr_set = 128;
         }
         else {
@@ -51,7 +51,7 @@ ISR pit_isr_handler(void) {
         }
 
         seconds_ticks = 0;
-        zob++;
+        led_blink_counter++;
     }
 
     *pit_tsr = 1;
@@ -86,7 +86,11 @@ void _release_pit(void) {
 }
 
 uint32_t ticks(void) {
+#if defined(BAREMETAL)
     return pit_ticks;
+#else
+    return trap0(BIOS_TICKS, 0, 0, 0);
+#endif
 }
 
 uint32_t reset_ticks(void) {

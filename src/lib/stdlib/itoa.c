@@ -1,10 +1,11 @@
 #include <stdlib.h>
 
-char *itoa_padded(unsigned int value, char *string, int base, char width, char zeropad, char is_signed) {
+char *itoa_padded(unsigned int value, char *string, int base, char width, char zeropad, char is_signed, char ten_char) {
 	char c;
 	int i = 0;
 	int j = 0;
 	int sign = 0;
+	int fudge = ten_char - '9' - 1;
 
 	if (is_signed && ((signed int) value) < 0) {
 		sign = 1;
@@ -14,7 +15,7 @@ char *itoa_padded(unsigned int value, char *string, int base, char width, char z
 	do {
 		string[i] = (value % base) + '0';
 		if (string[i] > '9')
-			string[i] += 0x07;
+			string[i] += fudge;
 		value /= base;
 		i++;
 	} while (value > 0);
@@ -39,6 +40,6 @@ char *itoa_padded(unsigned int value, char *string, int base, char width, char z
 }
 
 char *itoa(unsigned int value, char *string, int base) {
-	return itoa_padded(value, string, base, 0, 0, base == 10 ? 1 : 0);
+	return itoa_padded(value, string, base, 0, 0, base == 10 ? 1 : 0, 'a');
 }
 

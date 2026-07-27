@@ -99,6 +99,8 @@ SOFTWARE.
 #define ISR_TX_READY    0x01
 #define ISR_RX_READY    0x02
 
+#define ACR_CK_DIV_16 0x30
+
 struct duart_port {
     volatile uint8_t *mode_regs;
     volatile uint8_t *sr_csr_reg;

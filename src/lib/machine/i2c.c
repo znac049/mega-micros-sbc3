@@ -217,3 +217,14 @@ void write_register(unsigned char slave_addr, unsigned char reg, unsigned char d
     }
     i2c_stop();
 }
+
+int i2c_probe(uint8_t addr7) {
+    int ack;
+ 
+    i2c_start();
+    ack = (i2c_write_byte((uint8_t)(addr7 << 1)) == 0);   /* address + W bit */
+    i2c_stop();
+ 
+    return ack;
+}
+ 
