@@ -68,6 +68,7 @@ trap0_call_table::
         dc.l    bios_getchar
         dc.l    bios_char_available
         dc.l    bios_exit
+        dc.l    bios_ticks
 t0ct_end     
 
         end

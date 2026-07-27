@@ -188,7 +188,7 @@ static int set_baud(kduart_port_t *channel, uint32_t baud) {
     }
 
     // Select baud rate table 0 or 1
-    *channel->acr_reg = acr;
+    *channel->acr_reg = acr | ACR_CK_DIV_16;
     *channel->sr_csr_reg = (table_offset << 4) | table_offset;  // Same for Tx and Rx
 
     return OK;

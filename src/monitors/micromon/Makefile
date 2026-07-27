@@ -4,6 +4,8 @@ endif
 
 .PHONY: first inc_build
 
+BAREMETAL=true
+
 first: inc_build rom
 	$(OBJCOPY) -O binary $(ROM_ELF) $(PROGRAM_BASENAME)_rom.bin
 	scp $(PROGRAM_BASENAME)_rom.bin $(REMOTE_USER):$(REMOTE_DIR)

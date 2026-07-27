@@ -1552,8 +1552,8 @@ static int disasm_single_instruction(void) {
 
     print_hexbytes(start, disasm_context.pos, hex_bytes, sizeof(hex_bytes));
 
-    // kprintf("$%08x  %-24s%-8s%s\n", pc, hex_bytes, insn.mnem, insn.ops);
-    kprintf("$%08x  %s %s%s\n", pc, hex_bytes, insn.mnem, insn.ops);
+    kprintf("%06x  %-24s%-8s%s\n", pc, hex_bytes, insn.mnem, insn.ops);
+    // kprintf("$%08x  %s %s%s\n", pc, hex_bytes, insn.mnem, insn.ops);
 
     return OK;
 }
