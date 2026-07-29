@@ -196,6 +196,8 @@ static int set_baud(kduart_port_t *channel, uint32_t baud) {
 
 /* Channel independent config */
 static inline void init_duart_channel(kduart_port_t *channel) {
+    uint32_t baud = 38400;
+
     *channel->cmd_reg = CR_RESET_MR_PTR;
     NOP();
     *channel->cmd_reg = CR_RESET_TX;
@@ -223,7 +225,11 @@ static inline void init_duart_channel(kduart_port_t *channel) {
     channel->rts_asserted = YES;
 
     // *channel->sr_csr_reg = 0x88;        // Baud rate: 230400
-    if (set_baud(channel, 230400) == NOT_OK) {
+    if (duart.is_xr68c681) {
+        baud = (duart.clock_doubled)?230400:115200;
+    }
+
+    if (set_baud(channel, baud) == NOT_OK) {
         if (set_baud(channel, 9600) == NOT_OK) {
             *channel->sr_csr_reg = 0x88;
         }
@@ -252,13 +258,52 @@ static void init_duart_structures(void) {
     channel_b.rts_bit = 2;
 }
 
-void setup_duart(int is_xr, int clk_dbl) {
+static inline void set_counter(uint16_t val) {
+    *duart_ctur = (val>>8);
+    *duart_ctlr = (val&0xff);
+}
+
+static inline uint16_t get_counter(void) {
+    register uint16_t hi = *duart_cur;
+    register uint16_t lo = *duart_clr;
+
+    return (hi << 8) | lo;
+}
+
+static int is_clock_doubled(void) {
+    uint8_t x =*duart_stop_counter;
+    uint32_t now = ticks();
+    uint32_t target = now + 100;
+
+    uint16_t count;
+
+    (void)x;
+
+    set_counter(0);
+
+    x = *duart_start_counter;
+    while (ticks() < target) {
+        ;
+    }
+
+    x = *duart_stop_counter;
+    count = (uint16_t)0xffff - get_counter();
+
+    return (count > 44000)?YES:NO; 
+}
+
+
+int duart_clock_doubled(void) {
+    return duart.clock_doubled;
+}
+
+void setup_duart(int is_xr) {
     init_duart_structures();
 
-    *duart_acr = 0x00;  // Baud rate table: set 1
+    *duart_acr = 0x30;  // Baud rate table: set 1, counter is clock/16
 
     duart.is_xr68c681 = is_xr;
-    duart.clock_doubled = clk_dbl;
+    duart.clock_doubled = is_clock_doubled();
 
     // Interrupt handler
     *duart_ivr = DUART_VECTOR_NUMBER;

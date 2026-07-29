@@ -32,11 +32,6 @@ SOFTWARE.
 #include "micromon.h"
 #include "expr.h"
 
-static void do_probe_cmd(void) {
-    get_ram_size();
-}
-
 void handle_probe_command(int argc) {
     kprintf("argc=%d\n", argc);
-    do_probe_cmd();
 }

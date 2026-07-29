@@ -28,37 +28,35 @@ SOFTWARE.
 
 #include "micromon.h"
 
-#define SKIP_SIZE 4096
+#define RAM_MAX ((1024*1024*8)-1)
+#define ONE_MEG (1024*1024)
 
-uint32_t get_ram_size(void) {
-    uint8_t *test_addr = (uint8_t *)SKIP_SIZE;
-    uint8_t *last_good_addr = (uint8_t *)-1;
-    int val;
+static uint16_t check_address(volatile uint16_t *addr) {
+    uint16_t orig = addr[0];
+    uint16_t x,y;
+
+    addr[0] = 0x5555;
+    x = addr[0];
+
+    addr[0] = 0xaaaa;
+    y = addr[0];
     
-    bus_error_flag = 0;
-    val = *test_addr;
+    addr[0] = orig;
 
-    while (bus_error_flag == 0) {
-        last_good_addr = test_addr;
-        test_addr += SKIP_SIZE;
-        val = *test_addr;
-        kprintf("peek(0x%08x) => %d (%d)\n", test_addr, val, bus_error_flag);
-    }
+    return ((x == 0x5555) && (y == 0xaaaa));
+}
 
-    kprintf("Homing in...\n");
-    bus_error_flag = 0;
-    for (int i=0; i<SKIP_SIZE; i++) {
-        val = *last_good_addr;
-        kprintf("peek(0x%08x) => %d (%d)\n", test_addr, val, bus_error_flag);
-
-        if (bus_error_flag) {
-            last_good_addr--;
-
-            return (uint32_t)last_good_addr;
+/*
+ * This isn't as simple as ayttempting to access possible RAM locations and
+ * handling bes error to detect end of RAM as it looks like the CPLD generates
+ * DTACK for the entire 8MB possible ram.
+ */
+uint32_t get_ram_end(void) {
+    for (uint32_t addr=(ONE_MEG-1); addr<=RAM_MAX; addr+=ONE_MEG) {
+        if (check_address((uint16_t *)addr) == 0) {
+            return addr;
         }
-
-        last_good_addr++;
     }
 
-    return (uint32_t)last_good_addr;
+    return 0x007fffff;
 }

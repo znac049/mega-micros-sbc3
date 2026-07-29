@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <stdio.h>
 #include <ctype.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -36,8 +37,17 @@ SOFTWARE.
 #define PAD_COL 45
 
 static int major = 0;
-static int minor = 3;
-static int MAGIC_BUILD_NUMBER = 215;
+static int minor = 4;
+static int MAGIC_BUILD_NUMBER = 265;
+
+uint32_t ram_end;
+bool_t duart_present;
+bool_t pit_present;
+bool_t cf_present;
+bool_t hex_display_present;
+bool_t acrtc3_present;
+bool_t rtc_present;
+bool_t oled_present;
 
 // Link time variables
 extern uint32_t _d_start, _data_load_start, _data_length;
@@ -66,10 +76,30 @@ static command_t commands[] = {
 
 #define NUM_COMMANDS (sizeof(commands)/sizeof(command_t))
 
-static char *jumper_txt[6] = {"TxA EN", "TxB EN", "XR EN", "EMU Boot", "DIAG EN", "ACRTC MODE"};
+static char *jumper_txt[6] = {"TxA_EN", "TxB_EN", "XR_EN", "EMU_Boot", "DIAG_EN", "ACRTC_MODE"};
 
 static void pr_section(const char *name, uint32_t start, uint32_t end) {
-    kprintf("%15s 0x%06x   0x%06x   %d\n", name, start, end, end-start);
+    kprintf("%-8s $%06X-$%06X   %d\n", name, start, end, end-start);
+}
+
+bool_t is_pit_present(void) {
+    int ivr = peek(pit_pivr);
+
+    return (ivr == -1)?NO:YES;
+}
+
+bool_t is_duart_present(void) {
+    int ivr = peek(duart_ivr);
+
+    return (ivr == -1)?NO:YES;
+}
+
+bool_t is_rtc_present(void) {
+    return i2c_probe(DS1307_ADDR);
+}
+
+bool_t is_oled_present(void) {
+    return i2c_probe(SH1107_ADDR);
 }
 
 static void padstr(const char *s, int cols) {
@@ -88,51 +118,23 @@ static void padstr(const char *s, int cols) {
     }
 }
 
-void setup(void) {
-    uint8_t *ram_end = (uint8_t *)0x3fffff; //get_ram_size();
-    uint8_t jumpers;
-    int is_xr;
+void pr_info(const char *msg, uint32_t start, uint32_t end) {
+    padstr(msg, PAD_COL);
+    kprintf(" [ $%06X-$%06X ]\n", start, end);
+}
+
+void pr_i2c(const char *msg, uint8_t addr) {
+    padstr(msg, PAD_COL);
+    kprintf(" [ DEV ID:");
+
+    for (int i=6; i<=0; i--) {
+        kprintf((addr & (1<<i))?"1":"0");
+    }
+    kprintf("x ]\n");
+}
+
+void pr_jumpers(uint8_t jumpers) {
     int list_started = NO;
-
-    *pit_tivr = PIT_VECTOR_NUMBER;
-    _claim_pit();
-
-    // Set PIT ports A and B as outputs
-    *pit_paddr = 0xff;
-    *pit_pbddr = 0xff;
-
-    jumpers = (~(*duart_ip)) & 0x3f;
-
-    is_xr = (jumpers & 0x04)?YES:NO;
-
-    setup_duart(is_xr, is_xr);
-
-    set_isr_handler(32, (unsigned int)trap0_handler);
-    set_isr_handler(46, (unsigned int)trap14_handler);
-
-    kprintf("\n\n\nMega-Micros SBC-3 Computer System\n");
-    kprintf("MicroMon ROM V%d.%d_%03d starting.\n", major, minor, MAGIC_BUILD_NUMBER);
-    kprintf("\nHardware:\n\n");
-
-    padstr("RAM detected", PAD_COL); 
-    kprintf(" [ $%06x-$%06x ]\n", 0, ram_end);
-
-    if (jumpers & 0x04) {
-        padstr("xr68C681 Extended duart detected", PAD_COL);
-    }
-    else {
-        padstr("mc68681 generic duart detected", PAD_COL);
-    }
-    kprintf(" [ $%06x-$%06x ]\n", duart_base, duart_base + 30);
-
-    // print Data about the code sections
-    kprintf("\nFirmware:\n");
-    pr_section("init  ", (uint32_t)&_pretext_start, (uint32_t)&_postinit_end);
-    pr_section("code  ", (uint32_t)&_code_start,    (uint32_t)&_code_end);
-    pr_section("rodata", (uint32_t)&_rodata_start,  (uint32_t)&_rodata_end);
-    pr_section("bss   ", (uint32_t)&_bss_start,     (uint32_t)&_bss_end);
-    kprintf   ("data   0x%06x   0x%06x               <-- relocated from 0x%08x\n", 
-        (uint32_t)&_d_start, (uint32_t)&_d_start + (uint32_t)&_data_length, (uint32_t)&_data_load_start);
 
     kprintf("\nJumpers JB2: ");
     for (int i=0; i<6; i++) {
@@ -145,6 +147,105 @@ void setup(void) {
         }
     }
     kprintf("\n\n");
+
+}
+
+void setup(void) {
+    uint8_t jumpers;
+    int is_xr;
+    char tmp_str[64];
+
+    ram_end = get_ram_end();
+    pit_present = YES; //is_pit_present();
+    duart_present = YES; //is_duart_present();
+    cf_present = YES;
+    hex_display_present = YES;
+    acrtc3_present = YES;
+    rtc_present = is_rtc_present();
+    oled_present = is_oled_present();
+
+    if (pit_present == YES) {
+        *pit_tivr = PIT_VECTOR_NUMBER;
+        _claim_pit();
+
+        // Set PIT ports A and B as outputs
+        *pit_paddr = 0xff;
+        *pit_pbddr = 0xff;
+    }
+
+    jumpers = (~(*duart_ip)) & 0x3f;
+
+    is_xr = (jumpers & 0x04)?YES:NO;
+
+    setup_duart(is_xr);
+
+    set_isr_handler(32, (unsigned int)trap0_handler);
+    set_isr_handler(46, (unsigned int)trap14_handler);
+
+    kprintf("\n\n\nMega-Micros SBC-3 Computer System\n");
+    kprintf("MicroMon ROM V%d.%d_%03d starting.\n", major, minor, MAGIC_BUILD_NUMBER);
+    kprintf("\nHardware:\n\n");
+
+    // RAM
+    snprintf(tmp_str, sizeof(tmp_str), "%dMB RAM detected", (ram_end+1)/(1024*1024));
+    pr_info(tmp_str, 0, ram_end);
+
+    // Duart
+    snprintf(tmp_str, sizeof(tmp_str), "%s duart running at %sMHz", 
+            (jumpers & 0x04)?"xr68c681":"generic mc68681",
+            duart_clock_doubled()?"7.3728":"3.6864"
+        );
+    pr_info(tmp_str, (uint32_t)duart_base, (uint32_t)duart_opr_reset);
+
+    // PI/T
+    if (pit_present) {
+        pr_info("68230 PI/T detected", (uint32_t)pit_base, (uint32_t)pit_tsr);
+    }
+
+    // CF
+    if (cf_present) {
+        pr_info("Compact Flash hardware detected", (uint32_t)cf_base, (uint32_t)cf_reg_command);
+    }
+
+    // Hex Display
+    if (hex_display_present) {
+        pr_info("Hex Display board detected", 0xab0000, 0xab0003);
+    }
+
+    // ACRTC3
+    if (acrtc3_present) {
+        pr_info("ACRTC3 detected", 0xaa0000, 0xaaffff);
+    }
+
+    if (rtc_present) {
+        pr_i2c("I2C RTC detected", DS1307_ADDR);
+    }
+
+    if (oled_present) {
+        pr_i2c("I2C oled display detected", SH1107_ADDR);
+        if (sh1107_init() < 0) {
+            kprintf(" --> not functioning correctly - disabling\n");
+            oled_present = NO;
+        }
+    }
+
+    // Jumpers
+    pr_jumpers(jumpers);
+
+    // print Data about the code sections
+    kprintf("\nFirmware:\n");
+    pr_section("init", (uint32_t)&_pretext_start, (uint32_t)&_postinit_end);
+    pr_section("code", (uint32_t)&_code_start,    (uint32_t)&_code_end);
+    pr_section("ro data", (uint32_t)&_rodata_start,  (uint32_t)&_rodata_end);
+    kprintf   ("%-8s $%06X-$%06X               <-- relocated from $%08X\n", 
+        "rw data", (uint32_t)&_d_start, (uint32_t)&_d_start + (uint32_t)&_data_length, (uint32_t)&_data_load_start);
+    pr_section("bss", (uint32_t)&_bss_start,     (uint32_t)&_bss_end);
+
+    if (oled_present) {
+        sh1107_clear();
+        sh1107_pstr(0, 0, "SBC-3\n\nusb1@230400\nusb2@230400", NULL);
+        sh1107_display();
+    }
 }
 
 bool_t is_command(const char *cmd, const char *target, int min_target_len) {

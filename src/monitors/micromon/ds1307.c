@@ -31,7 +31,6 @@ SOFTWARE.
 
 #include "micromon.h"
 
-#define DS1307_ADDR   0x68u
 
 static uint8_t bcd_to_dec(uint8_t bcd) {
     return (uint8_t)(((bcd >> 4) * 10) + (bcd & 0x0f));

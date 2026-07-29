@@ -35,6 +35,23 @@ SOFTWARE.
 #define DUART_VECTOR_NUMBER 64
 #define PIT_VECTOR_NUMBER 68
 
+// I2C
+#define DS1307_ADDR   0x68
+#define SH1107_ADDR   0x3C
+
+#define SH1107_WIDTH    128
+#define SH1107_HEIGHT   128
+#define SH1107_PAGES    (SH1107_HEIGHT / 8)
+
+/* 
+ * Some 128x128 SH1107 modules need a display-offset and/or a column-offset
+ * to line up correctly. The following values work for my generic baord
+ * but If your image is shifted or wrapped, try adjusting these two first.
+ */
+#define SH1107_DISPLAY_OFFSET   0x60
+#define SH1107_COLUMN_OFFSET    0x60
+
+
 struct ds1307_time {
     uint8_t seconds;   /* 0-59 */
     uint8_t minutes;   /* 0-59 */
@@ -46,6 +63,15 @@ struct ds1307_time {
 };
 
 typedef struct ds1307_time ds1307_time_t;
+
+struct font {
+    const uint8_t width;
+    const uint8_t height;
+    const uint16_t *font_chars;
+    const uint8_t *char_widths;
+};
+
+typedef struct font font_t;
 
 struct command {
     const char *command;
@@ -96,7 +122,7 @@ uint8_t i2c_read_byte(int nack);
 
 
 // kio.c
-void setup_duart(int is_xr, int clk_dbl);
+void setup_duart(int is_xr);
 bool_t kchar_available(void);
 int kgetchar(void);
 char *kgets(char *s);
@@ -124,7 +150,7 @@ bool_t is_command(const char *cmd, const char *target, int min_target_len);
 
 
 // memory.c
-uint32_t get_ram_size(void);
+uint32_t get_ram_end(void);
 
 
 // probe_cmd.c
@@ -134,6 +160,13 @@ void handle_probe_command(int argc);
 // rtc_cmd.c
 void handle_rtc_command(int argc, char *argv[]);
 
+// sh1107.c
+int sh1107_init(void);
+void sh1107_clear(void);
+void sh1107_set_pixel(int x, int y, int color);
+int sh1107_pch(int x, int y, char c, font_t *font);
+void sh1107_pstr(int x, int y, char *str, font_t *font);
+void sh1107_display(void);
 
 // syscall.asm
 unsigned int trap0_handler(int call_num, int arg1, int arg2, int arg3);
