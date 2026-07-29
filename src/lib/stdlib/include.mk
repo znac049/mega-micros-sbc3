@@ -1,4 +1,4 @@
-LIB=stdlib
+#LIB=stdlib
 LIBOBJECTS=atoi.o \
 			atol.o \
 			asctime.o \
@@ -66,12 +66,6 @@ LIBOBJECTS=atoi.o \
 LIBINCLUDES=$(DIR)/include
 
 DIR := $(shell dirname $(lastword $(MAKEFILE_LIST)))
-#BINARY := lib$(LIB).a
 CFLAGS  := $(CFLAGS) -I$(LIBINCLUDES) 
 OBJECTS := $(OBJECTS) $(LIBOBJECTS)
 INCLUDES := $(INCLUDES) $(DIR)/include/*
-#LIBS := $(LIBS) $(DIR)/$(BINARY)
-
-#$(DIR)/$(BINARY): $(LIBOBJECTS)
-#	$(AR) $(ARFLAGS) rs $@ $^
-#	$(RANLIB) $@

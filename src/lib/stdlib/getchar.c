@@ -25,9 +25,17 @@ SOFTWARE.
 #include <machine.h>
 
 int getchar(void) {
+#if defined(BAREMETAL)
+    return xr68681_device.chardev.getchar(0);
+#else
     return do_trap0(BIOS_GETCHAR, 0, 0, 0);
+#endif
 }
 
 int char_available(void) {
+#if defined(BAREMETAL)
+    return xr68681_device.chardev.char_available(0);
+#else
     return do_trap0(BIOS_CHAR_AVAILABLE, 0, 0, 0);
+#endif
 }

@@ -25,6 +25,10 @@ SOFTWARE.
 #include <stdlib.h>
 #include <machine.h>
 
+#if !defined(BAREMETAL)
+
 void exit(int code) {
     do_trap0(BIOS_EXIT, code, 0, 0);
 }
+
+#endif

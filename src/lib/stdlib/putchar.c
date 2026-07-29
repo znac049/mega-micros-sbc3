@@ -26,7 +26,11 @@ SOFTWARE.
 #include <machine.h>
 
 int putchar(int c) {
+#if defined(BAREMETAL)
+    xr68681_device.chardev.putchar(c, 0);
+#else
     do_trap0(BIOS_PUTCHAR, 0, c, 0);
+#endif
 
     return c;
 }

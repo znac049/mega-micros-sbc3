@@ -400,6 +400,8 @@ _not_handled::
 ; BUS ERROR handler - set a flag
 _bus_err_exception::
         move.b  #1,bus_error_flag
+        lea.l   $af0001,a1
+        move.b  #0,18(a0)
         rte
 
 
