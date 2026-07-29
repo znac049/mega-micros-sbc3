@@ -22,200 +22,135 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <stdbool.h>
+#include <stdio.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <machine.h>
+#include <nonstd.h>
 
-// Set your specific hardware delay for the desired clock speed (e.g., 4µs for 100kHz)
-void i2c_delay(void) {
-    // Example: Use a hardware timer delay or software loop
-    for (volatile int i = 0; i < 10; i++); 
+#define PCDDR      (*(pit_pcddr))
+#define PCDR       (*(pit_pcdr))
+
+#define SDA_BIT    0
+#define SCL_BIT    1
+
+#define SDA_MASK   (1 << SDA_BIT)
+#define SCL_MASK   (1 << SCL_BIT)
+
+/* Bus timing: crude busy-wait. Calibrate against your actual bus
+ * clock to hit a real I2C bit rate (100kHz/400kHz) -- measure with a
+ * scope or logic analyzer rather than trusting this constant as-is. */
+#define I2C_DELAY_COUNT   40
+
+static void i2c_delay(void) {
+    volatile int i;
+    for (i = 0; i < I2C_DELAY_COUNT; i++)
+        ;
 }
 
-// Drive SDA Low (Output mode)
-void sda_low(void) {
-    // Set pin direction to OUTPUT. Output register must already be 0.
+static void sda_low(void) {
+    PCDR  &= (uint8_t)~SDA_MASK;   /* output latch = 0 */
+    PCDDR |= SDA_MASK;             /* drive it */
 }
 
-// Release SDA High (Input mode, pulled up by external resistor)
-void sda_high(void) {
-    // Set pin direction to INPUT.
+static void sda_release(void) {
+    PCDDR &= (uint8_t)~SDA_MASK;   /* input: let pull-up take it high */
 }
 
-// Drive SCL Low (Output mode)
-void scl_low(void) {
-    // Set pin direction to OUTPUT. Output register must already be 0.
+static void scl_low(void) {
+    PCDR  &= (uint8_t)~SCL_MASK;
+    PCDDR |= SCL_MASK;
 }
 
-// Release SCL High (Input mode, pulled up by external resistor)
-void scl_high(void) {
-    // Set pin direction to INPUT.
+static void scl_release(void) {
+    PCDDR &= (uint8_t)~SCL_MASK;
+    while ((PCDR & SCL_MASK) == 0)
+        ;
 }
 
-// Read the physical state of the SDA pin
-bool read_sda(void) {
-    // Return true if pin is high, false if low.
-    return true; 
+static int sda_read(void) {
+    return (PCDR & SDA_MASK) ? 1 : 0;
 }
 
 void i2c_init(void) {
-    // Ensure data registers are cleared to 0 so toggling DDR controls the state
-    // Set pins as INPUT initially to let the bus stay high
-    sda_high();
-    scl_high();
-    i2c_delay();
+    PCDDR &= (uint8_t)~(SDA_MASK | SCL_MASK);   /* both lines released */
 }
 
 void i2c_start(void) {
-    sda_high();
-    scl_high();
+    sda_release();
+    scl_release();
     i2c_delay();
-    sda_low();   // SDA falls while SCL is high
+    sda_low();
     i2c_delay();
-    scl_low();   // Hold SCL low to prepare for data transfer
+    scl_low();
+    i2c_delay();
 }
 
 void i2c_stop(void) {
     sda_low();
     i2c_delay();
-    scl_high();  // SCL goes high
+    scl_release();
     i2c_delay();
-    sda_high();  // SDA rises while SCL is high
+    sda_release();
     i2c_delay();
 }
 
-// Transmit a byte and return true if ACK received, false if NACK
-bool i2c_write_byte(unsigned char byte) {
-    // Transmit 8 data bits
-    for (int i = 0; i < 8; i++) {
-        if (byte & 0x80) {
-            sda_high();
-        } else {
+/* Send one byte MSB-first. Returns 0 if the slave ACKed, 1 if NACKed. */
+int i2c_write_byte(uint8_t byte) {
+    int bit;
+    int ack;
+
+    for (bit = 7; bit >= 0; bit--) {
+        scl_low();
+        if (byte & (1 << bit))
+            sda_release();
+        else
             sda_low();
-        }
-        byte <<= 1;
         i2c_delay();
-        
-        scl_high();   // Target samples data on rising edge
+        scl_release();
         i2c_delay();
-        scl_low();
     }
-    
-    // Read ACK/NACK bit (9th clock)
-    sda_high();       // Release SDA so slave can pull it low
-    i2c_delay();
-    scl_high();       // Raise clock for reading
-    i2c_delay();
-    
-    bool ack = (read_sda() == 0); // Slave pulls down for ACK
-    
+
     scl_low();
-    return ack; 
+    sda_release();          /* let the slave drive ACK/NACK */
+    i2c_delay();
+    scl_release();
+    i2c_delay();
+    ack = sda_read();       /* 0 = ACK, 1 = NACK */
+    scl_low();
+
+    return ack;
 }
 
-// Read a byte from the bus and send ACK (true) or NACK (false)
-unsigned char i2c_read_byte(bool send_ack) {
-    unsigned char byte = 0;
-    sda_high();       // Release the line for the slave to write
-    
-    for (int i = 0; i < 8; i++) {
-        i2c_delay();
-        scl_high();
-        i2c_delay();
-        
-        byte <<= 1;
-        if (read_sda()) {
-            byte |= 0x01;
-        }
-        
+/* Read one byte MSB-first. Pass nack=0 to ACK (more bytes follow),
+ * nack!=0 to NACK (use this on the last byte you want from the slave). */
+uint8_t i2c_read_byte(int nack) {
+    uint8_t value = 0;
+    int bit;
+
+    sda_release();
+
+    for (bit = 7; bit >= 0; bit--) {
         scl_low();
+        i2c_delay();
+        scl_release();
+        value = (uint8_t)((value << 1) | sda_read());
+        i2c_delay();
     }
-    
-    // Send ACK/NACK bit (9th clock)
-    if (send_ack) {
-        sda_low();    // Master pulls down to acknowledge
-    } else {
-        sda_high();   // Master releases to signal NACK (end of read sequence)
-    }
+
+    scl_low();
+    if (nack)
+        sda_release();
+    else
+        sda_low();
     i2c_delay();
-    scl_high();
+    scl_release();
     i2c_delay();
     scl_low();
-    sda_high();       // Release data line
-    
-    return byte;
-}
+    sda_release();
 
-// Transmit a byte and return true if ACK received, false if NACK
-bool i2c_write_byte(unsigned char byte) {
-    // Transmit 8 data bits
-    for (int i = 0; i < 8; i++) {
-        if (byte & 0x80) {
-            sda_high();
-        } else {
-            sda_low();
-        }
-        byte <<= 1;
-        i2c_delay();
-        
-        scl_high();   // Target samples data on rising edge
-        i2c_delay();
-        scl_low();
-    }
-    
-    // Read ACK/NACK bit (9th clock)
-    sda_high();       // Release SDA so slave can pull it low
-    i2c_delay();
-    scl_high();       // Raise clock for reading
-    i2c_delay();
-    
-    bool ack = (read_sda() == 0); // Slave pulls down for ACK
-    
-    scl_low();
-    return ack; 
-}
-
-// Read a byte from the bus and send ACK (true) or NACK (false)
-unsigned char i2c_read_byte(bool send_ack) {
-    unsigned char byte = 0;
-    sda_high();       // Release the line for the slave to write
-    
-    for (int i = 0; i < 8; i++) {
-        i2c_delay();
-        scl_high();
-        i2c_delay();
-        
-        byte <<= 1;
-        if (read_sda()) {
-            byte |= 0x01;
-        }
-        
-        scl_low();
-    }
-    
-    // Send ACK/NACK bit (9th clock)
-    if (send_ack) {
-        sda_low();    // Master pulls down to acknowledge
-    } else {
-        sda_high();   // Master releases to signal NACK (end of read sequence)
-    }
-    i2c_delay();
-    scl_high();
-    i2c_delay();
-    scl_low();
-    sda_high();       // Release data line
-    
-    return byte;
-}
-
-void write_register(unsigned char slave_addr, unsigned char reg, unsigned char data) {
-    unsigned char write_addr = (slave_addr << 1) | 0; // Write bit is 0
-    
-    i2c_start();
-    if (i2c_write_byte(write_addr)) {
-        if (i2c_write_byte(reg)) {
-            i2c_write_byte(data);
-        }
-    }
-    i2c_stop();
+    return value;
 }
 
 int i2c_probe(uint8_t addr7) {
