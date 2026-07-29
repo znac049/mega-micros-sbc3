@@ -103,8 +103,17 @@ int do_trap0(uint32_t syscall_num, uint32_t arg1, uint32_t arg2, uint32_t arg3);
 // bios_call.c
 int bios_call(int call_num, int arg1, int arg2, int arg3);
 
+// i2c.c
+void i2c_init(void);
+void i2c_start(void);
+void i2c_stop(void);
+uint8_t i2c_read_byte(int nack);
+int i2c_write_byte(uint8_t byte);
+int i2c_probe(uint8_t addr7);
+
+
 // traps.c
 long trap0(long syscall_num, long arg1, long arg2, long arg3);
 
-int peek(uint8_t *addr);
-int poke(uint8_t *addr, uint8_t val);
+int peek(volatile uint8_t *addr);
+int poke(volatile uint8_t *addr, uint8_t val);

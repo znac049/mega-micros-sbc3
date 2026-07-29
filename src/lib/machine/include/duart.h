@@ -117,5 +117,7 @@ extern system_io_device_t xr68681_device;
 void _claim_duart(void);
 void _release_duart(void);
 
+int duart_clock_doubled(void);
+
 void clear_led(int);
 void set_led(int);

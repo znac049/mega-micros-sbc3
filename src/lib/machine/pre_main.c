@@ -36,8 +36,10 @@ FILE *stdin;
 FILE *stdout;
 FILE *stderr;
 
+#if defined(BAREMETAL)
 filesystem_t _mounted_filesystems[MAX_FILESYSTEMS];
 uint8_t _num_mounted_filesystems = 0;
+#endif
 
 static const char *cpus[] = {
     "68000/68008",
@@ -47,20 +49,26 @@ static const char *cpus[] = {
 };
 
 static void _init_streams(void) {
+#if defined(BAREMETAL)
 	stdin = stdout = fopen("CON:", "a+");
 	stderr = fopen("AUX:", "w");
+#endif
 }
 
 void pre_main(void) {
+#if defined(BAREMETAL)
+    _claim_pit();
     _claim_duart();
+#endif
+
     _init_heap();
     _init_streams();
 
     cpu_speed_mhz = measure_cpu_clock();
 
-// #ifdef WITH_DISKS
-//     cf_init();
-// #endif
+#if defined(BAREMETAL)
+    cf_init();
+#endif
 
     if (0 /*running_in_rom*/) {
         printf("%c[2J", 27);

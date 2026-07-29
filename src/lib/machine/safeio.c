@@ -31,7 +31,7 @@ static ISR bus_error(void) {
     result = -1;
 }
 
-int peek(uint8_t *addr) {
+int peek(volatile uint8_t *addr) {
     unsigned int old_handler = set_isr_handler(VEC_BUS_ERROR, (unsigned int)bus_error);
     uint8_t data;
     
@@ -43,7 +43,7 @@ int peek(uint8_t *addr) {
     return (result == -1)?result:(int)data;
 }
 
-int poke(uint8_t *addr, uint8_t val) {
+int poke(volatile uint8_t *addr, uint8_t val) {
     unsigned int old_handler = set_isr_handler(VEC_BUS_ERROR, (unsigned int)bus_error);
 
     result = val;

@@ -1,10 +1,10 @@
 LIBOBJECTS := $(LIBOBJECTS) \
-			blocks.o \
-			dir.o \
-			dump.o \
-			endian.o \
+			e2blocks.o \
+			e2dir.o \
+			e2dump.o \
+			e2endian.o \
 			ext2.o \
-			file.o
+			e2file.o
 
 LIBINCLUDES=$(DIR)/include
 
