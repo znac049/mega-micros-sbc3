@@ -32,6 +32,7 @@ SOFTWARE.
 #include <cb.h>
 #include <disk.h>
 #include <ext2.h>
+#include <filesystems.h>
 #include <fs.h>
 
 typedef short lock_state_t;
@@ -86,8 +87,13 @@ typedef short lock_state_t;
 #define BIOS_CHAR_AVAILABLE	2
 #define BIOS_EXIT			3
 #define BIOS_TICKS			4
+#define BIOS_OPEN			5
+#define BIOS_CLOSE			6
+#define BIOS_CREAT          7
+#define BIOS_READ			8
+#define BIOS_WRITE			9
 
-#define NUM_BIOS_CALLS		5
+#define NUM_BIOS_CALLS		10
 
 extern uint8_t running_in_rom;
 extern uint8_t cpu_type;
@@ -100,8 +106,23 @@ int measure_cpu_clock(void);
 // crt0.asm
 int do_trap0(uint32_t syscall_num, uint32_t arg1, uint32_t arg2, uint32_t arg3);
 
+
 // bios_call.c
 int bios_call(int call_num, int arg1, int arg2, int arg3);
+
+
+// filesystems.c
+int fs_init(void);
+int fs_shutdown(void);
+int fs_chdir(const char *path);
+char *fs_getcwd(char*buff, size_t size);
+vdir_t *fs_locate(const char *path);
+int fs_creat(const char *pathname, mode_t mode);
+int fs_open(const char *pathname, int flags);
+int fs_close(int fd);
+int fs_read(int fd, char *buff, size_t num_bytes);
+size_t fs_write(int fd, const char *buff, size_t num_bytes);
+
 
 // i2c.c
 void i2c_init(void);
@@ -112,8 +133,11 @@ int i2c_write_byte(uint8_t byte);
 int i2c_probe(uint8_t addr7);
 
 
+// safeio.c
+int peek(volatile uint8_t *addr);
+int poke(volatile uint8_t *addr, uint8_t val);
+
+
 // traps.c
 long trap0(long syscall_num, long arg1, long arg2, long arg3);
 
-int peek(volatile uint8_t *addr);
-int poke(volatile uint8_t *addr, uint8_t val);

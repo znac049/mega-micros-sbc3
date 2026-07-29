@@ -25,36 +25,12 @@ SOFTWARE.
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <machine.h>
 
-static inline size_t read_chardev(int fd, void *buf, size_t count) {
-    uint8_t *bp = (uint8_t *) buf;
-
-    for (int i=0; i<count; i++) {
-        int ch = _file_table[fd].device->chardev.getchar(_file_table[fd].minor);
-
-        if (ch == -1) {
-            return i;
-        }
-
-        *bp++ = ch;
-    }
-
-    return count;
-}
-
-size_t read(int fd, void *buf, size_t count) {
-    if ((fd < 0) || (fd >= FILE_TABLE_SIZE)) {
-        errno = EBADF;
-
-        return -1;
-    }
-
-    switch (_file_table[fd].type) {
-        case DEVTYPE_CHAR:
-            return read_chardev(fd, buf, count);
-    }
-
-    errno = EBADF;
-
-    return -1;
+size_t read(int fd, void *buff, size_t count) {
+#if defined(BAREMETAL)
+    return fs_read(fd, buff, count);
+#else
+    return do_trap0(BIOS_READ, fd, (uint32_t)buff, count);
+#endif
 }

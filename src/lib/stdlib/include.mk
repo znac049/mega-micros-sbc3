@@ -2,8 +2,10 @@
 LIBOBJECTS=atoi.o \
 			atol.o \
 			asctime.o \
+			char_available.o \
 			chdir.o \
 			close.o \
+			creat.o \
 			ctime.o \
 			err.o \
 			errno.o \

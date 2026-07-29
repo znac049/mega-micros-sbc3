@@ -5,6 +5,7 @@ LIBOBJECTS=\
 			cpu.o \
 			disk.o \
 			duart2.o \
+			filesystems.o \
 			i2c.o \
 			leds.o \
 			_misc.o \

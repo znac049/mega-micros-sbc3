@@ -27,11 +27,5 @@ SOFTWARE.
 #include <errno.h>
 
 int isatty(int fd) {
-    if ((fd < 0) || (fd >= FILE_TABLE_SIZE)) {
-        errno = EBADF;
-
-        return 0;
-    }
-
-    return (_file_table[fd].type == DEVTYPE_CHAR);
+    return YES;
 }

@@ -39,14 +39,14 @@ SCRIPT_DIR=../link_scripts/bare
 INSTALL_INC=$(INSTALL_DIR)/include
 OBJ_DIR=bare/
 DEFINES += -DBAREMETAL
-CRT0_OBJS=crt0.o rom_crt0.o
+CRT0_OBJECTS=crt0.o rom_crt0.o
 else
 INSTALL_LIB=$(INSTALL_DIR)/lib/bios
 SCRIPT_DIR=../link_scripts/bios
 INSTALL_INC=$(INSTALL_DIR)/include
 OBJ_DIR=bios/
 DEFINES += -DUSEBIOS
-CRT0_OBJS=crt0.o
+CRT0_OBJECTS=crt0.o
 endif
 
 TARGET_LIB=libmega.a
@@ -96,7 +96,7 @@ $(USERLIB): $(ALL_OBJS)
 	$(AR)	$(ARFLAGS) rs $@ $^
 	$(RANLIB) $@
 
-actual_install: $(USERLIB)
+actual_install: build
 	$(MKDIR_P) $(INSTALL_INC)
 	$(MKDIR_P) $(INSTALL_LIB)
 	$(MKDIR_P) $(INSTALL_DIR)/ld

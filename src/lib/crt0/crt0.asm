@@ -41,7 +41,8 @@ ibdone:
 	movem.l	d0-d1,-(sp)
 	bsr	    main
 
-ifd BAREMETAL
+	ifd BAREMETAL
+
  	bra     done
 
 exit::
@@ -53,15 +54,18 @@ done:
 
 ; ...and pass control to the monitor
 	rts
-endif
+	
+	endif
 
-ifnd BAREMETAL
+	ifnd BAREMETAL
+
 ; usage: do_trap0(syscall_number, arg1, arg2, arg)
 ;
 do_trap0::
 	trap #0
 	rts
-endif
+
+	endif
 
 
 ; usage: get_heap_start()

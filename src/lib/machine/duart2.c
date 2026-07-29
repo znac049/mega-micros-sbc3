@@ -32,8 +32,6 @@ static duart_port_t channel_a;
 static duart_port_t channel_b;
 static duart_port_t *channels[] = {&channel_a, &channel_b};
 
-system_io_device_t xr68681_device;
-
 // Forward declarations
 int xr68681_getchar(uint8_t minor);
 int xr68681_char_available(uint8_t minor);
@@ -93,11 +91,6 @@ void _claim_duart(void) {
 
     // init_duart_channel(&channel_a);
     // init_duart_channel(&channel_b);
-
-    xr68681_device.chardev.getchar = xr68681_getchar;
-    xr68681_device.chardev.char_available = xr68681_char_available;
-    xr68681_device.chardev.putchar = xr68681_putchar;
-    xr68681_device.chardev.flush = xr68681_flush;
 }
 
 static inline void release_duart_channel(duart_port_t *channel) {

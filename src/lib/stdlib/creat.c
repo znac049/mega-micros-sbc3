@@ -22,25 +22,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <unistd.h>
+#include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <string.h>
 #include <machine.h>
 
-int close(int fd) {
+int creat(const char *pathname, mode_t mode) {
 #if defined(BAREMETAL)
-    return fs_close(fd);
+    return fs_creat(pathname, mode);
 #else
-    int res = do_trap0(BIOS_CLOSE, fd, 0, 0);
-
-    if (res != 0) {
-        errno = res;
-        res = -1;
-    }
-    else {
-        res = 0;
-    }
-
-    return res;
+    return do_trap0(BIOS_CREAT, (uint32_t)pathname, mode, 0);
 #endif
+    return -1;
 }

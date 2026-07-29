@@ -26,7 +26,7 @@ $ sudo apt install gcc-m68k-linux-gnu
 ```
 
 #### vasm
-I despise the gnu-as syntax and much prefer Motorola style syntax. For that reason, I use vasm instead of gas for my assembly code. You have to download and build it from sourcecode, but it's really not that hard:
+I despise the _gnu-as_ syntax and much prefer Motorola style syntax. For that reason, I use _vasm_ instead of _gnu-as_ for my assembly code. You have to download and build it from source code, but it's really not that hard:
 ```
 $ mkdir tmp
 $ cd tmp
@@ -40,7 +40,7 @@ $ # Optional:
 $ rm -rf tmp
 ```
 > [!NOTE] 
-> there may be newer versions of vasm which should work just fine. At thge time of writing, I am using 2.0e
+> there may be newer versions of _vasm_ which should work just fine. At thge time of writing, I am using 2.0e
 
 ### Environment
 All you need to do is add an environment variable called `MEGA_MICROS_DIR` which contains the full path to wherever you checked out the git repository. Foe example, on my system, where I use the bash shell, I put the following at the end of my `~/.bashrc` file:
@@ -51,5 +51,5 @@ export MEGA_MICROS_DIR=/home/bob/src/mega-micros
 Once that environment variable has been set, you should be good to start compiling stuff.
 
 > [!NOTE]
-> The supplied makefiles assume that the 68k compiler and vasm can be found somewhere on your search path.
+> The supplied makefiles assume that the 68k compiler and _vasm_ can be found somewhere on your search path.
 

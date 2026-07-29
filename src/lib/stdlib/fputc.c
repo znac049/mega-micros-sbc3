@@ -34,18 +34,14 @@ int fputc(int c, FILE *stream) {
     if ((stream != NULL) && (stream->is_open == 0)) {
         errno = EBADF;
 
-        puts("!");
-
         return EOF;
     }
 
     res = write(stream->fd, &ch, 1);
 
     if (res == 1) {
-        puts("C");
         return c;
     }
 
-    puts("X");
     return EOF;
 }

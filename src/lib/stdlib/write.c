@@ -26,36 +26,12 @@ SOFTWARE.
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <machine.h>
 
-static inline size_t write_chardev(int fd, const uint8_t *buf, size_t count) {
-    for (size_t i=0; i<count; i++) {
-        _file_table[fd].device->chardev.putchar(*buf++, _file_table[fd].minor);
-    }
-
-    return count;
-}
-
-size_t write(int fd, void *buf, size_t count) {
-    // printf("write(%d, 0x%08x, %d)\n", fd, buf, count);
-
-    if ((fd < 0) || (fd >= FILE_TABLE_SIZE)) {
-        errno = EBADF;
-
-        return -1;
-    }
-
-    // printf("  file type=%d\n", _file_table[fd].type);
-    switch (_file_table[fd].type) {
-        case DEVTYPE_CHAR:
-            return write_chardev(fd, (uint8_t *)buf, count);
-            break;
-
-        default:
-            printf("  don't know how to write to file type %^d\n", _file_table[fd]);
-            break;
-    }
-
-    errno = EBADF;
-
-    return -1;
+size_t write(int fd, void *buff, size_t count) {
+#if defined(BAREMETAL)
+    return fs_write(fd, buff, count);
+#else
+    return do_trap0(BIOS_WRITE, fd, (uint32_t)buff, count);
+#endif
 }

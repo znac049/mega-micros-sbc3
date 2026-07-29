@@ -26,8 +26,6 @@ SOFTWARE.
 
 #include <ctype.h>
 
-#define FILE_TABLE_SIZE 16
-
 /* File flags */
 #define O_RDONLY    (1<<0)
 #define O_WRONLY    (1<<1)
@@ -57,34 +55,6 @@ SOFTWARE.
 #define S_ISVTX     001000
 
 
-#define DEVTYPE_NOTSET  0
-#define DEVTYPE_CHAR    1
-#define DEVTYPE_FS      2
-#define DEVTYPE_BLOCK   3
-
-typedef union system_io_device {
-    struct {
-        void (*putchar)(int ch, uint8_t minor);
-        int (*getchar)(uint8_t minor);
-        int (*char_available)(uint8_t minor);
-        int (*flush)(uint8_t minor);
-    } chardev;
-    struct {
-        int fred;
-    } fs;
-    struct {
-        int fred;
-    } blockdev;
-} system_io_device_t;
-
-typedef struct file_table_entry {
-    int type;
-    int minor;
-    char *name;
-    system_io_device_t *device;
-} file_table_entry_t;
-
-extern file_table_entry_t _file_table[FILE_TABLE_SIZE];
 
 int creat(const char *pathname, mode_t mode);
 int open(const char *pathname, int flags);

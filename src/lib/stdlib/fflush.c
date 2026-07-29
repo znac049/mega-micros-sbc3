@@ -28,24 +28,6 @@ SOFTWARE.
 #include <errno.h>
 
 int fflush(FILE *stream) {
-    int fd = stream->fd;
-
-    if ((fd < 0) || (fd >= FILE_TABLE_SIZE)) {
-        errno = EBADF;
-
-        return -1;
-    }
-
-    switch (_file_table[fd].type) {
-        case DEVTYPE_CHAR:
-            return _file_table[fd].device->chardev.flush(_file_table[fd].minor);
-            break;
-
-        default:
-            printf("  don't know how to flush file type %^d\n", _file_table[fd]);
-            break;
-    }
-
     errno = EBADF;
 
     return -1;

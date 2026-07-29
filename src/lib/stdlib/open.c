@@ -26,67 +26,14 @@ SOFTWARE.
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
-
-extern system_io_device_t xr68681_device;
-
-file_table_entry_t _file_table[FILE_TABLE_SIZE];
-
-static int find_free_slot(void) {
-    for (int i=0; i<FILE_TABLE_SIZE; i++) {
-        if (_file_table[i].type == DEVTYPE_NOTSET) {
-            return i;
-        }
-    }
-
-    return -1;
-}
-
-int open_dir(const char *pathname, int flags) {
-    return -1;
-}
-
-int open_file(const char *pathname, int flags) {
-    int ft_index = find_free_slot();
-
-    // printf("open_file('%s', %d), ft_index=%d\n", pathname, flags, ft_index);
-
-    if (ft_index < 0) {
-        // printf("No free file slots!\n");
-        errno = ENOMEM;
-        return -1;
-    }
-
-    // Is it a special filename - ignore flags?
-    if (strcasecmp(pathname, "CON:") == 0) {
-        // printf("Opening console\n");
-        _file_table[ft_index].type = DEVTYPE_CHAR;
-        _file_table[ft_index].minor = 0;
-        _file_table[ft_index].device = &xr68681_device;
-
-        return ft_index;
-    }
-    else if (strcasecmp(pathname, "AUX:") == 0) {
-        // printf("Opening aux\n");
-        _file_table[ft_index].type = DEVTYPE_CHAR;
-        _file_table[ft_index].minor = 1;
-        _file_table[ft_index].device = &xr68681_device;
-
-        return ft_index;
-    }
-
-    // Not a special filename
-    // printf("Not a special filename\n");
-
-    return -1;
-}
+#include <machine.h>
 
 int open(const char *pathname, int flags) {
-    if (flags & O_DIRECTORY)
-        return open_dir(pathname, flags);
-    else
-        return open_file(pathname, flags);
-}
+#if defined(BAREMETAL)
+    return fs_open(pathname, flags);
+#else
+    return do_trap0(BIOS_OPEN, (uint32_t)pathname, flags, 0);
+#endif
 
-int creat(const char *pathname, mode_t mode) {
     return -1;
 }

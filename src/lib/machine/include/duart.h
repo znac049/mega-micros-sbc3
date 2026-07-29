@@ -112,8 +112,6 @@ struct duart_port {
 
 typedef struct duart_port duart_port_t;
 
-extern system_io_device_t xr68681_device;
-
 void _claim_duart(void);
 void _release_duart(void);
 

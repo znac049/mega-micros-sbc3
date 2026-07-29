@@ -22,25 +22,47 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <unistd.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <machine.h>
+#pragma once
 
-int close(int fd) {
-#if defined(BAREMETAL)
-    return fs_close(fd);
-#else
-    int res = do_trap0(BIOS_CLOSE, fd, 0, 0);
+// Max number of file descriptors
+#define MAX_FILES 12
 
-    if (res != 0) {
-        errno = res;
-        res = -1;
-    }
-    else {
-        res = 0;
-    }
+#define PATH_MAX 128
 
-    return res;
-#endif
-}
+struct vfile {
+    char path[PATH_MAX];
+    bool_t valid;
+};
+
+typedef struct vfile vfile_t;
+
+
+struct vdir {
+    char path[PATH_MAX];
+    bool_t valid;
+};
+
+typedef struct vdir vdir_t;
+
+
+struct vmp {
+    int zob;
+};
+
+typedef struct mountpoint vmp_t;
+
+
+struct vfs {
+    vmp_t (*mount)(void);
+    int (*unmount)(vmp_t *mp);
+    int (*sync)(void);
+    int (*find_path)(void);
+    int (*open)(vdir_t *pwd, const char *fname);
+    int (*read)(vfile_t *file, size_t n_bytes);
+    int (*write)(vfile_t *file, const char *buf, size_t n_bytes);
+    int (*close)(vfile_t *file);
+    vdir_t *(*locate)(const char *path);
+};
+
+typedef struct vfs vfs_t;
+
