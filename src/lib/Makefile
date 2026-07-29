@@ -56,7 +56,7 @@ USERLIB=$(OBJ_DIR)libmega.a
 decoy: all
 	@echo Please use \"make all\" to build all the libraries.
 
-VPATH = machine stdlib nonstdlib 
+VPATH = machine stdlib nonstdlib crt0
 
 include machine/include.mk
 include stdlib/include.mk
@@ -66,6 +66,7 @@ include nonstdlib/include.mk
 $(info VPATH is $(VPATH))
 
 ALL_OBJS += $(addprefix $(OBJ_DIR),$(OBJECTS))
+CRT0_OBJS = $(addprefix $(OBJ_DIR),$(CRT0_OBJECTS))
 
 $(OBJ_DIR)%.o : %.c
 	$(CC) -c $(CFLAGS) $(EXTRA_CFLAGS) -o $@ $<
@@ -85,8 +86,7 @@ all: bare bios
 
 build: $(USERLIB) $(ALL_OBJS) $(CRT0_OBJS)
 
-
-bare: $(USERLIB)
+bare:
 	make build BAREMETAL=true
 
 bios:
@@ -103,6 +103,7 @@ actual_install: $(USERLIB)
 	$(CP_R) $(INCLUDES) $(INSTALL_INC)
 	$(CP_R) $(USERLIB) $(INSTALL_LIB)
 	$(CP_R) $(SCRIPT_DIR)/* $(INSTALL_LIB)
+	$(CP_R) $(CRT0_OBJS) $(INSTALL_LIB)
 
 install:
 	make actual_install BAREMETAL=true

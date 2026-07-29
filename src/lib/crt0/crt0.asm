@@ -40,24 +40,28 @@ ibdone:
 	move.l	8(sp),d1
 	movem.l	d0-d1,-(sp)
 	bsr	    main
-; bra     done
 
-; exit::
-; 	move.l  4(sp),d0		; grab exit code
-; done:
-;	move.l  d0,-(sp)
-;	bsr		post_main
-;	move.l  (sp)+,d0
+ifd BAREMETAL
+ 	bra     done
+
+exit::
+ 	move.l  4(sp),d0		; grab exit code
+done:
+	move.l  d0,-(sp)
+	bsr		post_main
+	move.l  (sp)+,d0
 
 ; ...and pass control to the monitor
 	rts
+endif
 
-
+ifnd BAREMETAL
 ; usage: do_trap0(syscall_number, arg1, arg2, arg)
 ;
 do_trap0::
 	trap #0
 	rts
+endif
 
 
 ; usage: get_heap_start()
