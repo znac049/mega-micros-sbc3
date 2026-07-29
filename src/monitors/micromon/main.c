@@ -38,7 +38,7 @@ SOFTWARE.
 
 static int major = 0;
 static int minor = 4;
-static int MAGIC_BUILD_NUMBER = 265;
+static int MAGIC_BUILD_NUMBER = 267;
 
 uint32_t ram_end;
 bool_t duart_present;
@@ -124,11 +124,19 @@ void pr_info(const char *msg, uint32_t start, uint32_t end) {
 }
 
 void pr_i2c(const char *msg, uint8_t addr) {
+    uint8_t mask = 0x40;
+
     padstr(msg, PAD_COL);
     kprintf(" [ DEV ID:");
 
-    for (int i=6; i<=0; i--) {
-        kprintf((addr & (1<<i))?"1":"0");
+    while (mask) {
+        if (addr & mask) {
+            kputchar('1');
+        }
+        else {
+            kputchar('0');
+        }
+        mask = mask >> 1;
     }
     kprintf("x ]\n");
 }
