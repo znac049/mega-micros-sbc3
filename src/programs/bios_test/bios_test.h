@@ -1,10 +1,6 @@
 
 #pragma once
 
-#define OK 0
-#define NOT_OK 1
-
-#define SKIP_SIZE 0x10000
 #define RAM_MAX ((1024*1024*8)-1)
 #define ONE_MEG (1024*1024)
 
