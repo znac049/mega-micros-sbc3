@@ -24,5 +24,6 @@ SOFTWARE.
 
 #pragma once
 
-extern void dump_mem(uint8_t *buf, size_t count, uint8_t print_zeroes);
-extern int split_str(char *s, char sep, char *bits[], int max_bits);
+void dump_mem(uint8_t *buf, size_t count, uint8_t print_zeroes);
+int split_str(char *s, char sep, char *bits[], int max_bits);
+int strpad(char *str, int width, char pad_ch);

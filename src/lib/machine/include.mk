@@ -1,10 +1,9 @@
 LIBOBJECTS=\
-			bios_call.o \
 			_cf.o \
 			cf.o \
 			cpu.o \
 			disk.o \
-			duart2.o \
+			duart.o \
 			filesystems.o \
 			i2c.o \
 			leds.o \

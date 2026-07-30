@@ -33,7 +33,11 @@ ibloop:
 	bra.s   ibloop
 
 ibdone:
+	ifnd BAREMETAL
+
 ;	bsr		pre_main
+
+	endif
 
 ; invoke main() 
 	move.l	4(sp),d0		; pass argc, argv to main()

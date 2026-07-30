@@ -27,7 +27,7 @@ SOFTWARE.
 #include <stdio.h>
 #include <ctype.h>
 #include <fcntl.h>
-#include <cb.h>
+#include <machine.h>
 
 /* Duart Register Base Addresses */
 #define duart_base ((volatile uint8_t*) 0xad0001)
@@ -101,21 +101,61 @@ SOFTWARE.
 
 #define ACR_CK_DIV_16 0x30
 
-struct duart_port {
+#if defined(BAREMETAL)
+
+#define DUART_VECTOR_NUMBER 64
+#define RX_BUFFER_SIZE 16
+#define HIGH_WATER_MARK 10
+#define LOW_WATER_MARK 2
+
+
+struct kduart_port {
     volatile uint8_t *mode_regs;
     volatile uint8_t *sr_csr_reg;
     volatile uint8_t *cmd_reg;
     volatile uint8_t *acr_reg;
     volatile uint8_t *data_reg;
     uint8_t rts_bit;
+
+    volatile uint8_t rx_buff[RX_BUFFER_SIZE];
+    volatile uint8_t rx_insert;
+    volatile uint8_t rx_remove;
+    volatile uint8_t rx_count;
+    volatile unsigned int rts_asserted : 1;
 };
 
-typedef struct duart_port duart_port_t;
+typedef struct kduart_port kduart_port_t;
 
-void _claim_duart(void);
-void _release_duart(void);
+struct kduart {
+    unsigned int is_xr68c681 : 1;
+    unsigned int clock_doubled : 1;
+};
 
+typedef struct kduart kduart_t;
+
+
+void setup_duart(int is_xr);
+
+int kchar_available(void);
+int kgetchar(void);
+char *kgets(char *s);
+int kputchar(int c);
+int kputs(const char *s);
+int kprintf(const char *format, ...);
+int kgetchar(void);
+int kputchar(int c);
+
+int bios_getchar(uint8_t port);
+int bios_putchar(uint8_t port, int c);
+int bios_char_available(uint8_t port);
+char *bios_gets(uint8_t port, char *s);
+int bios_puts(uint8_t port, const char *s);
+int bios_printf(uint8_t port, const char *format, ...);
+int bios_set_baud(uint8_t port, uint32_t baudrate);
+
+int kio_rx_info(void);
 int duart_clock_doubled(void);
 
-void clear_led(int);
-void set_led(int);
+int setup_vfs_duart_handler(vfs_handler_t *vfs);
+
+#endif

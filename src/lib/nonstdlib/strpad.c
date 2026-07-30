@@ -22,26 +22,23 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <ctype.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
-#include <machine.h>
+#include <nonstd.h>
 
-static uint32_t *syscalls = (uint32_t *)0x00c00400;
+int strpad(char *str, int width, char pad_ch) {
+    int len = strlen(str);
 
-int bios_call(int call_num, int arg1, int arg2, int arg3) {
-    register uint32_t fn_addr = syscalls[call_num];
-    int (*fn)();
-
-    if ((call_num < 0) || (call_num >= NUM_BIOS_CALLS)) {
+    // No padding required
+    if (len >= width) {
+        // No padding required
         return 0;
     }
 
-    fn = (int (*)())fn_addr;
+    str = &str[len];
+    for (int i=len; i<width; i++) {
+        *str++ = pad_ch;
+    }
+    *str = EOS;
 
-    *pit_padr = (uint8_t)(fn_addr&0xff);
-    *pit_pbdr = (uint8_t)((fn_addr>>8)&0xff);
-
-    return fn(arg1, arg2, arg3);
+    return 0;
 }

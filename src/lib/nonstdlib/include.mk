@@ -1,6 +1,7 @@
 LIBOBJECTS=\
 			dump_mem.o \
 			split_str.o \
+			strpad.o
 
 LIBINCLUDES=$(DIR)/include
 
