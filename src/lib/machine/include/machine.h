@@ -25,6 +25,7 @@ SOFTWARE.
 #pragma once
 
 #include <ctype.h>
+#include <filesystems.h>
 #include <duart.h>
 #include <pit.h>
 #include <cf.h>
@@ -32,7 +33,6 @@ SOFTWARE.
 #include <cb.h>
 #include <disk.h>
 #include <ext2.h>
-#include <filesystems.h>
 #include <fs.h>
 
 typedef short lock_state_t;
@@ -112,6 +112,8 @@ int bios_call(int call_num, int arg1, int arg2, int arg3);
 
 
 // filesystems.c
+#if defined(BAREMETAL)
+
 int fs_init(void);
 int fs_shutdown(void);
 int fs_chdir(const char *path);
@@ -123,6 +125,7 @@ int fs_close(int fd);
 int fs_read(int fd, char *buff, size_t num_bytes);
 size_t fs_write(int fd, const char *buff, size_t num_bytes);
 
+#endif
 
 // i2c.c
 void i2c_init(void);
@@ -131,6 +134,11 @@ void i2c_stop(void);
 uint8_t i2c_read_byte(int nack);
 int i2c_write_byte(uint8_t byte);
 int i2c_probe(uint8_t addr7);
+
+
+// leds.c
+void clear_led(int);
+void set_led(int);
 
 
 // safeio.c

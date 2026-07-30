@@ -26,11 +26,20 @@ SOFTWARE.
 #include <machine.h>
 #include <filesystems.h>
 
-vdir_t cwd;
+#if defined(BAREMETAL)
 
-vfile_t fs_fds[MAX_FILES];
+static vdir_t cwd;
+
+static vfs_handler_t handlers[MAX_VFS_HANDLERS];
+
+static vfile_t fs_fds[MAX_FILES];
+
+int fs_open(const char *pathname, int flags);
 
 int fs_init(void) {
+    int res = 0;
+    int fd;
+
     cwd.valid = NO;
     strcpy(cwd.path, "/");
 
@@ -38,7 +47,26 @@ int fs_init(void) {
         fs_fds[i].valid = NO;
     }
 
-    return 0;
+    for (int i=0; i<MAX_VFS_HANDLERS; i++) {
+        handlers[i].type = VFS_TYPE_NONE;
+    }
+
+    // Add a handler for the two serial ports
+    res = setup_vfs_duart_handler(&handlers[0]);
+
+    if ((fd = fs_open("//usb1", O_RDONLY)) < 0) {
+        res = fd;
+    }
+
+    if ((fd = fs_open("//usb1", O_WRONLY)) < 0) {
+        res = fd;
+    }
+
+    if ((fd = fs_open("//usb2", O_WRONLY)) < 0) {
+        res = fd;
+    }
+    
+    return res;
 }
 
 int fs_shutdown(void) {
@@ -63,6 +91,24 @@ static int find_free_fd(void) {
     return -1;
 }
 
+static vfs_handler_t *find_handler(const char *pathname) {
+    // Find the handler responsible for the given pathname
+    for (int i=0; i<MAX_VFS_HANDLERS; i++) {
+        if (handlers[i].type != VFS_TYPE_NONE) {
+            printf("Does handler %s deal with '%s'?  --> ", handlers[i].name, pathname);
+            if (handlers[i].handler.handles_path(pathname) == YES) {
+                printf("YES\n");
+                return &handlers[i];
+            }
+            else {
+                printf("NO\n");
+            }
+        }
+    }
+
+    return NULL;
+}
+
 int fs_chdir(const char *path) {
     return 0;
 }
@@ -76,12 +122,37 @@ vdir_t *fs_locate(const char *path) {
 }
 
 int fs_creat(const char *pathname, mode_t mode) {
+    vfs_handler_t *handler = find_handler(pathname);
+
+    if (handler == NULL) {
+        return -1;
+    }
+
     return -1;
 }
 
 int fs_open(const char *pathname, int flags) {
     int fd = find_free_fd();
+    vfs_handler_t *handler;
+    vfile_t *file;
 
+    if (fd < 0) {
+        printf("No free file descriptors\n");
+        return -1;
+    }
+
+    handler  = find_handler(pathname);
+    if (handler == NULL) {
+        printf("No handler found for '%s' :-(\n", pathname);
+        return -1;
+    }
+
+    // We have a handler
+    file = &fs_fds[fd];
+    file.valid = YES;
+    strcpy(file.path, pathname);
+    file.handler = handler;
+    
     return fd;
 }
 
@@ -108,3 +179,5 @@ size_t fs_write(int fd, const char *buff, size_t num_bytes) {
 
     return num_bytes;
 }
+
+#endif
