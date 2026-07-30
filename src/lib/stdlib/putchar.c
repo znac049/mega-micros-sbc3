@@ -27,7 +27,7 @@ SOFTWARE.
 
 int putchar(int c) {
 #if defined(BAREMETAL)
-    return fs_write(0, &c, 1);
+    return fs_write(0, (const char *)&c, 1);
 #else
     do_trap0(BIOS_PUTCHAR, 0, c, 0);
 #endif
