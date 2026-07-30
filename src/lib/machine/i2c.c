@@ -38,14 +38,16 @@ SOFTWARE.
 #define SDA_MASK   (1 << SDA_BIT)
 #define SCL_MASK   (1 << SCL_BIT)
 
-/* Bus timing: crude busy-wait. Calibrate against your actual bus
- * clock to hit a real I2C bit rate (100kHz/400kHz) -- measure with a
- * scope or logic analyzer rather than trusting this constant as-is. */
-#define I2C_DELAY_COUNT   40
+// These are correct for 68030 running at 40MHz
+#define I2C_SLOW_DELAY 10
+#define I2C_FAST_DELAY 2
+
+static uint32_t i2c_delay_count = I2C_SLOW_DELAY;
 
 static void i2c_delay(void) {
-    volatile int i;
-    for (i = 0; i < I2C_DELAY_COUNT; i++)
+    volatile uint32_t i;
+
+    for (i = 0; i < i2c_delay_count; i++)
         ;
 }
 
@@ -161,5 +163,19 @@ int i2c_probe(uint8_t addr7) {
     i2c_stop();
  
     return ack;
+}
+
+int i2c_speed(int kbs) {
+    switch (kbs) {
+        case 100:
+            i2c_delay_count = I2C_SLOW_DELAY;
+            return OK;
+
+        case 400:
+            i2c_delay_count = I2C_FAST_DELAY;
+            return OK;
+    }
+
+    return NOT_OK;
 }
  
