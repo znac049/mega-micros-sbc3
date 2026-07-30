@@ -58,7 +58,7 @@ static void _init_streams(void) {
 void pre_main(void) {
 #if defined(BAREMETAL)
     _claim_pit();
-    _claim_duart();
+    // _claim_duart();
 #endif
 
     _init_heap();
@@ -135,5 +135,5 @@ void post_main(int status) {
 //     }
 // #endif
 
-    _release_duart();
+    // _release_duart();
 }
