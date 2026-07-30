@@ -29,10 +29,6 @@ SOFTWARE.
 #define MAX_LINE 512
 #define MAX_ARGS 32
 
-#define OK 0
-#define NOT_OK -1
-
-#define DUART_VECTOR_NUMBER 64
 #define PIT_VECTOR_NUMBER 68
 
 // I2C
@@ -82,6 +78,22 @@ struct command {
 typedef struct command command_t;
 
 
+// Link time variables
+extern uint32_t _d_start, _data_load_start, _data_length;
+extern uint32_t _pretext_start, _postinit_end;
+extern uint32_t _code_start, _code_end;
+extern uint32_t _rodata_start, _rodata_end;
+extern uint32_t _bss_start, _bss_end;
+
+
+
+// detect.c
+bool_t is_pit_present(void);
+bool_t is_duart_present(void);
+bool_t is_rtc_present(void);
+bool_t is_oled_present(void);
+
+
 // diasm_cmd.c
 void handle_disasm_command(int argc, char *argv[]);
 
@@ -113,32 +125,9 @@ extern jmp_buf go_env;
 void handle_go_command(int argc, char *argv[]);
 
 
-// i2c.c
-void i2c_init(void);
-void i2c_start(void);
-void i2c_stop(void);
-int i2c_write_byte(uint8_t byte);
-uint8_t i2c_read_byte(int nack);
-
-
-// kio.c
-void setup_duart(int is_xr);
-bool_t kchar_available(void);
-int kgetchar(void);
-char *kgets(char *s);
-int kputchar(int c);
-int kputs(const char *s);
-int kprintf(const char *format, ...);
-int bios_getchar(int port);
-int kgetchar(void);
-int bios_putchar(int port, int c);
-int kputchar(int c);
-bool_t bios_char_available(int port);
-char *bios_gets(int port, char *s);
-int bios_puts(int port, const char *s);
-int bios_printf(int port, const char *format, ...);
-int bios_set_baud(int port, uint32_t baudrate);
-int kio_rx_info(void);
+// io.c
+int dbgf(const char *format, ...);
+int printk(const char *format, ...);
 
 
 // load.c
@@ -159,6 +148,11 @@ void handle_probe_command(int argc);
 
 // rtc_cmd.c
 void handle_rtc_command(int argc, char *argv[]);
+
+
+// setup.c
+void setup(void);
+
 
 // sh1107.c
 int sh1107_init(void);

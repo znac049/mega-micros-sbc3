@@ -69,6 +69,11 @@ trap0_call_table::
         dc.l    bios_char_available
         dc.l    bios_exit
         dc.l    bios_ticks
+        dc.l    fs_open
+        dc.l    fs_close
+        dc.l    fs_creat
+        dc.l    fs_read
+        dc.l    fs_write
 t0ct_end     
 
         end
