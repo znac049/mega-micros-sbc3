@@ -399,9 +399,11 @@ _not_handled::
 
 ; BUS ERROR handler - set a flag
 _bus_err_exception::
+        movem.l a0,-(sp)
         move.b  #1,bus_error_flag
-        lea.l   $af0001,a1
+        lea.l   $af0001,a0
         move.b  #0,18(a0)
+        movem.l (sp)+,a0
         rte
 
 
