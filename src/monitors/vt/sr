@@ -1,5 +1,0 @@
-#!/bin/bash
-echo "LO"
-sleep 1
-cat $*.srec
-0;

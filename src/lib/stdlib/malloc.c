@@ -1,8 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits.h>
+#include <duart.h>
 
-extern uint32_t _end;
+#if defined(BAREMETAL)
+#define printf(...) kprintf(__VA_ARGS__)
+#endif
 
 uint32_t heap_start;
 
