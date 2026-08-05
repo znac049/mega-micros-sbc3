@@ -29,7 +29,7 @@ SOFTWARE.
 
 int close(int fd) {
 #if defined(BAREMETAL)
-    return fs_close(fd);
+    return vfs_close(fd);
 #else
     int res = do_trap0(BIOS_CLOSE, fd, 0, 0);
 

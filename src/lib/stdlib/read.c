@@ -29,7 +29,7 @@ SOFTWARE.
 
 size_t read(int fd, void *buff, size_t count) {
 #if defined(BAREMETAL)
-    return fs_read(fd, buff, count);
+    return vfs_read(fd, buff, count);
 #else
     return do_trap0(BIOS_READ, fd, (uint32_t)buff, count);
 #endif

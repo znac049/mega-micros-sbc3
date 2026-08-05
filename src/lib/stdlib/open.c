@@ -30,7 +30,7 @@ SOFTWARE.
 
 int open(const char *pathname, int flags) {
 #if defined(BAREMETAL)
-    return fs_open(pathname, flags);
+    return vfs_open(pathname, flags);
 #else
     return do_trap0(BIOS_OPEN, (uint32_t)pathname, flags, 0);
 #endif
