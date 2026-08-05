@@ -27,8 +27,10 @@ SOFTWARE.
 #include <string.h>
 #include <errno.h>
 #include <nonstd.h>
+#include <machine.h>
 #include <ext2.h>
 
+#if defined(BAREMETAL)
 
 void dump_dirent (ext2_dirent_t *ent) {
     printf("\nDirectory entry:\n");
@@ -82,7 +84,7 @@ static uint32_t find_dir_inode_in(ext2_fs_t *fs, uint32_t parent_inode_num, cons
         printf("Read block %d\n", parent.i_block[block_index]);
 
         ext2_read_fs_block(fs, parent.i_block[block_index]);
-        while (offset < fs->block_size) {
+        while (offset < BLOCK_DEVICE_BLOCK_SIZE) {
             ext2_sanitize_dirent((ext2_dirent_t *)&fs->block_buffer[offset], &ent);
 
             if (ent.file_type == EXT2_FT_DIR) {
@@ -131,7 +133,7 @@ ext2_dirp_t *ext2_opendir(ext2_fs_t *fs, const char *name) {
     }
 
     dirp->bf = malloc(sizeof(ext2_block_follower_t));
-    dirp->buffer = malloc(fs->block_size);
+    dirp->buffer = malloc(BLOCK_DEVICE_BLOCK_SIZE);
     dirp->fs = fs;
     dirp->offset = 0;
 
@@ -199,7 +201,7 @@ ext2_dirent_t *ext2_readdir(ext2_dirp_t *dirp) {
 
     // update the offset ready for the next call
     dirp->offset += dirp->dirent.rec_len;
-    if (dirp->offset >= dirp->fs->block_size) {
+    if (dirp->offset >= BLOCK_DEVICE_BLOCK_SIZE) {
         dirp->offset = 0;
     }
 
@@ -215,3 +217,5 @@ void ext2_rewinddir(ext2_dirp_t *dirp) {
     ext2_reset_block_follower(dirp->bf);
     dirp->offset = 0;
 }
+
+#endif

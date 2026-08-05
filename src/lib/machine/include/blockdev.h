@@ -24,8 +24,29 @@ SOFTWARE.
 
 #pragma once
 
-struct block_device {
+#define BLOCK_DEVICE_BLOCK_SIZE 2048
+#define BLOCK_NUM_SHIFT 11
+#define MAX_BLOCK_DEVICES 4
 
+
+// typedef struct device_block device_block_t;
+typedef struct block_device block_device_t;
+
+
+struct block_device {
+    bool_t active;
+    char name[16];
+    uint8_t num_sub_devices;
+
+    int (*init)(block_device_t *dev);
+    int (*finish)(void);
+
+    int (*read_block)(uint32_t block_num, uint8_t *buff, uint8_t subdev);
+    int (*write_block)(uint32_t block_num, uint8_t *buff, uint8_t subdev);
+
+    void *driver_data;
 };
 
-typedef struct block_device block_device_t;
+
+
+extern block_device_t block_devices[MAX_BLOCK_DEVICES];

@@ -25,6 +25,9 @@ SOFTWARE.
 #pragma once
 
 #include <ctype.h>
+#include <filesystems.h>
+
+#define MAX_EXT2_FS   4
 
 #define EXT2_SB_MAGIC 0xef53
 
@@ -80,6 +83,10 @@ SOFTWARE.
 #define S_ISFIFO(m) ((m&0xf000)==EXT2_S_IFIFO)
 #define S_ISLNK(m) ((m&0xf000)==EXT2_S_IFLNK)
 #define S_ISSOCK(m) ((m&0xf000)==EXT2_S_IFSOCK)
+
+
+typedef struct vmp vmp_t;
+
 
 
 /*
@@ -194,16 +201,15 @@ typedef struct ext2_inode ext2_inode_t;
 #define EXT2_TRIP_IND   14
 
 struct ext2_fs {
-    uint8_t     *block_buffer;
+    uint8_t     block_buffer[BLOCK_DEVICE_BLOCK_SIZE];
     uint32_t    block_num_in_buffer;
     uint8_t     block_in_buffer_valid;
-    int         part_num;
-    ext2_sb_t   *sb;
+    ext2_sb_t   sb;
     uint32_t    num_blockgroups;
-    uint32_t    block_size;
     uint8_t     sectors_per_block;
     uint32_t    *bg_ent;
     ext2_bg_t   *bgdt;
+    vmp_t       *mp;
 };
 
 typedef struct ext2_fs ext2_fs_t;
@@ -242,43 +248,4 @@ struct ext2_dirp {
 
 typedef struct ext2_dirp ext2_dirp_t;
 
-
-// block.c
-int ext2_read_block(ext2_fs_t *fs, uint32_t block_num, uint8_t *buffer);
-int ext2_read_blocks(ext2_fs_t *fs, uint32_t block_num, int num_blocks, uint8_t *buffer);
-int ext2_read_fs_block(ext2_fs_t *fs, uint32_t block_num);
-int ext2_init_block_follower(ext2_fs_t *fs, uint32_t inode_num, ext2_block_follower_t *bf);
-void ext2_reset_block_follower(ext2_block_follower_t *bf);
-uint32_t ext2_get_next_block_num(ext2_block_follower_t *bf);
-
-// dir.c
-int ext2_closedir(ext2_dirp_t *dirp);
-ext2_dirp_t *ext2_opendir(ext2_fs_t *fs, const char *name);
-ext2_dirent_t *ext2_readdir(ext2_dirp_t *dirp);
-void ext2_rewinddir(ext2_dirp_t *dirp);
-
-// dump.c
-void dump_ext2_bg(ext2_bg_t *bg, int bg_num, ext2_sb_t *sb);
-void dump_ext2_inode(ext2_inode_t *in, int in_num);
-void dump_ext2_sb(ext2_sb_t *sb);
-
-// endian.c
-void ext2_sanitize_superblock(ext2_sb_t *src_sb, ext2_sb_t *dst_sb);
-void ext2_sanitize_bg(ext2_bg_t *src_bg, ext2_bg_t *dst_bg);
-void ext2_sanitize_inode(ext2_inode_t *src_in, ext2_inode_t *dst_in);
-void ext2_sanitize_dirent(ext2_dirent_t *src_dp, ext2_dirent_t *dst_dp);
-
-// ext2.c
-ext2_bg_t *ext2_get_bg(ext2_fs_t *fs, uint32_t blockgroup_num);
-int ext2_get_inode(ext2_fs_t *fs, uint32_t inode_num, ext2_inode_t *inode);
-ext2_fs_t *ext2_mount(uint8_t part_num);
-ext2_fs_t *ext2_umount(ext2_fs_t *fs);
-int is_ext2(ext2_sb_t *sb);
-bool_t ext2_has_superblock(uint32_t bg_num);
-
-// file.c
-int ext2_file_reader(ext2_fs_t *fs, uint32_t inode_num);
-
-// utils.c
-// void printn(const char *pfx, const uint8_t *str, int len);
 

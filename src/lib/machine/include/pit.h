@@ -54,14 +54,16 @@ SOFTWARE.
 #define pit_cntrl ((volatile uint8_t*) pit_base+50)
 #define pit_tsr   ((volatile uint8_t*) pit_base+52)
 
-uint32_t pit_get_counter(void);
-uint32_t pit_set_counter(uint32_t);
 uint32_t ticks(void);
 uint32_t reset_ticks(void);
 void idle_for_ticks(uint32_t t);
 
+#if defined(BAREMETAL)
 void _claim_pit(void);
 void _release_pit(void);
+uint32_t pit_get_counter(void);
+uint32_t pit_set_counter(uint32_t);
+#endif
 
 void pit_set_a(uint8_t val);
 void pit_set_bits_a(uint8_t bits);

@@ -22,14 +22,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <ctype.h>
-#include <machine.h>
-#include <ext2.h>
+#pragma once
 
-#if defined(BAREMETAL)
+// BIOS calls
+#define BIOS_PUTCHAR		0
+#define BIOS_GETCHAR		1
+#define BIOS_CHAR_AVAILABLE	2
+#define BIOS_EXIT			3
+#define BIOS_TICKS			4
+#define BIOS_OPEN			5
+#define BIOS_CLOSE			6
+#define BIOS_CREAT          7
+#define BIOS_READ			8
+#define BIOS_WRITE			9
+#define BIOS_RESET_TICKS   10
 
-int ext2_file_reader(ext2_fs_t *fs, uint32_t inode_num) {
-    return -1;
-}
+#define NUM_BIOS_CALLS	   11
 
-#endif

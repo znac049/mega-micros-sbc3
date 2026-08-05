@@ -24,6 +24,7 @@ SOFTWARE.
 
 #include <ctype.h>
 #include <stddef.h>
+#include <string.h>
 #include <machine.h>
 
 #if defined(BAREMETAL)
@@ -487,11 +488,15 @@ static int handles_path(const char *pathname) {
     if ((strcasecmp(pathname, "//usb1") == 0) || (strcasecmp(pathname, "//usb2") == 0)) {
         return YES;
     }
-    
+
     return NO;
 }
 
 int setup_vfs_duart_handler(vfs_handler_t *vfs) {
+    if (vfs == NULL) {
+        return NOT_OK;
+    }
+
     vfs->type = VFS_TYPE_CHAR;
     vfs->handles_path = handles_path;
     vfs->name = "68681 duart";
@@ -501,7 +506,7 @@ int setup_vfs_duart_handler(vfs_handler_t *vfs) {
     vfs->handler.chardev.char_available = bios_char_available;
     vfs->handler.chardev.flush = bios_flush;
 
-    return 0;
+    return OK;
 }
 
 #endif

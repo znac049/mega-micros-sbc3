@@ -6,8 +6,8 @@ LIBOBJECTS := $(LIBOBJECTS) \
 			ext2.o \
 			e2file.o
 
-LIBINCLUDES=$(DIR)/include
+LIBINCLUDES=$(SUBDIR)/include
 
-DIR := $(shell dirname $(lastword $(MAKEFILE_LIST)))
+SUBDIR := $(shell dirname $(lastword $(MAKEFILE_LIST)))
 CFLAGS  := $(CFLAGS) -I$(LIBINCLUDES)
 OBJECTS := $(OBJECTS) $(LIBOBJECTS)

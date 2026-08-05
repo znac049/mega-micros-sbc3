@@ -26,14 +26,17 @@ SOFTWARE.
 #include <pit.h>
 #include <machine.h>
 
+static uint8_t pit_port_a = 0;
+static uint8_t pit_port_b = 0;
+
+
+#if defined(BAREMETAL)
+
 static unsigned int saved_pit_isr=0;
 static unsigned int saved_pit_counter=0;
 
-volatile unsigned int pit_ticks = 0;
-volatile unsigned int seconds_ticks = 0;
-
-static uint8_t pit_port_a = 0;
-static uint8_t pit_port_b = 0;
+static volatile unsigned int pit_ticks = 0;
+static volatile unsigned int seconds_ticks = 0;
 
 ISR pit_isr_handler(void) {
     static uint8_t led_blink_counter = 0;
@@ -85,6 +88,9 @@ void _release_pit(void) {
     ENABLE_IRQS();
 }
 
+#endif /* BAREMETAL */
+
+
 uint32_t ticks(void) {
 #if defined(BAREMETAL)
     return pit_ticks;
@@ -94,6 +100,7 @@ uint32_t ticks(void) {
 }
 
 uint32_t reset_ticks(void) {
+#if defined(BAREMETAL)
     int saved_state;
 
     LOCK(saved_state);
@@ -103,15 +110,21 @@ uint32_t reset_ticks(void) {
     UNLOCK(saved_state);
 
     return pit_ticks;
+#else
+    return trap0(BIOS_RESET_TICKS, 0, 0, 0);
+#endif
 }
 
 void idle_for_ticks(uint32_t t) {
-    uint32_t end_tick = pit_ticks + t;
+    uint32_t end_tick = ticks() + t;
 
-    while (pit_ticks <= end_tick) {
+    while (ticks() <= end_tick) {
         ;
     }
 }
+
+
+#if defined(BAREMETAL)
 
 uint32_t pit_get_counter(void) {
     uint32_t l, m, h;
@@ -139,6 +152,8 @@ uint32_t pit_set_counter(uint32_t count_max) {
 
     return old_count_max;
 }
+
+#endif 
 
 void pit_set_a(uint8_t val) {
     pit_port_a = ~val;

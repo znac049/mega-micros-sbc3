@@ -1,8 +1,9 @@
 LIBOBJECTS := $(LIBOBJECTS) \
-			cfblock.o
+			cf_block.o \
+			rom_block.o
 
-LIBINCLUDES=$(DIR)/include
+LIBINCLUDES=$(SUBDIR)/include
 
-DIR := $(shell dirname $(lastword $(MAKEFILE_LIST)))
+SUBDIR := $(shell dirname $(lastword $(MAKEFILE_LIST)))
 CFLAGS  := $(CFLAGS) -I$(LIBINCLUDES)
 OBJECTS := $(OBJECTS) $(LIBOBJECTS)

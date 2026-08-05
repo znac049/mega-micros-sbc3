@@ -24,11 +24,17 @@ SOFTWARE.
 
 #pragma once
 
+#include <ctype.h>
+#include <blockdev.h>
+#include <filesystems.h>
+#include <ext2.h>
+
 #if defined(BAREMETAL)
 
 // Max number of file descriptors
 #define MAX_FILES 12
-#define MAX_VFS_HANDLERS 6
+#define MAX_VIRTUAL_FILESYSTEMS 6
+#define MAX_MOUNTS 4
 
 #define PATH_MAX 128
 
@@ -36,11 +42,28 @@ SOFTWARE.
 #define VFS_TYPE_CHAR 1
 #define VFS_TYPE_FS   2
 
-struct vmp {
-    int zob;
-};
+typedef struct vmp vmp_t;
+typedef union vfs vfs_t;
+typedef struct vfs_handler vfs_handler_t;
+typedef struct vdir vdir_t;
+typedef struct vfile vfile_t;
 
-typedef struct mountpoint vmp_t;
+
+struct vmp {
+    block_device_t *dev;
+    vfs_handler_t *fs_handler;
+
+    uint8_t block_buff[BLOCK_DEVICE_BLOCK_SIZE];
+
+    unsigned int mounted : 1;
+    unsigned int read_only : 1;
+    uint8_t subdev;
+
+    // This data depends on the specific filesystem type
+    union {
+        ext2_fs_t   e2fs;
+    } fs;
+};
 
 
 union vfs {
@@ -53,7 +76,7 @@ union vfs {
     } chardev;
 
     struct {
-        vmp_t (*mount)(void);
+        vmp_t *(*mount)(vmp_t *mp);
         int (*unmount)(vmp_t *mp);
         int (*sync)(void);
         int (*find_path)(void);
@@ -65,16 +88,15 @@ union vfs {
     } fs;
 };
 
-typedef union vfs vfs_t;
 
 struct vfs_handler {
     uint8_t type;
     int (*handles_path)(const char *pathname);
     char *name;
+    block_device_t *dev;
     vfs_t handler;
 };
 
-typedef struct vfs_handler vfs_handler_t;
 
 
 struct vdir {
@@ -83,16 +105,14 @@ struct vdir {
     vfs_handler_t *handler;
 };
 
-typedef struct vdir vdir_t;
 
 
 struct vfile {
     char path[PATH_MAX];
-    bool_t valid;
-    vfs_handler_t *handler;
+    bool_t open;
+    vmp_t *mp;
 };
 
-typedef struct vfile vfile_t;
 
 
 

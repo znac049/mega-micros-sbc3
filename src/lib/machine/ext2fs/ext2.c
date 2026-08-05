@@ -30,24 +30,27 @@ SOFTWARE.
 #include <ext2.h>
 #include <disk.h>
 
-static int ext2_read_superblock(uint8_t part_num, ext2_sb_t *sb) {
-    uint8_t buf[CF_SECTOR_SIZE];
+#if defined(BAREMETAL)
 
-    if (partition_read(part_num, 2, buf) != 0) {
-        return -1;
+static int ext2_read_superblock(vmp_t *mp, ext2_sb_t *sb) {
+    // kprintf("attempt to read superblock\n");
+
+    if (bd_read(mp->dev, 0, mp->block_buff, mp->subdev) != OK) {
+        return NOT_OK;
     }
 
-    ext2_sanitize_superblock((ext2_sb_t *)buf, sb);
+    // This only works because we have insisted on 2k block size.
+    ext2_sanitize_superblock((ext2_sb_t *)(&mp->block_buff[1024]), sb);
 
-    return 0;
+    return OK;
 }
 
 int is_ext2(ext2_sb_t *sb) {
     if (sb->s_magic != 0xef53) {
-        return 0;
+        return NO;
     }
 
-    return 1;
+    return YES;
 }
 
 static inline bool_t is_power_of(uint32_t num, uint32_t power) {
@@ -90,124 +93,116 @@ ext2_bg_t *ext2_get_bg(ext2_fs_t *fs, uint32_t bg_num) {
 }
 
 int ext2_get_inode(ext2_fs_t *fs, uint32_t inode_num, ext2_inode_t *inode) {
-    register uint32_t inodes_per_group = fs->sb->s_inodes_per_group;
+    register uint32_t inodes_per_group = fs->sb.s_inodes_per_group;
     uint32_t block_group_num = (inode_num - 1) / inodes_per_group;
     uint32_t index = (inode_num - 1) % inodes_per_group;
-    uint32_t block_num = (index * fs->sb->s_inode_size) / fs->block_size;
+    uint32_t block_num = (index * fs->sb.s_inode_size) / BLOCK_DEVICE_BLOCK_SIZE;
     ext2_inode_t *ent;
     ext2_bg_t *bg;
-    uint32_t offset = index * fs->sb->s_inode_size;;
+    uint32_t offset = index * fs->sb.s_inode_size;;
 
     if ((bg = ext2_get_bg(fs, block_group_num)) == NULL) {
         printf("Failed to get bg %d\n", block_group_num);
-        return -1;
+        return NOT_OK;
     }
 
     // dump_ext2_bg(bg, block_group_num, fs->sb);
 
     if (ext2_read_fs_block(fs, bg->bg_inode_table + block_num) != 0) {
-        return -1;
+        return NOT_OK;
     }
 
     ent = (ext2_inode_t *)&fs->block_buffer[offset];
     ext2_sanitize_inode(ent, inode);
     
-    return 0;
+    return OK;
 }
 
-ext2_fs_t *ext2_mount(uint8_t part_num) {
-    ext2_sb_t *sb;
+static inline vmp_t *null(int err) {
+    errno = err;
+    return NULL;
+}
+
+vmp_t *ext2_mount(vmp_t *mp) {
+    ext2_sb_t sb;
     int res;
     uint32_t bg1;
     uint32_t bg2;
-    ext2_fs_t *fs = NULL;
-    uint8_t *buffer = NULL;
     uint32_t block_size;
     ext2_bg_t *bgdt;
     uint32_t num_bgdt_blocks;
+    ext2_fs_t *fs;
 
-    sb = malloc(sizeof(ext2_sb_t));
-    if (sb == NULL) {
-        errno = ENOMEM;
-        return NULL;
+    if (mp == NULL) {
+        kprintf("NULL mp\n");
+        return null(EGENERIC);
     }
 
-    res = ext2_read_superblock(part_num, sb);
+    fs = (ext2_fs_t *)&mp->fs;
+    fs->mp = mp;
+
+    res = ext2_read_superblock(mp, &sb);
     if (res != 0) {
-        free(sb);
-        errno = EIO;
-        return NULL;
+        return null(EIO);
     }
 
-    if (!is_ext2(sb)) {
-        // printf("Not an ext2 filesystem!\n");
-        free(sb);
-        errno = EIO;
-        return NULL;
+    if (!is_ext2(&sb)) {
+        // kprintf("Not an ext2 filesystem!\n");
+        return null(EIO);
     }
 
-    // dump_ext2_sb(sb);
+    // dump_ext2_sb(&sb);
 
     // Calculate the number of block groups two different ways and check both
     // answers are the same.
-    bg1 = sb->s_blocks_count / sb->s_blocks_per_group;
-    if ((bg1 * sb->s_blocks_per_group) < sb->s_blocks_count) {
+    bg1 = sb.s_blocks_count / sb.s_blocks_per_group;
+    if ((bg1 * sb.s_blocks_per_group) < sb.s_blocks_count) {
         bg1++;
     }
 
-    bg2 = sb->s_inodes_count / sb->s_inodes_per_group;
-    if ((bg2 * sb->s_inodes_per_group) < sb->s_inodes_count) {
+    bg2 = sb.s_inodes_count / sb.s_inodes_per_group;
+    if ((bg2 * sb.s_inodes_per_group) < sb.s_inodes_count) {
         bg2++;
     }
 
     if (bg1 != bg2) {
         // printf("Number of Block groups calculations inconsistency: %d != %d.\n", bg1, bg2);
-        free(sb);
-        errno = EGENERIC;
-        return NULL;
+        return null(EGENERIC);
     }
 
-    block_size = 1024<<sb->s_log_block_size;
+    block_size = 1024<<sb.s_log_block_size;
 
-    // printf("bg table entries=%d, entry size=%d\n", bg1, sizeof(ext2_bg_t));
-    // printf("bg table entries per block=%d\n", block_size / sizeof(ext2_bg_t));
+    // If the block size is not 2k, then fail
+    if (block_size != BLOCK_DEVICE_BLOCK_SIZE) {
+        kprintf("Block size is %d - should be %d\n", block_size, BLOCK_DEVICE_BLOCK_SIZE);
+        return null(EGENERIC);
+    }
 
-    fs = malloc(sizeof(ext2_fs_t));
-    buffer = malloc(block_size);
+    // kprintf("bg table entries=%d, entry size=%d\n", bg1, sizeof(ext2_bg_t));
+    // kprintf("bg table entries per block=%d\n", block_size / sizeof(ext2_bg_t));
+
+    // kprintf("malloc(%d)...\n", sizeof(ext2_bg_t) * bg1);
     bgdt = malloc(sizeof(ext2_bg_t) * bg1);
 
-    if ((fs == NULL) || (buffer == NULL) || (bgdt == NULL)) {
-        // printf("Out of memory.\n");
-        free(fs);
-        free(buffer);
-        free(sb);
+    if (bgdt == NULL) {
+        kprintf("Out of memory.\n");
         free(bgdt);
-        errno = ENOMEM;
-        return NULL;
+        return null(ENOMEM);
     }
 
-    // printf("ext2_mount: all ok.\n");
     // All good !
-    fs->part_num = part_num;
-    fs->sb = sb;
     fs->num_blockgroups = bg1;
-    fs->block_size = block_size;
-    fs->block_buffer = buffer;
     fs->block_num_in_buffer = 0;
     fs->block_in_buffer_valid = 0;
-    fs->sectors_per_block = fs->block_size / CF_SECTOR_SIZE;
     fs->bgdt = bgdt;
 
     // Read the Block Group Descriptor Table...
-    num_bgdt_blocks = (fs->num_blockgroups * sizeof(ext2_bg_t)) / fs->block_size; 
-    // printf("Gonna read %d blocks for the bgdt (%d-%d)\n", num_bgdt_blocks+1, 1, 1+num_bgdt_blocks);
+    num_bgdt_blocks = (fs->num_blockgroups * sizeof(ext2_bg_t)) / BLOCK_DEVICE_BLOCK_SIZE; 
     if (ext2_read_blocks(fs, 1, num_bgdt_blocks+1, (uint8_t *)bgdt) != (num_bgdt_blocks+1)) {
-        free(fs);
-        free(buffer);
-        free(sb);
         free(bgdt);
-        errno = EIO;
-        return NULL;
+
+        kprintf("e2_read_blocks(, 1, %d) failed :-(\n", num_bgdt_blocks+1);
+        return null(EIO);
     }
 
     for (int i=0; i<fs->num_blockgroups; i++) {
@@ -217,16 +212,53 @@ ext2_fs_t *ext2_mount(uint8_t part_num) {
         // dump_ext2_bg(bg, i, sb);
     }
 
-    return fs;
+    mp->mounted = YES;
+
+    return mp;
 }
 
-ext2_fs_t *ext2_umount(ext2_fs_t *fs) {
+int ext2_umount(vmp_t *mp) {
+    ext2_fs_t *fs;
+
+    if (mp == NULL) {
+        return NOT_OK;
+    }
+
     // printf("unmount ext2 filesystem on partition %d.\n", fs->part_num);
 
-    free(fs->sb);
-    free(fs->block_buffer);
+    fs = (ext2_fs_t *)&mp->fs;
     free(fs->bgdt);
-    free(fs);
 
-    return NULL;
+    mp->mounted = NO;
+
+    return OK;
 }
+
+static int handles_path(const char *pathname) {
+    return NO;
+}
+
+int setup_vfs_ext2_handler(vfs_handler_t *vfs) {
+    if (vfs == NULL) {
+        return NOT_OK;
+    }
+
+    vfs->type = VFS_TYPE_FS;
+    vfs->handles_path = handles_path;
+    vfs->name = "ext2";
+
+    vfs->handler.fs.mount = ext2_mount;
+    vfs->handler.fs.unmount = ext2_umount;
+    
+    vfs->handler.fs.sync = NULL;
+    vfs->handler.fs.find_path = NULL;
+    vfs->handler.fs.open = NULL;
+    vfs->handler.fs.read = NULL;
+    vfs->handler.fs.write = NULL;
+    vfs->handler.fs.close = NULL;
+    vfs->handler.fs.locate = NULL;
+
+    return OK;
+}
+
+#endif

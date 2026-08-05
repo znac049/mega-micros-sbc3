@@ -315,10 +315,6 @@ _start::
         move.b  d0,pit_paddr_o(a5)      ; Port A
         move.b  d0,pit_pbddr_o(a5)      ; Port B
 
-; Light a single LED on port A
-        move.b  #$FE,d0
-        move.b  d0,pit_padr_o(a5)
-
 
 
 ; copy the vector table into RAM at VECTOR_BASE
@@ -330,10 +326,6 @@ cpvec:
         move.l  (a0)+,d1
         move.l  d1,(a1)+
         dbeq    d0,cpvec
-
-; Light a single LED on port A
-        move.b  #$FD,d0
-        move.b  d0,pit_padr_o(a5)
 
 
 
@@ -350,11 +342,6 @@ cpdata:
         move.l  d1,(a1)+
         dbra    d0,cpdata               
 
-; Light a single LED on port A
-        move.b  #$FB,d0
-        move.b  d0,pit_padr_o(a5)
-
-
 
 ; Init BSS
 ;
@@ -366,9 +353,6 @@ ibloop:
         bra.s   ibloop
 
 ibdone:
-; Light a single LED on port A
-        move.b  #$F7,d0
-        move.b  d0,pit_padr_o(a5)
 
 
 ; invoke main() 

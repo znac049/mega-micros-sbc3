@@ -30,6 +30,8 @@ SOFTWARE.
 #include <ext2.h>
 #include <disk.h>
 
+#if defined(BAREMETAL)
+
 struct fs_feature {
     int mask;
     char *feature;
@@ -199,3 +201,5 @@ void dump_ext2_inode(ext2_inode_t *in, int in_num) {
 
     printf("  Generation #:      %d\n", in->i_generation);
 }
+
+#endif

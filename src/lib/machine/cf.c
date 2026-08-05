@@ -53,7 +53,7 @@ int cf_read(uint8_t drive_num, uint32_t sector, uint8_t *buffer) {
 	//dump_regs();
 	status = *cf_reg_status;
 	if (status & CF_ST_ERROR) {
-		return -1;
+		return NOT_OK;
     }
 
     // Wait for device to indicate data is ready to read
@@ -67,21 +67,31 @@ int cf_read(uint8_t drive_num, uint32_t sector, uint8_t *buffer) {
 		//_cf_wait_busy();
 	}
 
-	return 0;
+	return OK;
 }
 
 uint8_t cf_drive_ready(uint8_t drive_num) {
-    uint8_t status;
+    /* 
+     * Poll the status register: if no card is present, this will
+     * consistently return 0. If a card is present, DRDY and DSC
+     * should be set.
+     */ 
+    register uint8_t cf_good = CF_ST_RDY | CF_ST_DSC;
 
     if (drive_num > 1) {
-        return 0;
+        return NO;
     }
 
+    // Select drive
     *cf_reg_lba3 = 0xe0 | (drive_num?0x10:0);
-    status = *cf_reg_status;
-    // printf("CF Status: 0x%02x\n", status);
 
-    return status & CF_ST_RDY;
+    for (int i=0; i<1000; i++) {
+        if ((*cf_reg_status & cf_good) == cf_good) {
+            return YES;
+        }
+    }
+
+    return NO;
 }
 
 static void sanitize_string(char *str, int max_len) {

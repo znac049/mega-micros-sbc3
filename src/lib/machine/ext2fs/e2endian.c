@@ -29,6 +29,8 @@ SOFTWARE.
 #include <ext2.h>
 #include <disk.h>
 
+#if defined(BAREMETAL)
+
 void ext2_sanitize_superblock(ext2_sb_t *src_sb, ext2_sb_t *dst_sb) {
 #if __BYTE_ORDER__ != __ORDER_BIG_ENDIAN__
     if (src_sb != dst_sb) {
@@ -171,3 +173,5 @@ void ext2_sanitize_dirent(ext2_dirent_t *src_dp, ext2_dirent_t *dst_dp) {
 
 #endif
 }
+
+#endif
