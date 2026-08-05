@@ -24,6 +24,7 @@ SOFTWARE.
 
 #include <ctype.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 #include <machine.h>
 
@@ -33,7 +34,7 @@ SOFTWARE.
 
 static int major = 0;
 static int minor = 4;
-static int MAGIC_BUILD_NUMBER = 289;
+static int MAGIC_BUILD_NUMBER = 385;
 
 
 uint32_t ram_end;
@@ -44,8 +45,9 @@ bool_t hex_display_present;
 bool_t acrtc3_present;
 bool_t rtc_present;
 bool_t oled_present;
+bool_t experimental;
 
-static char *jumper_txt[6] = {"TxA_EN", "TxB_EN", "XR_EN", "EMU_Boot", "DIAG_EN", "ACRTC_MODE"};
+static char *jumper_txt[6] = {"TxA_EN", "TxB_EN", "XR_EN", "EMU_Boot", "Experimental", "ACRTC_MODE"};
 
 static void pr_section(const char *name, void *start, void *end) {
     printk("%-8s $%06X-$%06X   %d\n", name, start, end, (uint32_t)end - (uint32_t)start);
@@ -135,13 +137,15 @@ void setup(void) {
     jumpers = (~(*duart_ip)) & 0x3f;
     
     is_xr = (jumpers & 0x04)?YES:NO;
+    experimental = (jumpers & 0x10)?YES:NO;
+
     setup_duart(is_xr);
 
     set_isr_handler(32, (unsigned int)trap0_handler);
     set_isr_handler(46, (unsigned int)trap14_handler);
 
     printk("\n\n\nMega-Micros SBC-3 Computer System\n");
-    printk("MicroMon ROM V%d.%d_%03d starting.\n", major, minor, MAGIC_BUILD_NUMBER);
+    printk("MicroMon System ROM V%d.%d_%03d starting.\n", major, minor, MAGIC_BUILD_NUMBER);
     printk("\nHardware:\n\n");
 
     // RAM
@@ -198,12 +202,40 @@ void setup(void) {
     printk   ("%-8s $%06X-$%06X               <-- relocated from $%08X\n", "rw data", (uint32_t)&_d_start, (uint32_t)&_d_start + (uint32_t)&_data_length, (uint32_t)&_data_load_start);
     pr_section("bss",     &_bss_start,     &_bss_end);
 
+    if (rtc_present) {
+        ds1307_time_t t;
+        int status;
+
+        i2c_speed(100);
+        status = ds1307_read_time(&t);
+        if (status >= 0) {
+            status = ds1307_read_time(&t);
+
+            printk("\nThe current time is: %02u:%02u:%02u on %02u-%02u-%04u %s\n", 
+                t.hours, t.minutes, t.seconds,
+                t.date, t.month, t.year,
+                (status == 1)?"(halted)":""            );
+        }
+    }
+
     if (oled_present) {
+        i2c_speed(400);
         sh1107_clear();
         sh1107_pstr(0, 0, "SBC-3\n\nusb1@230400\nusb2@230400", NULL);
         sh1107_display();
     }
 
+    // Setup the heap so malloc can be used
+    _init_heap();
+    heap_print_free();
+
+    // Activate any block devices
+    printk("\nActivating block devices\n");
+    bd_init();
+    
     // Prepare filesystems for use
-    fs_init();
+    if (experimental) {
+        printk("Attempting mounts\n");
+        vfs_init();
+    }
 }
