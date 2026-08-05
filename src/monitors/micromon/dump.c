@@ -29,9 +29,27 @@ SOFTWARE.
 
 #include "micromon.h"
 
+static volatile int berr = NO;
+
+static ISR bus_error(void) {
+    berr = YES;
+}
+
+static int get_byte(uint8_t *addr) {
+    uint8_t byte_val;
+
+    berr = NO;
+    byte_val = *addr;
+
+    return (berr==YES)?-1:byte_val;
+}
+
 void dump(uint8_t *buf, size_t count, uint8_t print_zeroes, const char *heading, bool_t absolute_addresses) {
-    int all_zeroes = 0;
+    int all_zeroes = NO;
     int printed_something = 0;
+    unsigned int old_handler = set_isr_handler(VEC_BUS_ERROR, (unsigned int)bus_error);
+    int byte_val;
+
 
     if (heading != NULL) {
         kprintf("%s:\n", heading);
@@ -40,8 +58,8 @@ void dump(uint8_t *buf, size_t count, uint8_t print_zeroes, const char *heading,
         kprintf("Memory at 0x%08x\n", buf);
     }
 
-    for (size_t i=0; i<count; i+=16) {
-        int needed = 16;
+    for (uint32_t i=0; i<count; i+=16) {
+        uint32_t needed = 16;
         int skip = 0;
 
         if ((i + 16) > count) {
@@ -50,13 +68,15 @@ void dump(uint8_t *buf, size_t count, uint8_t print_zeroes, const char *heading,
         }
 
         if (print_zeroes) {
-            all_zeroes = 0;
+            all_zeroes = NO;
         }
         else {
-            all_zeroes = 1;
-            for (int x=0; x<needed; x++) {
-                if (buf[i+x]) {
-                    all_zeroes = 0;
+            all_zeroes = YES;
+            for (uint32_t x=0; x<needed; x++) {
+                byte_val = get_byte(buf+i+x);
+                if (byte_val > 0) {
+                    all_zeroes = NO;
+                    x = needed;
                 }
             }
         }
@@ -77,8 +97,16 @@ void dump(uint8_t *buf, size_t count, uint8_t print_zeroes, const char *heading,
                 }
             }
 
-            for (int x=0; x<needed; x++) {
-                kprintf("%02x ", buf[i+x]);
+            for (uint32_t x=0; x<needed; x++) {
+                byte_val = get_byte(buf+i+x);
+
+                if (byte_val == NOT_OK) {
+                    // Bus Error occurred
+                    kprintf("!! ");
+                }
+                else {
+                    kprintf("%02x ", byte_val);
+                }
             }
 
             for (int x=0; x<skip; x++) {
@@ -86,13 +114,18 @@ void dump(uint8_t *buf, size_t count, uint8_t print_zeroes, const char *heading,
             }
 
             kprintf("    ");
-            for (int x=0; x<needed; x++) {
-                char c = buf[i+x];
+            for (uint32_t x=0; x<needed; x++) {
+                byte_val = get_byte(buf+i+x);
 
-                if ((c < ' ') || (c > '_'))
-                    c = '.';
+                if ((byte_val < ' ') || (byte_val > '_'))
+                    byte_val = '.';
 
-                kprintf("%c", c);
+                if (byte_val == NOT_OK) {
+                    kprintf(" ");
+                }
+                else {
+                    kprintf("%c", byte_val);
+                }
             }
             kprintf("\n");
 
@@ -105,4 +138,6 @@ void dump(uint8_t *buf, size_t count, uint8_t print_zeroes, const char *heading,
     }
 
     kprintf("\n");
+
+    set_isr_handler(VEC_BUS_ERROR, old_handler);
 }

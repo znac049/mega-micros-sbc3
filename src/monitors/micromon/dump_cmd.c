@@ -62,7 +62,7 @@ void handle_dump_command(int argc, char *argv[]) {
         }
     }
 
-    dump((uint8_t *)dump_address, dump_window_size, NO, NULL, YES);
+    dump((uint8_t *)dump_address, dump_window_size, YES, NULL, YES);
 
     dump_address += dump_window_size;
 }
