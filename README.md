@@ -54,7 +54,7 @@ Once that environment variable has been set, you should be good to start compili
 > The supplied makefiles assume that the 68k compiler and _vasm_ can be found somewhere on your search path.
 
 ## First Steps
-### Build the run-time libraries and crt0
+### Build the run-time libraries and run-time startup (crt0)
 If you've followed the instructions above, it's as simple as (start in the directory you git cloned into):
 ```
 $ cd src/lib
