@@ -56,7 +56,7 @@ with open(romdisk, mode="w+b") as f:
     f.write(b'\xff' * (block_size * rounded_block_count))
 
 # cmd = ['dd', 'if=/dev/zero', f'of={romdisk}', f'bs={block_size}', f'count={rounded_block_count}']
-cmd = ['mkfs.ext2', '-b', f'{block_size}', '-d', './romdisk', '-m', '1', '-M', '//rom', '-t', 'ext2', romdisk]
+cmd = ['mkfs.ext2', '-b', f'{block_size}', '-d', '../romdisk/romdisk', '-m', '1', '-M', '//rom', '-t', 'ext2', romdisk]
 print(cmd)
 try:
     res = subprocess.run(cmd, text=True, check=True)

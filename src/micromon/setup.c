@@ -35,7 +35,7 @@ SOFTWARE.
 
 static int major = 0;
 static int minor = 4;
-static int MAGIC_BUILD_NUMBER = 413;
+static int MAGIC_BUILD_NUMBER = 414;
 
 
 uint32_t ram_end;
