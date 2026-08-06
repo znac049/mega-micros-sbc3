@@ -492,7 +492,7 @@ static int handles_path(const char *pathname) {
     return NO;
 }
 
-int setup_vfs_duart_handler(vfs_handler_t *vfs) {
+int setup_vfs_duart_handler(vfs_fs_t *vfs) {
     if (vfs == NULL) {
         return NOT_OK;
     }

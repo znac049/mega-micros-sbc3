@@ -75,7 +75,6 @@ int ext2_read_blocks(ext2_fs_t *fs, uint32_t block_num, int num_blocks, uint8_t 
     return num_blocks;
 }
 
-#if 0
 void ext2_reset_block_follower(ext2_block_follower_t *bf) {
     bf->direct_offset = 0;
     bf->single_offset = 0;
@@ -97,6 +96,7 @@ int ext2_init_block_follower(ext2_fs_t *fs, uint32_t inode_num, ext2_block_follo
     return 0;
 }
 
+#if 0
 uint32_t ext2_get_next_block_num(ext2_block_follower_t *bf) {
     ext2_inode_t *in = &bf->inode;
     uint32_t block_num = 0;

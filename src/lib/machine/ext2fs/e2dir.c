@@ -101,15 +101,25 @@ static uint32_t find_dir_inode_in(ext2_fs_t *fs, uint32_t parent_inode_num, cons
     return parent_inode_num;
 }
 
-ext2_dirp_t *ext2_opendir(ext2_fs_t *fs, const char *name) {
-    ext2_dirp_t *dirp;
+ext2_dirp_t *ext2_opendir(vmp_t *mp, vdir_t *dir, const char *name) {
     char name_copy[EXT2_MAX_PATH_LEN];
     char *s = name_copy;
     char *dirv[EXT2_MAX_DIR_DEPTH];
     int dirc = 0;
     int dir_inode_num = EXT2_ROOT_INO;
+    ext2_dirp_t *dirp;
 
     printf("ext2_opendir: '%s'\n", name);
+
+    if ((dir == NULL) || (mp == NULL)) {
+        kprintf("NULL vmp_t and/or vdir_t pointer passed\n");
+        return NULL;
+    }
+
+    dirp = &dir->fs.e2dir;
+    dirp->offset = 0;
+    dirp->mp = mp;
+
     strcpy(name_copy, name);
     
     if (*s == '/') {
@@ -119,42 +129,22 @@ ext2_dirp_t *ext2_opendir(ext2_fs_t *fs, const char *name) {
     if (*s) {
         dirc = split_str(s, '/', dirv, EXT2_MAX_DIR_DEPTH);
 
-        printf("The path splits into %d parts:\n", dirc);
+        kprintf("The path splits into %d parts:\n", dirc);
         for (int i=0; i<dirc; i++) {
-            printf("  %s\n", dirv[i]);
+            kprintf("  %s\n", dirv[i]);
         }
-    }
-
-    dirp = malloc(sizeof(ext2_dirp_t));
-
-    if (dirp == NULL) {
-        errno = ENOMEM;
-        return NULL;
-    }
-
-    dirp->bf = malloc(sizeof(ext2_block_follower_t));
-    dirp->buffer = malloc(BLOCK_DEVICE_BLOCK_SIZE);
-    dirp->fs = fs;
-    dirp->offset = 0;
-
-    if ((dirp->buffer == NULL) || (dirp->bf == NULL)) {
-        free(dirp->bf);
-        free(dirp->buffer);
-        free(dirp);
-        errno = ENOMEM;
-        return NULL;
     }
 
     // do stuff
     if (dirc) {
         for (int i=0; (i<dirc) && (dir_inode_num != -1); i++) {
-            dir_inode_num = find_dir_inode_in(fs, dir_inode_num, dirv[i]);
-            printf("Directory inode # is %d\n", dir_inode_num);
+            dir_inode_num = find_dir_inode_in(&mp->fs.e2fs, dir_inode_num, dirv[i]);
+            kprintf("Directory inode # is %d\n", dir_inode_num);
         }
     }
 
-    printf("The final dir inode # is %d\n", dir_inode_num);
-    ext2_init_block_follower(fs, dir_inode_num, dirp->bf);
+    kprintf("The final dir inode # is %d\n", dir_inode_num);
+    ext2_init_block_follower(&mp->fs.e2fs, dir_inode_num, &dirp->bf);
 
     return dirp;
 }
@@ -162,18 +152,16 @@ ext2_dirp_t *ext2_opendir(ext2_fs_t *fs, const char *name) {
 int ext2_closedir(ext2_dirp_t *dirp) {
     if (dirp == NULL) {
         errno = EBADF;
-        return -1;
+        return NOT_OK;
     }
 
-    free(dirp->bf);
-    free(dirp->buffer);
-    free(dirp);
+    dirp->mp = NULL;
 
-    return 0;
+    return OK;
 }
 
 ext2_dirent_t *ext2_readdir(ext2_dirp_t *dirp) {
-    uint8_t *buf = dirp->fs->block_buffer;
+    uint8_t *buf = (uint8_t *)&dirp->mp->block_buff;
 
     if (dirp == NULL) {
         errno = EBADF;
@@ -182,14 +170,14 @@ ext2_dirent_t *ext2_readdir(ext2_dirp_t *dirp) {
 
     // do stuff
     if (dirp->offset == 0) {
-        uint32_t block_num = ext2_get_next_block_num(dirp->bf);
+        uint32_t block_num = ext2_get_next_block_num(&dirp->bf);
 
         if (block_num == 0) {
             return NULL;
         }
 
         printf("Grab dir block %d\n", block_num);
-        if (ext2_read_fs_block(dirp->fs, block_num) != 0) {
+        if (ext2_read_fs_block(&dirp->mp->fs.e2fs, block_num) != 0) {
             printf("Failed to read block %d\n", block_num);
             return NULL;
         }
@@ -214,13 +202,28 @@ void ext2_rewinddir(ext2_dirp_t *dirp) {
         return;
     }
 
-    ext2_reset_block_follower(dirp->bf);
+    ext2_reset_block_follower(&dirp->bf);
     dirp->offset = 0;
 }
 
-vdir_t *ext2_locate(vmp_t *mp, const char *pathname) {
+vdir_t *ext2_locate(vmp_t *mp, vdir_t *dir, const char *pathname) {
+    ext2_dirp_t *e2_dir;
+
     kprintf("ext2_locate(..., '%s')\n", pathname);
-    return NULL;
+
+    if ((mp == NULL) || (dir == NULL)) {
+        kprintf("mp and/or dir set to NULL\n");
+        return NULL;
+    }
+
+    e2_dir = ext2_opendir(mp, dir, pathname);
+
+    if (e2_dir == NULL) {
+        kprintf("Failed to open ext2 dir '%s'\n", pathname);
+        return NULL;
+    }
+
+    return dir;
 }
 
 #endif

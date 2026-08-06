@@ -76,6 +76,7 @@ trap0_call_table::
         dc.l    vfs_write
         dc.l    reset_ticks
         dc.l    vfs_chdir
+        dc.l    vfs_getcwd
 t0ct_end     
 
         end

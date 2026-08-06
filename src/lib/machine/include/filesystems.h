@@ -35,6 +35,7 @@ SOFTWARE.
 #define MAX_FILES 12
 #define MAX_VIRTUAL_FILESYSTEMS 6
 #define MAX_MOUNTS 4
+#define MAX_DIRS 8
 
 #define PATH_MAX 128
 
@@ -44,14 +45,14 @@ SOFTWARE.
 
 typedef struct vmp vmp_t;
 typedef union vfs vfs_t;
-typedef struct vfs_handler vfs_handler_t;
+typedef struct vfs_fs vfs_fs_t;
 typedef struct vdir vdir_t;
 typedef struct vfile vfile_t;
 
 
 struct vmp {
     block_device_t *dev;
-    vfs_handler_t *fs_handler;
+    vfs_fs_t *fs_handler;
     char name[16];
 
     uint8_t block_buff[BLOCK_DEVICE_BLOCK_SIZE];
@@ -86,12 +87,12 @@ union vfs {
         int (*write)(vfile_t *file, const char *buf, size_t n_bytes);
         int (*close)(vfile_t *file);
         int (*chdir)(const char *path);
-        vdir_t *(*locate)(vmp_t *mp, const char *path);
+        vdir_t *(*locate)(vmp_t *mp, vdir_t *dir, const char *path);
     } fs;
 };
 
 
-struct vfs_handler {
+struct vfs_fs {
     uint8_t type;
     int (*handles_path)(const char *pathname);
     char *name;
@@ -103,8 +104,12 @@ struct vfs_handler {
 
 struct vdir {
     char path[PATH_MAX];
-    bool_t valid;
+    bool_t open;
     vmp_t *mp;
+
+    union {
+        ext2_dirp_t e2dir;
+    } fs;
 };
 
 

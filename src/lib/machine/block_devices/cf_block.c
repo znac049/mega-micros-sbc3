@@ -103,7 +103,7 @@ int create_cf_dev(block_device_t *dev) {
     dev->read_block = cf_dev_read_block;
     dev->write_block = cf_dev_write_block;
 
-    strcpy(dev->name, "CF");
+    strcpy(dev->name, "cf");
 
     dev->driver_data = &cf_disks;
     dev->num_sub_devices = 2;       // Max

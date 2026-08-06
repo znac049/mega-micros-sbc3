@@ -135,7 +135,7 @@ int create_rom_dev(block_device_t *dev) {
     dev->read_block = rom_dev_read_block;
     dev->write_block = rom_dev_write_block;
 
-    strcpy(dev->name, "ROM");
+    strcpy(dev->name, "rom");
 
     dev->driver_data = &rom_disk;
     dev->num_sub_devices = 1;

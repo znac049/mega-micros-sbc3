@@ -35,7 +35,7 @@ SOFTWARE.
 
 static int major = 0;
 static int minor = 4;
-static int MAGIC_BUILD_NUMBER = 401;
+static int MAGIC_BUILD_NUMBER = 413;
 
 
 uint32_t ram_end;
@@ -239,8 +239,13 @@ void setup(void) {
     
     // Prepare filesystems for use
     if (experimental) {
+        char pwd[PATH_MAX];
+        
         printk("Attempting mounts\n");
         vfs_init();
+
+        kprintf("PWD is '%s'\n", getcwd(pwd, PATH_MAX));
     }
 
+    kprintf("Entering command loop.\n");
 }

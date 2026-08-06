@@ -22,22 +22,23 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+#include <ctype.h>
+#include <stddef.h>
+#include <unistd.h>
+#include <errno.h>
+#include <machine.h>
 
-// BIOS calls
-#define BIOS_PUTCHAR		0
-#define BIOS_GETCHAR		1
-#define BIOS_CHAR_AVAILABLE	2
-#define BIOS_EXIT			3
-#define BIOS_TICKS			4
-#define BIOS_OPEN			5
-#define BIOS_CLOSE			6
-#define BIOS_CREAT          7
-#define BIOS_READ			8
-#define BIOS_WRITE			9
-#define BIOS_RESET_TICKS   10
-#define BIOS_CHDIR         11
-#define BIOS_GETCWD        12
+char *getcwd(char *buf, size_t size) {
+#if defined(BAREMETAL)
+    return (char *)vfs_getcwd(buf, size);
+#else
+    int res = do_trap0(BIOS_GETCWD, (uint32_t)buf, size, 0);
 
-#define NUM_BIOS_CALLS	   13
+    if (res != 0) {
+        errno = res;
+        return NULL;
+    }
 
+    return buf;
+#endif
+}

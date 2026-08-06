@@ -239,13 +239,10 @@ typedef struct ext2_block_follower ext2_block_follower_t;
 
 
 struct ext2_dirp {
-    ext2_block_follower_t   *bf;
+    ext2_block_follower_t   bf;
     ext2_dirent_t           dirent;
-    ext2_fs_t               *fs;
-    uint8_t                 *buffer;
     uint32_t                offset;
+    vmp_t                   *mp;
 };
 
 typedef struct ext2_dirp ext2_dirp_t;
-
-

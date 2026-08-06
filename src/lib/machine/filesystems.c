@@ -31,10 +31,9 @@ SOFTWARE.
 
 static vdir_t cwd;
 
-static vfs_handler_t filesystems[MAX_VIRTUAL_FILESYSTEMS];
-
-static vfile_t fs_fds[MAX_FILES];
-
+static vfs_fs_t filesystems[MAX_VIRTUAL_FILESYSTEMS];
+static vfile_t vfs_files[MAX_FILES];
+static vdir_t vfs_dirs[MAX_DIRS];
 static vmp_t mounts[MAX_MOUNTS];
 
 int vfs_open(const char *pathname, int flags);
@@ -50,10 +49,45 @@ static vmp_t *find_free_vmp(void) {
     return NULL;
 }
 
-static vfs_handler_t *find_free_handler(void) {
+static vfs_fs_t *find_free_fs(void) {
     for (int i=0; i<MAX_VIRTUAL_FILESYSTEMS; i++) {
         if (filesystems[i].type == VFS_TYPE_NONE) {
             return &filesystems[i];
+        }
+    }
+
+    return NULL;
+}
+
+static vdir_t *find_free_dir(void) {
+    for (int i=0; i<MAX_DIRS; i++) {
+        if (vfs_dirs[i].open == NO) {
+            return &vfs_dirs[i];
+        }
+    }
+
+    return NULL;
+}
+
+static int find_free_file(void) {
+    for (int i=0; i<MAX_FILES; i++) {
+        if (vfs_files[i].open == NO) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+static vmp_t *find_handler(const char *pathname) {
+    // Find the handler responsible for the given pathname
+    if (pathname[0] != '/') {
+        return cwd.mp;
+    }
+
+    for (int i=0; i<MAX_MOUNTS; i++) {
+        if ((mounts[i].mounted == YES) && (strncasecmp(pathname+1, mounts[i].name, strlen(mounts[i].name)) == 0)) {
+            return &mounts[i];
         }
     }
 
@@ -71,7 +105,7 @@ int attempt_to_mount(block_device_t *dev, uint8_t subdev) {
 
     // Try each filesystem type in turn...
     for (int fs=0; fs<MAX_VIRTUAL_FILESYSTEMS; fs++) {
-        vfs_handler_t *hand = &filesystems[fs];
+        vfs_fs_t *hand = &filesystems[fs];
 
         if (hand->type == VFS_TYPE_FS) {
             vmp->dev = dev;
@@ -100,35 +134,38 @@ int attempt_to_mount(block_device_t *dev, uint8_t subdev) {
     return NOT_OK;
 }
 
-int vfs_init(void) {
-    int res = OK;
-    int fd;
-
-    cwd.valid = NO;
-    strcpy(cwd.path, "/");
-
-    vfs_chdir("/rom0");
-
-    // Initialise the files table
-    for (int i=0; i<MAX_FILES; i++) {
-        fs_fds[i].open = NO;
+static void init_structures(void) {
+    for (int i=0; i<MAX_DIRS; i++) {
+        vfs_dirs[i].open = NO;
     }
 
-    // Initialise the mounts table
+    for (int i=0; i<MAX_FILES; i++) {
+        vfs_files[i].open = NO;
+    }
+
     for (int i=0; i<MAX_MOUNTS; i++) {
         mounts[i].mounted = NO;
     }
 
-    // Initialise the filesystems
     for (int i=0; i<MAX_VIRTUAL_FILESYSTEMS; i++) {
         filesystems[i].type = VFS_TYPE_NONE;
     }
+}
+
+int vfs_init(void) {
+    int res = OK;
+    int fd;
+
+    cwd.open = NO;
+    strcpy(cwd.path, "/");
+
+    init_structures();
 
     // Register a handler for the two serial ports
-    res = setup_vfs_duart_handler(find_free_handler());
+    res = setup_vfs_duart_handler(find_free_fs());
 
     // Register a handler for ext2 filesystems
-    res = setup_vfs_ext2_handler(find_free_handler());
+    res = setup_vfs_ext2_handler(find_free_fs());
 
     // Open stdin/out/err
     if ((fd = vfs_open("//usb1", O_RDONLY)) < 0) {
@@ -152,13 +189,20 @@ int vfs_init(void) {
 
             // Check if we can mount anything on each subdev
             for (uint8_t subdev=0; subdev<dev->num_sub_devices; subdev++) {
-                if (attempt_to_mount(dev, subdev) == OK) {
-                    return OK;
+                if (attempt_to_mount(dev, subdev) == NOT_OK) {
+                    kprintf("%s%d not mounted\n", dev->name, subdev);
                 }
             }
         }
     }
-    
+
+    kprintf("Calling chdir()...\n");
+    if (vfs_chdir("/rom0") == NOT_OK) {
+        kprintf("chdir() failed|||\n");
+
+        return NOT_OK;
+    }
+
     return res;
 }
 
@@ -166,7 +210,7 @@ int vfs_shutdown(void) {
     // Close any open files...
 
     for (int i=0; i<MAX_FILES; i++) {
-        if (fs_fds[i].open == YES) {
+        if (vfs_files[i].open == YES) {
             vfs_close(i);
         }
     }
@@ -174,37 +218,19 @@ int vfs_shutdown(void) {
     return OK;
 }
 
-static int find_free_fd(void) {
-    for (int i=0; i<MAX_FILES; i++) {
-        if (fs_fds[i].open == NO) {
-            return i;
-        }
-    }
-
-    return -1;
-}
-
-static vmp_t *find_handler(const char *pathname) {
-    // Find the handler responsible for the given pathname
-    if (pathname[0] != '/') {
-        return cwd.mp;
-    }
-
-    for (int i=0; i<MAX_MOUNTS; i++) {
-        if (strncasecmp(pathname, mounts[i].name, strlen(mounts[i].name)) == 0) {
-            return &mounts[i];
-        }
-    }
-
-    return NULL;
-}
-
 int vfs_chdir(const char *path) {
     vmp_t *mp;
     vdir_t *target_dir;
+    vdir_t *free_dir;
     char *p = (char *)path;
 
     kprintf("chdir('%s')\n", path);
+
+    free_dir = find_free_dir();
+    if (free_dir == NULL) {
+        kprintf("No free vdir_t slots\n");
+        return NOT_OK;
+    }
 
     mp = find_handler(path);
     if (mp == NULL) {
@@ -212,7 +238,10 @@ int vfs_chdir(const char *path) {
         return NOT_OK;
     }
 
+    kprintf("Whoop, whooop - found a handler: '%s%d'\n", mp->dev->name, mp->subdev);
     if (path[0] == '/') {
+        kprintf("Absolute path - strip the mount\n");
+
         // Gotta strip off the /devXX
         p = strchr(path+1, '/');
         if (p == NULL) {
@@ -220,21 +249,31 @@ int vfs_chdir(const char *path) {
         }
     }
 
-    target_dir = mp->fs_handler->handler.fs.locate(mp, p);
+    kprintf("Locating '%s'\n", p);
+    target_dir = mp->fs_handler->handler.fs.locate(mp, free_dir, p);
     if (target_dir == NULL) {
         kprintf("locate('%s') failed, p='%s'\n", path, p);
         return NOT_OK;
     }
 
+    kprintf("Locate()  returned ok\n");
+
     memcpy(&cwd, target_dir, sizeof(vdir_t));
-    cwd.valid = YES;
+    cwd.open = YES;
+    cwd.mp = mp;
 
     kprintf("chdir() success\n");
     return OK;
 }
 
-char *vfs_getcwd(char*buff, size_t size) {
-    return NULL;
+int vfs_getcwd(char*buff, size_t size) {
+    if (cwd.open == NO) {
+        return (int)"/limbo";
+    }
+
+    snprintf(buff, size, "/%s%d/%s", cwd.mp->dev->name, cwd.mp->subdev, cwd.path);
+
+    return (int)buff;
 }
 
 vdir_t *vfs_locate(const char *path) {
@@ -252,16 +291,15 @@ int vfs_creat(const char *pathname, mode_t mode) {
 }
 
 int vfs_open(const char *pathname, int flags) {
-    int fd = find_free_fd();
+    int fd = find_free_file();
     vfile_t *file;
 
-    if (fd < 0) {
+    if (fd == -1) {
         printf("No free file descriptors\n");
         return -1;
     }
 
-    // We have a handler
-    file = &fs_fds[fd];
+    file = &vfs_files[fd];
     file->open = YES;
     strcpy(file->path, pathname);
 

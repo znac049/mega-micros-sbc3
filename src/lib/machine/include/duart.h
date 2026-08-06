@@ -156,6 +156,6 @@ int bios_set_baud(uint8_t port, uint32_t baudrate);
 int kio_rx_info(void);
 int duart_clock_doubled(void);
 
-int setup_vfs_duart_handler(vfs_handler_t *vfs);
+int setup_vfs_duart_handler(vfs_fs_t *vfs);
 
 #endif

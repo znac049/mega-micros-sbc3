@@ -20,6 +20,7 @@ LIBOBJECTS=atoi.o \
 			fread.o \
 			fwrite.o \
 			getchar.o \
+			getcwd.o \
 			getenv.o \
 			gets.o \
 			gmtime.o \

@@ -163,7 +163,7 @@ int ds1307_write_nvram(int addr, uint8_t *buf, size_t num_bytes);
 int vfs_init(void);
 int vfs_shutdown(void);
 int vfs_chdir(const char *path);
-char *vfs_getcwd(char*buff, size_t size);
+int vfs_getcwd(char*buff, size_t size);
 vdir_t *vfs_locate(const char *path);
 int vfs_creat(const char *pathname, mode_t mode);
 int vfs_open(const char *pathname, int flags);
@@ -219,10 +219,10 @@ uint32_t ext2_get_next_block_num(ext2_block_follower_t *bf);
 
 // ext2/e2dir.c
 int ext2_closedir(ext2_dirp_t *dirp);
-ext2_dirp_t *ext2_opendir(ext2_fs_t *fs, const char *name);
+ext2_dirp_t *ext2_opendir(vmp_t *mp, vdir_t *dir, const char *name);
 ext2_dirent_t *ext2_readdir(ext2_dirp_t *dirp);
 void ext2_rewinddir(ext2_dirp_t *dirp);
-vdir_t *ext2_locate(vmp_t *mp, const char *pathname);
+vdir_t *ext2_locate(vmp_t *mp, vdir_t *dir, const char *pathname);
 
 // ext2/e2dump.c
 void dump_ext2_bg(ext2_bg_t *bg, int bg_num, ext2_sb_t *sb);
@@ -242,7 +242,7 @@ vmp_t *ext2_mount(vmp_t *mp);
 int ext2_umount(vmp_t *mp);
 int is_ext2(ext2_sb_t *sb);
 bool_t ext2_has_superblock(uint32_t bg_num);
-int setup_vfs_ext2_handler(vfs_handler_t *vfs);
+int setup_vfs_ext2_handler(vfs_fs_t *vfs);
 
 // ext2/e2file.c
 int ext2_file_reader(ext2_fs_t *fs, uint32_t inode_num);
