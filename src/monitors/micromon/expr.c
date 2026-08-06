@@ -32,16 +32,11 @@ SOFTWARE.
 #include "micromon.h"
 #include "expr.h"
 
-static const constant_t constants[] = {
-    {"ACRTC_BASE", 0xAB0001},
-    {"DUART_BASE", 0xAD0001},
-    {"CF_BASE",    0xAE0000},
-    {"PIT_BASE",   0xAF0001},
-    {"ROM_BASE",   0xC00000},
-    {"RAM_BASE",   0},
-    {"YES",        1},
-    {"NO",         0},
-};
+long _dtors_end;
+
+#define MAX_CONSTANTS 32
+
+static constant_t constants[MAX_CONSTANTS];
 
 #define NUM_CONSTANTS (sizeof(constants) / sizeof(constant_t))
 
@@ -51,23 +46,97 @@ static long parse_shift(parser_t *p);
 
 static int ci_streq_n(const char *a, size_t alen, const char *b) {
     size_t blen = strlen(b);
-    if (alen != blen) return 0;
-    for (size_t i = 0; i < alen; i++) {
-        if (tolower((unsigned char)a[i]) != tolower((unsigned char)b[i]))
-            return 0;
+
+    if (alen != blen) {
+        return NO;
     }
-    return 1;
+
+    for (size_t i=0; i<alen; i++) {
+        if (tolower((unsigned char)a[i]) != tolower((unsigned char)b[i])) {
+            return NO;
+        }
+    }
+
+    return YES;
+}
+
+static constant_t *find_free_slot(void) {
+    for (size_t i = 0; i < NUM_CONSTANTS; i++) {
+        if (constants[i].name[0] == EOS) {
+            return &constants[i];
+        }
+    }
+
+    return NULL;
+}
+
+static int find_constant(const char *name) {
+    for (size_t i = 0; i < NUM_CONSTANTS; i++) {
+        if (strcasecmp(name, constants[i].name) == 0) {
+            return i;
+        }
+    }
+
+    return -1;
 }
 
 static int lookup_constant(const char *name, size_t len, long *out) {
     for (size_t i = 0; i < NUM_CONSTANTS; i++) {
-        if (ci_streq_n(name, len, constants[i].name)) {
-            *out = constants[i].value;
-            return 1;
+        if (ci_streq_n(name, len, constants[i].name) == YES) {
+            *out = constants[i].val;
+            return YES;
         }
     }
-    return 0;
+
+    return NO;
 }
+
+int add_constant(const char *name, long val) {
+    int len = strlen(name);
+
+    if (len >= MAX_CONSTANT_NAME) {
+        return NOT_OK;
+    }
+
+    for (int i=0; i<MAX_CONSTANTS; i++) {
+        if (constants[i].name[0] == EOS) {
+            strcpy(constants[i].name, name);
+            constants[i].val = val;
+
+            return OK;
+        }
+    }
+
+    return NOT_OK;
+}
+
+int set_constant(const char *name, long val) {
+    int index = find_constant(name);
+
+    if (index == -1) {
+        return add_constant(name, val);
+    }
+    
+    constants[index].val = val;
+
+    return OK;
+}
+
+int init_constants(void) {
+    for (int i=0; i<MAX_CONSTANTS; i++) {
+        constants[i].name[0] = EOS;
+    }
+
+    add_constant("ACRTC_BASE", 0xAB0001);
+    add_constant("DUART_BASE", 0xAD0001);
+    add_constant("CF_BASE", 0xAE0000);
+    add_constant("PIT_BASE", 0xAF0001);
+    add_constant("ROM_BASE", 0xC00000);
+    add_constant("RAM_BASE", 0);
+
+    return OK;
+}
+
 
 static void set_error(parser_t *p, expr_error_t err, int pos) {
     if (p->err == EXPR_OK) {

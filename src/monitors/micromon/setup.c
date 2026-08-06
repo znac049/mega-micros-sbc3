@@ -26,6 +26,7 @@ SOFTWARE.
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <machine.h>
 
 #include "micromon.h"
@@ -34,7 +35,7 @@ SOFTWARE.
 
 static int major = 0;
 static int minor = 4;
-static int MAGIC_BUILD_NUMBER = 385;
+static int MAGIC_BUILD_NUMBER = 401;
 
 
 uint32_t ram_end;
@@ -139,6 +140,9 @@ void setup(void) {
     is_xr = (jumpers & 0x04)?YES:NO;
     experimental = (jumpers & 0x10)?YES:NO;
 
+    // constants used by the expression evaluator
+    init_constants();
+
     setup_duart(is_xr);
 
     set_isr_handler(32, (unsigned int)trap0_handler);
@@ -238,4 +242,5 @@ void setup(void) {
         printk("Attempting mounts\n");
         vfs_init();
     }
+
 }

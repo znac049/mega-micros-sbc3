@@ -26,6 +26,8 @@ SOFTWARE.
 
 #include <setjmp.h>
 
+#include "expr.h"
+
 #define MAX_LINE 512
 #define MAX_ARGS 32
 
@@ -58,6 +60,10 @@ bool_t is_oled_present(void);
 
 // bios_calls.c
 int bios_exit(int exit_code);
+
+
+// cat_cmd.c
+void handle_cat_command(int argc, char *argv[]);
 
 
 // diasm_cmd.c

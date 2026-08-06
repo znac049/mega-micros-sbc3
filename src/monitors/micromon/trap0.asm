@@ -75,6 +75,7 @@ trap0_call_table::
         dc.l    vfs_read
         dc.l    vfs_write
         dc.l    reset_ticks
+        dc.l    vfs_chdir
 t0ct_end     
 
         end

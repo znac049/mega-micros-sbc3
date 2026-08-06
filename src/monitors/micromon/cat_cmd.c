@@ -31,37 +31,25 @@ SOFTWARE.
 
 #include "micromon.h"
 
-static long dump_address = 0;
-static size_t dump_window_size = 256;
+void handle_cat_command(int argc, char *argv[]) {
+    FILE *fd;
+    int ch;
 
-void handle_dump_command(int argc, char *argv[]) {
-    long val;
-    expr_error_t res;
-    int error_pos;
-
-    if (argc >= 2) {
-        res = expr_evaluate(argv[1], &val, &error_pos);
-        if (res == EXPR_OK) {
-            dump_address = val;
-        }
-        else {
-            kprintf("Couldn't evaluate expression: '%s'\n", argv[1]);
-            return;
-        }
-
-        if (argc == 3) {
-            res = expr_evaluate(argv[2], &val, &error_pos);
-            if (res == EXPR_OK) {
-                dump_window_size = (size_t)val;
-            }
-            else {
-                kprintf("Couldn't evaluate expression: '%s'\n", argv[2]);
-                return;
-            }
-        }
+    if (argc != 2) {
+        printf("usage: cat <filename>\n");
+        return;
     }
 
-    dump((uint8_t *)dump_address, dump_window_size, YES, NULL, YES);
+    fd = fopen(argv[1], "r");
+    if (fd == NULL) {
+        printf("Couldn't open file '%s'\n", argv[1]);
+        return;
+    }
 
-    dump_address += dump_window_size;
+    while ((ch = fgetc(fd)) != EOF) {
+        putchar(ch);
+    }
+
+    fclose(fd);
+    putchar('\n');
 }

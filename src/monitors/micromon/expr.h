@@ -24,6 +24,9 @@ SOFTWARE.
 
 #pragma once
 
+#define MAX_CONSTANTS 32
+#define MAX_CONSTANT_NAME 16
+
 typedef enum {
     EXPR_OK = 0,
     EXPR_ERR_EMPTY_EXPRESSION,   /* "" or NULL was passed in            */
@@ -37,8 +40,8 @@ typedef enum {
 } expr_error_t;
 
 struct constant {
-    const char *name;
-    long value;
+    char name[MAX_CONSTANT_NAME];
+    long val;
 };
 
 typedef struct constant constant_t;
@@ -79,6 +82,8 @@ struct parser {
 
 typedef struct parser parser_t;
 
-
+int init_constants(void);
+int set_constant(const char *name, long val);
+int add_constant(const char *name, long val);
 expr_error_t expr_evaluate(const char *expression, long *result, int *error_pos);
 const char *expr_error_string(expr_error_t err);

@@ -34,12 +34,11 @@ SOFTWARE.
 #include "expr.h"
 
 
-
-void handle_zob_command(int argc, char *argv[]);
 void print_help(int argc, char *argv[]);
 
 static command_t commands[] = {
     {"help",        2, print_help},
+    {"cat",         0, handle_cat_command},
     {"disassemble", 3, handle_disasm_command},
     {"dump",        2, handle_dump_command},
     {"eval",        2, handle_eval_command},
@@ -49,7 +48,6 @@ static command_t commands[] = {
     {"rtc",         3, handle_rtc_command},
     {"usb1",        0, handle_usb_command},
     {"usb2",        0, handle_usb_command},
-    {"zob",         0, handle_zob_command},
 };
 
 #define NUM_COMMANDS (sizeof(commands)/sizeof(command_t))
@@ -90,6 +88,8 @@ void print_help(int argc, char *argv[]) {
     argv++;
 
     kprintf("Commands are:\n");
+    kprintf("  cat <filename>\n");
+    kprintf("  disassemble <address>\n");
     kprintf("  dump [<start_address> [<count>]]\n");
     kprintf("  eval <expression>\n");
     kprintf("  go <address>]\n");
@@ -98,41 +98,6 @@ void print_help(int argc, char *argv[]) {
     kprintf("  rtc (erase) | (time [hh:mm[:ss]]) | (date [yyyy:mm:dd])\n");
     kprintf("  usb1|2 baud <baudrate>\n");
     kprintf("  quit\n\n");
-}
-
-void handle_zob_command(int argc, char *argv[]) {
-    register const char *cmd = argv[1];
-
-    if ((argc == 1) || ((argc == 2) && is_command(cmd, "help", 2) == YES)) {
-        kprintf("zob accepts the following sub-commands: \n", argv[0]);
-        kprintf("  duart             read bytes from the duart\n");
-        kprintf("\n");
-    }
-    else if (is_command(cmd, "duart", 2) == YES) {
-        long val;
-        expr_error_t res;
-        int error_pos;
-        int num_read = 0;
-        uint32_t end_time = ticks() + (60*1000);
-
-        res = expr_evaluate(argv[2], &val, &error_pos);
-        if (res != EXPR_OK) {
-            kprintf("Couldn't evaluate expression: '%s'\n", argv[2]);
-            return;
-        }
-
-        kprintf("Ok, I'm waiting to read %d characters. Please start typing...\n", val);
-        while ((ticks() < end_time) && (num_read < val)) {
-            num_read = kio_rx_info();
-            bios_printf(0, "num_read=%d\r", num_read);
-        }
-        bios_printf(0, "\n");
-        
-    }
-    else {
-        kprintf("'%s' is not a valid sub-command.\n", argv[1]);
-    }
-
 }
 
 void handle_command(int argc, char *argv[]) {

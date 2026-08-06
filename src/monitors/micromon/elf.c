@@ -28,40 +28,10 @@ SOFTWARE.
 #include <string.h>
 #include <nonstd.h>
 #include <machine.h>
+#include <setjmp.h>
 
 #include "micromon.h"
 
-static long dump_address = 0;
-static size_t dump_window_size = 256;
-
-void handle_dump_command(int argc, char *argv[]) {
-    long val;
-    expr_error_t res;
-    int error_pos;
-
-    if (argc >= 2) {
-        res = expr_evaluate(argv[1], &val, &error_pos);
-        if (res == EXPR_OK) {
-            dump_address = val;
-        }
-        else {
-            kprintf("Couldn't evaluate expression: '%s'\n", argv[1]);
-            return;
-        }
-
-        if (argc == 3) {
-            res = expr_evaluate(argv[2], &val, &error_pos);
-            if (res == EXPR_OK) {
-                dump_window_size = (size_t)val;
-            }
-            else {
-                kprintf("Couldn't evaluate expression: '%s'\n", argv[2]);
-                return;
-            }
-        }
-    }
-
-    dump((uint8_t *)dump_address, dump_window_size, YES, NULL, YES);
-
-    dump_address += dump_window_size;
+int load_elf(int fd) {
+    return fd;
 }
