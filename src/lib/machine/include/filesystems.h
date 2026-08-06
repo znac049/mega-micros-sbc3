@@ -52,6 +52,7 @@ typedef struct vfile vfile_t;
 struct vmp {
     block_device_t *dev;
     vfs_handler_t *fs_handler;
+    char name[16];
 
     uint8_t block_buff[BLOCK_DEVICE_BLOCK_SIZE];
 
@@ -84,7 +85,8 @@ union vfs {
         int (*read)(vfile_t *file, size_t n_bytes);
         int (*write)(vfile_t *file, const char *buf, size_t n_bytes);
         int (*close)(vfile_t *file);
-        vdir_t *(*locate)(const char *path);
+        int (*chdir)(const char *path);
+        vdir_t *(*locate)(vmp_t *mp, const char *path);
     } fs;
 };
 
@@ -102,7 +104,7 @@ struct vfs_handler {
 struct vdir {
     char path[PATH_MAX];
     bool_t valid;
-    vfs_handler_t *handler;
+    vmp_t *mp;
 };
 
 

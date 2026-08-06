@@ -36,6 +36,7 @@ SOFTWARE.
 #define BIOS_READ			8
 #define BIOS_WRITE			9
 #define BIOS_RESET_TICKS   10
+#define BIOS_CHDIR         11
 
-#define NUM_BIOS_CALLS	   11
+#define NUM_BIOS_CALLS	   12
 

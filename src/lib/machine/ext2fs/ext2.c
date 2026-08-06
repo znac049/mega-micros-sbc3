@@ -235,6 +235,10 @@ int ext2_umount(vmp_t *mp) {
 }
 
 static int handles_path(const char *pathname) {
+    if (pathname[0] == EOS) {
+        return YES;
+    }
+
     return NO;
 }
 
@@ -256,7 +260,7 @@ int setup_vfs_ext2_handler(vfs_handler_t *vfs) {
     vfs->handler.fs.read = NULL;
     vfs->handler.fs.write = NULL;
     vfs->handler.fs.close = NULL;
-    vfs->handler.fs.locate = NULL;
+    vfs->handler.fs.locate = ext2_locate;
 
     return OK;
 }

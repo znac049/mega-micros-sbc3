@@ -63,11 +63,15 @@ int bd_init(void) {
                 bd->active = NO;
             }
             else {
-                kprintf("\nInit block device %d '%s':", i, bd->name);
-                for (uint8_t i=0; i<bd->num_sub_devices; i++) {
-                    kprintf("%s%d ", bd->name, i);
+                if (bd->active == YES) {
+                    kprintf("block device %d (%s): ", i, bd->name);
+                    
+                    for (uint8_t i=0; i<bd->num_sub_devices; i++) {
+                        kprintf("%s%d, ", bd->name, i);
+                    }
+                    kprintf("\n");
                 }
-                kprintf("\n");
+                else {}
             }
         }
     }
@@ -76,11 +80,7 @@ int bd_init(void) {
 }
 
 int bd_read(block_device_t *dev, uint32_t block_num, uint8_t *buff, uint8_t subdev) {
-    kprintf("bd_read()...\n");
-
     if ((dev != NULL) && (dev->active == YES) && (subdev < dev->num_sub_devices)) {
-        kprintf("...dev='%s%d', dev->name, subdev, blk # = %d\n", dev->name, subdev, block_num);
-
         return dev->read_block(block_num, buff, subdev);
     }
 

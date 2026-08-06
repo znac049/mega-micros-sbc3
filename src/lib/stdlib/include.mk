@@ -49,6 +49,7 @@ LIBOBJECTS=atoi.o \
 			strcat.o \
 			strchr.o \
 			strcasecmp.o \
+			strncasecmp.o \
 			strcmp.o \
 			strcpy.o \
 			streams.o \

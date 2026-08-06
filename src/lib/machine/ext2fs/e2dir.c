@@ -218,4 +218,9 @@ void ext2_rewinddir(ext2_dirp_t *dirp) {
     dirp->offset = 0;
 }
 
+vdir_t *ext2_locate(vmp_t *mp, const char *pathname) {
+    kprintf("ext2_locate(..., '%s')\n", pathname);
+    return NULL;
+}
+
 #endif

@@ -222,6 +222,7 @@ int ext2_closedir(ext2_dirp_t *dirp);
 ext2_dirp_t *ext2_opendir(ext2_fs_t *fs, const char *name);
 ext2_dirent_t *ext2_readdir(ext2_dirp_t *dirp);
 void ext2_rewinddir(ext2_dirp_t *dirp);
+vdir_t *ext2_locate(vmp_t *mp, const char *pathname);
 
 // ext2/e2dump.c
 void dump_ext2_bg(ext2_bg_t *bg, int bg_num, ext2_sb_t *sb);

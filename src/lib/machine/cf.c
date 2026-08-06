@@ -38,7 +38,7 @@ void cf_init(void) {
 int cf_read(uint8_t drive_num, uint32_t sector, uint8_t *buffer) {
     uint8_t status;
 
-    // printf("cf_read(%d, %d,...)\n", drive_num, sector);
+    printf("cf_read(%d, %d,...)\n", drive_num, sector);
 
     *cf_reg_lba3 = 0xe0 | ((drive_num & 1)<<4) | (uint8_t) ((sector >> 24) & 0x0f);
     *cf_reg_lba2 = (uint8_t) (sector >> 16);

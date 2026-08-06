@@ -28,7 +28,7 @@ SOFTWARE.
 #include <errno.h>
 
 int fclose(FILE *stream) {
-    int res = -1;
+    int res = NOT_OK;
 
     if (stream != NULL && stream->is_open) {
         fflush(stream);

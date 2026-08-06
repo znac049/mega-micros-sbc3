@@ -90,7 +90,7 @@ FILE *fopen(const char *pathname, const char *mode) {
 		return NULL;
 	}
 
-	stream->is_open = 1;
+	stream->is_open = YES;
 	stream->fd = fd;
 
 	return stream;

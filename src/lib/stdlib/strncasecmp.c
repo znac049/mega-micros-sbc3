@@ -22,26 +22,21 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <string.h>
 #include <ctype.h>
-#include <stddef.h>
-#include <unistd.h>
-#include <errno.h>
-#include <machine.h>
 
-int chdir(const char *path) {
-#if defined(BAREMETAL)
-    return vfs_chdir(path);
-#else
-    int res = do_trap0(BIOS_CHDIR, (uint32_t)path, 0, 0);
-
-    if (res != 0) {
-        errno = res;
-        res = NOT_OK;
+int strncasecmp(const char *s1, const char *s2, size_t len) {
+    int i;
+    
+    for (i=0; s1[i] && i<len; i++) {
+        if (tolower(s1[i]) != tolower(s2[i])) {
+            return tolower(s1[i]) - tolower(s2[i]);
+        }
     }
-    else {
-        res = OK;
-    }
+  
+    if (s2[i]) {
+        return -1;
+    }  
 
-    return res;
-#endif
+    return 0;
 }

@@ -89,6 +89,9 @@ int attempt_to_mount(block_device_t *dev, uint8_t subdev) {
                 // Success
                 kprintf("%s%d: mounted as %s\n", vmp->dev->name, vmp->subdev, vmp->fs_handler->name);
 
+                // save the mountpoint name
+                snprintf(vmp->name, 16, "%s%d", vmp->dev->name, vmp->subdev);
+
                 return OK;
             }
         }
@@ -103,6 +106,8 @@ int vfs_init(void) {
 
     cwd.valid = NO;
     strcpy(cwd.path, "/");
+
+    vfs_chdir("/rom0");
 
     // Initialise the files table
     for (int i=0; i<MAX_FILES; i++) {
@@ -138,7 +143,6 @@ int vfs_init(void) {
         res = fd;
     }
 
-    kprintf("\nLook for things to mount...\n");
     // Anything we can mount?
     for (int bd=0; bd<MAX_BLOCK_DEVICES; bd++) { 
         block_device_t *dev = &block_devices[bd];
@@ -152,8 +156,6 @@ int vfs_init(void) {
                     return OK;
                 }
             }
-
-            kprintf("%s%d: not mounted\n", dev->name, subdev);
         }
     }
     
@@ -182,18 +184,15 @@ static int find_free_fd(void) {
     return -1;
 }
 
-static vfs_handler_t *find_handler(const char *pathname) {
+static vmp_t *find_handler(const char *pathname) {
     // Find the handler responsible for the given pathname
-    for (int i=0; i<MAX_VIRTUAL_FILESYSTEMS; i++) {
-        if (filesystems[i].type != VFS_TYPE_NONE) {
-            printf("Does handler %s deal with '%s'?  --> ", filesystems[i].name, pathname);
-            if (filesystems[i].handles_path(pathname) == YES) {
-                printf("YES\n");
-                return &filesystems[i];
-            }
-            else {
-                printf("NO\n");
-            }
+    if (pathname[0] != '/') {
+        return cwd.mp;
+    }
+
+    for (int i=0; i<MAX_MOUNTS; i++) {
+        if (strncasecmp(pathname, mounts[i].name, strlen(mounts[i].name)) == 0) {
+            return &mounts[i];
         }
     }
 
@@ -201,25 +200,55 @@ static vfs_handler_t *find_handler(const char *pathname) {
 }
 
 int vfs_chdir(const char *path) {
-    return 0;
+    vmp_t *mp;
+    vdir_t *target_dir;
+    char *p = (char *)path;
+
+    kprintf("chdir('%s')\n", path);
+
+    mp = find_handler(path);
+    if (mp == NULL) {
+        kprintf("No path handler found!\n");
+        return NOT_OK;
+    }
+
+    if (path[0] == '/') {
+        // Gotta strip off the /devXX
+        p = strchr(path+1, '/');
+        if (p == NULL) {
+            p = "/";
+        }
+    }
+
+    target_dir = mp->fs_handler->handler.fs.locate(mp, p);
+    if (target_dir == NULL) {
+        kprintf("locate('%s') failed, p='%s'\n", path, p);
+        return NOT_OK;
+    }
+
+    memcpy(&cwd, target_dir, sizeof(vdir_t));
+    cwd.valid = YES;
+
+    kprintf("chdir() success\n");
+    return OK;
 }
 
-char *fs_getcwd(char*buff, size_t size) {
+char *vfs_getcwd(char*buff, size_t size) {
     return NULL;
 }
 
-vdir_t *fs_locate(const char *path) {
+vdir_t *vfs_locate(const char *path) {
     return NULL;
 }
 
 int vfs_creat(const char *pathname, mode_t mode) {
-    vfs_handler_t *handler = find_handler(pathname);
+    vmp_t *mp = find_handler(pathname);
 
-    if (handler == NULL) {
-        return -1;
+    if (mp == NULL) {
+        return NOT_OK;
     }
 
-    return -1;
+    return NOT_OK;
 }
 
 int vfs_open(const char *pathname, int flags) {
@@ -235,7 +264,9 @@ int vfs_open(const char *pathname, int flags) {
     file = &fs_fds[fd];
     file->open = YES;
     strcpy(file->path, pathname);
-    file->mp = NULL;
+
+    // Invoke the specific filesystem handler
+    file->mp = cwd.mp;
     
     return fd;
 }

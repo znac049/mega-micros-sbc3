@@ -34,7 +34,7 @@ int fgetc(FILE *stream) {
     if ((stream != NULL) && (stream->is_open == 0)) {
         errno = EBADF;
 
-        return -1;
+        return EOF;
     }
 
     res = read(stream->fd, &ch, 1);
