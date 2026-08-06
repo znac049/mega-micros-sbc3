@@ -22,21 +22,32 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-extern int t0(int sys_call_num, int p1, int p2, int p3);
-
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include <machine.h>
 #include <nonstd.h>
+#include <unistd.h>
 
 #include "bios_test.h"
 
-int main(int argc, char *argv[]) {
-    printf("Hello, Bob. Args are:\n");
-    exit(0);
+void find_board(void) {
+    while (!char_available()) {
+        (void)peek((uint8_t *)0xa00000);
+    }
+    getchar();
+}
 
-    (void)argc;
-    (void)argv;
+int main(void) {
+    char pwd[256];
+    char *p = getcwd(pwd, sizeof(pwd));
+
+    printf("p=%d ($%08X)\n", p, p);
+    printf("Running in '%s'\n", pwd);
+
+    find_board();
+
+    exit(42);
+    return 0;
 }
