@@ -22,27 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+#include <stddef.h>
+#include <dirent.h>
 
-typedef unsigned int ino_t;
-typedef unsigned int off_t;
-
-typedef struct {
-    int zob;
-} DIR;
-
-
-struct dirent {
-    ino_t           d_ino;
-    off_t           d_off;
-    unsigned short  d_reclen;
-    unsigned char   d_type;
-    char            d_name[256];
-};
-
-DIR *opendir(const char *name);
-int closedir(DIR *dirp);
-struct dirent *readdir(DIR *dirp);
-void rewinddir(DIR *dirp);
-void seekdir(DIR *dirp, long loc);
-long telldir(DIR *dirp);
+void rewinddir(DIR *dirp) {
+}

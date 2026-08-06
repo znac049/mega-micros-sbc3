@@ -5,6 +5,7 @@ LIBOBJECTS=atoi.o \
 			char_available.o \
 			chdir.o \
 			close.o \
+			closedir.o \
 			creat.o \
 			ctime.o \
 			err.o \
@@ -38,11 +39,15 @@ LIBOBJECTS=atoi.o \
 			memset.o \
 			mktime.o \
 			open.o \
+			opendir.o \
 			printf.o \
 			putchar.o \
 			puts.o \
 			rand.o \
 			read.o \
+			readdir.o \
+			rewinddir.o \
+			seekdir.o \
 			setjmp.o \
 			snprintf.o \
 			srand.o \
@@ -59,6 +64,7 @@ LIBOBJECTS=atoi.o \
 			strncpy.o \
 			strrchr.o \
 			strtol.o \
+			telldir.o \
 			tolower.o \
 			toupper.o \
 			vfprintf.o \
