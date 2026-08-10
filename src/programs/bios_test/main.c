@@ -33,10 +33,11 @@ SOFTWARE.
 #include "bios_test.h"
 
 void find_board(void) {
-    while (!char_available()) {
-        (void)peek((uint8_t *)0xa00000);
+    for (int i=0; i<10000000; i++) {
+        for (int j=0; j<10000000; j++) {
+            (void)peek((uint8_t *)0xa00000);
+        }
     }
-    getchar();
 }
 
 int main(void) {

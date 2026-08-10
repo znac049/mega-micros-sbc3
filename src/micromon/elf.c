@@ -22,16 +22,21 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <stdio.h>
 #include <ctype.h>
 #include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <nonstd.h>
-#include <machine.h>
-#include <setjmp.h>
+#include <unistd.h>
 
-#include "micromon.h"
+#include "elf.h"
 
 int load_elf(int fd) {
-    return fd;
+    size_t res;
+    elf32_ehdr_t hdr;
+
+    res = read(fd, &hdr, sizeof(elf32_ehdr_t));
+    if (res != sizeof(elf32_ehdr_t)) {
+        return NOT_OK;
+    }
+
+    return OK;
 }
