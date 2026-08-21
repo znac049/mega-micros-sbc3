@@ -19,3 +19,4 @@ src/libs_in_waiting
 src/monitors/micromon/micromon.part1
 src/romdisk/sayhi/sayhi
 src/micromon/romdisk/passwd
+src/elftools/ed
