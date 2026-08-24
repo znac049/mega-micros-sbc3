@@ -22,35 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <string.h>
+#include <nonstd.h>
 
-int split_str(const char *s, char sep, char *bits[], int max_bits) {
-    int bit_num = 0;
-    char *next_sep = strchr(s, sep);
-
-    if (sep == 0) {
-        return -1;
-    }
-
-    max_bits--;
-
-    while ((next_sep != NULL) && (bit_num < max_bits)) {
-        bits[bit_num++] = (char *)s;
-        *next_sep++ = EOS;
-
-        s = next_sep;
-        while (*s == sep) {
-            s++;
-        }
-
-        if (*s == EOS) {
-            return bit_num;
-        }
-
-        next_sep = strchr(s, sep);
-    }
-
-    bits[bit_num++] = (char *)s;
-
-    return bit_num;
+char *strmid(char *dest, size_t max_len, const char *s, int from, int to) {
+    return NULL;
 }
