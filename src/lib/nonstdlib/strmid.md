@@ -1,75 +1,49 @@
-% HELLO(1) Version 1.0 | Frivolous "Hello World" Documentation
+% strmid(3) Version 1.0 | Library Functions Manual
+***
 
-NAME
-====
+## NAME
 
-**hello** — prints Hello, World!
+**strmid** — return part of a string.
 
-SYNOPSIS
-========
+### LIBRARY
 
-| **hello** \[**-o**|**--out** _file_] \[_dedication_]
-| **hello** \[**-h**|**--help**|**-v**|**--version**]
+libmega C library (-lmega)
 
-DESCRIPTION
-===========
+### SYNOPSIS
 
-Prints "Hello, _dedication_!" to the terminal. If no dedication is
-given, uses the default dedication. The default dedication is chosen by
-the following sequence:
+```
+#include <nonstd.h>
 
- 1. Using the environment variable *DEFAULT_HELLO_DEDICATION*
- 2. Using the per-user configuration file, *~/.hellorc*
- 3. Using the system-wide configuration file, */etc/hello.conf*
- 4. Finally, using "world".
+char *strmid(char *dest, size_t max_len, const char *s, int from, int to);
+```
 
-Options
--------
+### DESCRIPTION
+***
 
--h, --help
+Returns a portion of a the string **s**, specified by the **offset** and **length** parameters. The string porttion is copied into the string **dest**, up to a limit of **max_len** characters. If there is not enough room, **NULL** is returned.
 
-:   Prints brief usage information.
 
--o, --output
 
-:   Outputs the greeting to the given filename.
+### RETURN VALUE
+***
 
-    The file must be an **open(2)**able and **write(2)**able file.
+On success, a pointer to the string **dest** is returned, otherwise **NULL**.
 
--v, --version
 
-:   Prints the current version number.
+### NOTES
+***
 
-FILES
-=====
+None.
 
-*~/.hellorc*
+### BUGS
 
-:   Per-user default dedication file.
-
-*/etc/hello.conf*
-
-:   Global default dedication file.
-
-ENVIRONMENT
-===========
-
-**DEFAULT_HELLO_DEDICATION**
-
-:   The default dedication if none is given. Has the highest precedence
-    if a dedication is not supplied on the command line.
-
-BUGS
-====
-
-See GitHub Issues: <https://github.com/[owner]/[repo]/issues>
+See GitHub Issues: <https://github.com/znac049/mega-micros-sbc3/issues>
 
 ### AUTHOR
-======
+***
 
 Bob Green <bob@chippers.org.uk>
 
-SEE ALSO
-========
+### SEE ALSO
+***
 
-**hi(1)**, **hello(3)**, **hello.conf(5)**
