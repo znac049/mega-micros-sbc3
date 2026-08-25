@@ -25,6 +25,7 @@ SOFTWARE.
 #include <stdio.h>
 #include <dirent.h>
 #include <nonstd.h>
+#include <limits.h>
 #include "unittest.h"
 
 void test_main(void) {
@@ -56,5 +57,27 @@ void test_main(void) {
         strcpy(str, "Hi!");
         TEST(strpad(str, 16, '.') == 0);
         TEST(strcmp(str, "Hi!.............") == 0);
+        TEST(midstr(str, sizeof(str), "Hello, world", 2, 4) != NULL);
+        TEST(strcmp(str, "llo") == 0);
+        TEST(midstr(str, sizeof(str), "Hello, world", 7, 900) != NULL);
+        printf("str='%s'\n", str);
+        TEST(strcmp(str, "world") == 0);
+    } while (0);
+
+    SUITE("stdlib");
+    do {
+        char path[PATH_MAX];
+
+        TEST(realpath(".", path) != NULL);
+        printf("path='%s'\n", path);
+
+        TEST(realpath("/one/two/three/four/../six/./seven//eight", path) != NULL);
+        TEST(strcmp(path, "/one/two/three/six/seven/eight") == 0);
+
+        TEST(realpath("////usr//bin///gcc//", path) != NULL);
+        TEST(strcmp(path, "/usr/bin/gcc") == 0);
+
+        TEST(realpath("./subby", path) != NULL);
+        TEST(strcmp(path, "/rom0/subby") == 0);
     } while (0);
 }
