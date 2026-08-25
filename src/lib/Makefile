@@ -63,10 +63,11 @@ include stdlib/include.mk
 include crt0/include.mk
 include nonstdlib/include.mk
 
-$(info VPATH is $(VPATH))
+#$(info VPATH is $(VPATH))
 
 ALL_OBJS += $(addprefix $(OBJ_DIR),$(OBJECTS))
 CRT0_OBJS = $(addprefix $(OBJ_DIR),$(CRT0_OBJECTS))
+MANPAGES = $(addsuffix .md,$(basename $(OBJECTS)))
 
 $(OBJ_DIR)%.o : %.c
 	$(CC) -c $(CFLAGS) $(EXTRA_CFLAGS) -o $@ $<
@@ -80,7 +81,7 @@ $(OBJ_DIR)%.o : %.S
 $(OBJ_DIR)%.o : %.asm
 	$(VASM) $(VASMFLAGS) -o $@ $<
 
-.PHONY: all bare bios build install actual_install clean actual_clean decoy 
+.PHONY: all bare bios build install actual_install clean actual_clean decoy manpages
 
 all: bare bios
 
@@ -108,6 +109,11 @@ actual_install: build
 install:
 	make actual_install BAREMETAL=true
 	make actual_install BAREMETAL=false
+
+manpages:
+	for f in $(MANPAGES); do \
+		./makedoc.sh $$f ; \
+	done
 
 clean:
 	make actual_clean BAREMETAL=true
