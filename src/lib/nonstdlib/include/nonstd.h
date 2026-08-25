@@ -25,5 +25,6 @@ SOFTWARE.
 #pragma once
 
 void dump_mem(uint8_t *buf, size_t count, uint8_t print_zeroes);
+char *midstr(char *dest, size_t max_len, const char *s, int from, int to);
 int split_str(const char *s, char sep, char *bits[], int max_bits);
 int strpad(char *str, int width, char pad_ch);
