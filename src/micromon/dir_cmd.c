@@ -22,21 +22,51 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <stdio.h>
 #include <ctype.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <unistd.h>
+#include <dirent.h>
+#include <machine.h>
+#include <errno.h>
 
-#include "elf.h"
+#include "micromon.h"
 
-int load_elf(int fd) {
-    size_t res;
-    elf32_ehdr_t hdr;
+void handle_dir_command(int argc, char *argv[]) {
+    DIR *d = opendir(".");
+    struct dirent *ent;
 
-    res = read(fd, &hdr, sizeof(elf32_ehdr_t));
-    if (res != sizeof(elf32_ehdr_t)) {
-        return NOT_OK;
+    if (d == NULL) {
+        printf("opendir() failed. errno=%d\n", errno);
+        return;
     }
 
-    return OK;
+    printf("dir opened ok\n");
+
+    ent = readdir(d);
+    while (ent != NULL) {
+        printf("%s\n", ent->d_name);
+
+        ent = readdir(d);
+    }
+
+    printf("closing dir\n");
+
+    if (closedir(d) == NOT_OK) {
+        printf("closedir() failed. errno=%d\n", errno);
+    }
+
+    (void)argc;
+    (void)argv;
+}
+
+void handle_pwd_command(void) {
+    char pwd[PATH_MAX];
+
+    if (getcwd(pwd, PATH_MAX) == NULL) {
+        printf("Very bad karma!\n");
+        return;
+    }
+
+    kprintf("%s\n", pwd);
 }

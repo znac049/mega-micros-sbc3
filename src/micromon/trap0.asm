@@ -77,6 +77,7 @@ trap0_call_table::
         dc.l    reset_ticks
         dc.l    vfs_chdir
         dc.l    vfs_getcwd
+        dc.l    vfs_opendir
 t0ct_end     
 
         end
