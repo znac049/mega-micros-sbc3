@@ -28,16 +28,14 @@ SOFTWARE.
 #include <blockdev.h>
 #include <filesystems.h>
 #include <ext2.h>
+#include <limits.h>
 
 #if defined(BAREMETAL)
 
 // Max number of file descriptors
-#define MAX_FILES 12
+#define MAX_FILES 20
 #define MAX_VIRTUAL_FILESYSTEMS 6
 #define MAX_MOUNTS 4
-#define MAX_DIRS 8
-
-#define PATH_MAX 128
 
 #define VFS_TYPE_NONE 0
 #define VFS_TYPE_CHAR 1
@@ -46,13 +44,12 @@ SOFTWARE.
 typedef struct vmp vmp_t;
 typedef union vfs vfs_t;
 typedef struct vfs_fs vfs_fs_t;
-typedef struct vdir vdir_t;
 typedef struct vfile vfile_t;
 
 
 struct vmp {
-    block_device_t *dev;
-    vfs_fs_t *fs_handler;
+    block_device_t *dev_driver;
+    vfs_fs_t *fs_driver;
     char name[16];
 
     uint8_t block_buff[BLOCK_DEVICE_BLOCK_SIZE];
@@ -64,13 +61,13 @@ struct vmp {
     // This data depends on the specific filesystem type
     union {
         ext2_fs_t   e2fs;
-    } fs;
+    } fs_data;
 };
 
 
 union vfs {
     struct {
-        int (*open)(vdir_t *pwd, const char *fname);
+        int (*open)(vfile_t *pwd, const char *fname);
         int (*putchar)(uint8_t minor, int ch);
         int (*getchar)(uint8_t minor);
         int (*char_available)(uint8_t minor);
@@ -82,12 +79,12 @@ union vfs {
         int (*unmount)(vmp_t *mp);
         int (*sync)(void);
         int (*find_path)(void);
-        int (*open)(vdir_t *pwd, const char *fname);
+        int (*open)(vfile_t *pwd, const char *fname);
         int (*read)(vfile_t *file, size_t n_bytes);
         int (*write)(vfile_t *file, const char *buf, size_t n_bytes);
         int (*close)(vfile_t *file);
         int (*chdir)(const char *path);
-        vdir_t *(*locate)(vmp_t *mp, vdir_t *dir, const char *path);
+        int (*opendir)(vfile_t *dir, const char *name);
     } fs;
 };
 
@@ -97,19 +94,7 @@ struct vfs_fs {
     int (*handles_path)(const char *pathname);
     char *name;
     block_device_t *dev;
-    vfs_t handler;
-};
-
-
-
-struct vdir {
-    char path[PATH_MAX];
-    bool_t open;
-    vmp_t *mp;
-
-    union {
-        ext2_dirp_t e2dir;
-    } fs;
+    vfs_t api;
 };
 
 
@@ -118,9 +103,11 @@ struct vfile {
     char path[PATH_MAX];
     bool_t open;
     vmp_t *mp;
+
+    union {
+        ext2_dirp_t e2dir;
+    } fs;
 };
-
-
 
 
 #endif

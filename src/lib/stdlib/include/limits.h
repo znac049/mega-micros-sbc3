@@ -53,3 +53,7 @@ SOFTWARE.
 #define LONG_MIN (-2147483647L-1)/* minimum value of a long */
 #define LONG_MAX  2147483647L	/* maximum value of a long */
 #define ULONG_MAX 0xFFFFFFFFL	/* maximum value of an unsigned long */
+
+// Filesystem related defines
+#define PATH_MAX 128
+#define MAX_DIR_DEPTH 16

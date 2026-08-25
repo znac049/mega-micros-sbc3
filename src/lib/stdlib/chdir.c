@@ -24,15 +24,22 @@ SOFTWARE.
 
 #include <ctype.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
 #include <machine.h>
 
 int chdir(const char *path) {
+    char real_path[PATH_MAX];
+
+    if (realpath(path, real_path) == NULL) {
+        return NOT_OK;
+    }
+
 #if defined(BAREMETAL)
-    return vfs_chdir(path);
+    return vfs_chdir(real_path);
 #else
-    int res = do_trap0(BIOS_CHDIR, (uint32_t)path, 0, 0);
+    int res = do_trap0(BIOS_CHDIR, (uint32_t)real_path, 0, 0);
 
     if (res != 0) {
         errno = res;

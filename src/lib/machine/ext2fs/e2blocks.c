@@ -58,7 +58,7 @@ int ext2_read_fs_block(ext2_fs_t *fs, uint32_t block_num) {
 int ext2_read_block(ext2_fs_t *fs, uint32_t block_num, uint8_t *buffer) {
     // kprintf("ext2_read_block %d, device='%s%d'\n", block_num, fs->mp->dev->name, fs->mp->subdev);
 
-    return bd_read(fs->mp->dev, block_num, buffer, fs->mp->subdev);
+    return bd_read(fs->mp->dev_driver, block_num, buffer, fs->mp->subdev);
 }
 
 int ext2_read_blocks(ext2_fs_t *fs, uint32_t block_num, int num_blocks, uint8_t *buffer) {

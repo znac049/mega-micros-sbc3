@@ -23,8 +23,32 @@ SOFTWARE.
 */
 
 #include <stddef.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <dirent.h>
+#include <errno.h>
+#include <limits.h>
+#include <machine.h>
 
 DIR *opendir(const char *name) {
+    char real_path[PATH_MAX];
+
+    if (realpath(name, real_path) == NULL) {
+        return NULL;
+    }
+
+#if defined(BAREMETAL)
+    return (DIR *)vfs_opendir(real_path);
+#else
+    int res = do_trap0(BIOS_OPENDIR, (uint32_t)real_path, 0, 0);
+
+    if (res == 0) {
+        errno = res;
+        return NULL;
+    }
+
+    return (DIR *)res;
+#endif
+
     return NULL;
 }

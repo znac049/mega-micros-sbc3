@@ -164,12 +164,13 @@ int vfs_init(void);
 int vfs_shutdown(void);
 int vfs_chdir(const char *path);
 int vfs_getcwd(char*buff, size_t size);
-vdir_t *vfs_locate(const char *path);
+vfile_t *vfs_locate(const char *path);
 int vfs_creat(const char *pathname, mode_t mode);
 int vfs_open(const char *pathname, int flags);
 int vfs_close(int fd);
 int vfs_read(int fd, char *buff, size_t num_bytes);
 size_t vfs_write(int fd, const char *buff, size_t num_bytes);
+int vfs_opendir(const char *name);
 
 #endif
 
@@ -219,10 +220,10 @@ uint32_t ext2_get_next_block_num(ext2_block_follower_t *bf);
 
 // ext2/e2dir.c
 int ext2_closedir(ext2_dirp_t *dirp);
-ext2_dirp_t *ext2_opendir(vmp_t *mp, vdir_t *dir, const char *name);
+int ext2_opendir(vfile_t *dir, const char *name);
 ext2_dirent_t *ext2_readdir(ext2_dirp_t *dirp);
 void ext2_rewinddir(ext2_dirp_t *dirp);
-vdir_t *ext2_locate(vmp_t *mp, vdir_t *dir, const char *pathname);
+vfile_t *ext2_locate(vmp_t *mp, vfile_t *dir, const char *pathname);
 
 // ext2/e2dump.c
 void dump_ext2_bg(ext2_bg_t *bg, int bg_num, ext2_sb_t *sb);

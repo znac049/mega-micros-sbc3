@@ -501,10 +501,10 @@ int setup_vfs_duart_handler(vfs_fs_t *vfs) {
     vfs->handles_path = handles_path;
     vfs->name = "68681 duart";
 
-    vfs->handler.chardev.putchar = bios_putchar;
-    vfs->handler.chardev.getchar = bios_getchar;
-    vfs->handler.chardev.char_available = bios_char_available;
-    vfs->handler.chardev.flush = bios_flush;
+    vfs->api.chardev.putchar = bios_putchar;
+    vfs->api.chardev.getchar = bios_getchar;
+    vfs->api.chardev.char_available = bios_char_available;
+    vfs->api.chardev.flush = bios_flush;
 
     return OK;
 }

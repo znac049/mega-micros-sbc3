@@ -46,6 +46,7 @@ LIBOBJECTS=atoi.o \
 			rand.o \
 			read.o \
 			readdir.o \
+			realpath.o \
 			rewinddir.o \
 			seekdir.o \
 			setjmp.o \

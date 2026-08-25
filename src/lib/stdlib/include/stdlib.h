@@ -39,5 +39,6 @@ char *itoa_padded(unsigned int value, char *string, int base, char width, char z
 void *malloc(size_t size);
 void free(void *ptr);
 int rand(void);
+char *realpath(const char *path, char *resolved_path);
 void srand(unsigned int seed);
 long strtol(const char *nptr, char **endptr, int base);

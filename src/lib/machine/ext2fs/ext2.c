@@ -35,7 +35,7 @@ SOFTWARE.
 static int ext2_read_superblock(vmp_t *mp, ext2_sb_t *sb) {
     // kprintf("attempt to read superblock\n");
 
-    if (bd_read(mp->dev, 0, mp->block_buff, mp->subdev) != OK) {
+    if (bd_read(mp->dev_driver, 0, mp->block_buff, mp->subdev) != OK) {
         return NOT_OK;
     }
 
@@ -131,15 +131,15 @@ vmp_t *ext2_mount(vmp_t *mp) {
     uint32_t block_size;
     ext2_bg_t *bgdt;
     uint32_t num_bgdt_blocks;
-    ext2_fs_t *fs;
+    ext2_fs_t *fs_data;
 
     if (mp == NULL) {
         kprintf("NULL mp\n");
         return null(EGENERIC);
     }
 
-    fs = (ext2_fs_t *)&mp->fs;
-    fs->mp = mp;
+    fs_data = (ext2_fs_t *)&mp->fs_data.e2fs;
+    fs_data->mp = mp;
 
     res = ext2_read_superblock(mp, &sb);
     if (res != 0) {
@@ -191,22 +191,22 @@ vmp_t *ext2_mount(vmp_t *mp) {
     }
 
     // All good !
-    fs->num_blockgroups = bg1;
-    fs->block_num_in_buffer = 0;
-    fs->block_in_buffer_valid = 0;
-    fs->bgdt = bgdt;
+    fs_data->num_blockgroups = bg1;
+    fs_data->block_num_in_buffer = 0;
+    fs_data->block_in_buffer_valid = 0;
+    fs_data->bgdt = bgdt;
 
     // Read the Block Group Descriptor Table...
-    num_bgdt_blocks = (fs->num_blockgroups * sizeof(ext2_bg_t)) / BLOCK_DEVICE_BLOCK_SIZE; 
-    if (ext2_read_blocks(fs, 1, num_bgdt_blocks+1, (uint8_t *)bgdt) != (num_bgdt_blocks+1)) {
+    num_bgdt_blocks = (fs_data->num_blockgroups * sizeof(ext2_bg_t)) / BLOCK_DEVICE_BLOCK_SIZE; 
+    if (ext2_read_blocks(fs_data, 1, num_bgdt_blocks+1, (uint8_t *)bgdt) != (num_bgdt_blocks+1)) {
         free(bgdt);
 
         kprintf("e2_read_blocks(, 1, %d) failed :-(\n", num_bgdt_blocks+1);
         return null(EIO);
     }
 
-    for (int i=0; i<fs->num_blockgroups; i++) {
-        ext2_bg_t *bg = ext2_get_bg(fs, i);
+    for (int i=0; i<fs_data->num_blockgroups; i++) {
+        ext2_bg_t *bg = ext2_get_bg(fs_data, i);
 
         ext2_sanitize_bg(bg, bg);
         // dump_ext2_bg(bg, i, sb);
@@ -218,7 +218,7 @@ vmp_t *ext2_mount(vmp_t *mp) {
 }
 
 int ext2_umount(vmp_t *mp) {
-    ext2_fs_t *fs;
+    ext2_fs_t *fs_data;
 
     if (mp == NULL) {
         return NOT_OK;
@@ -226,8 +226,8 @@ int ext2_umount(vmp_t *mp) {
 
     // printf("unmount ext2 filesystem on partition %d.\n", fs->part_num);
 
-    fs = (ext2_fs_t *)&mp->fs;
-    free(fs->bgdt);
+    fs_data = (ext2_fs_t *)&mp->fs_data;
+    free(fs_data->bgdt);
 
     mp->mounted = NO;
 
@@ -251,16 +251,16 @@ int setup_vfs_ext2_handler(vfs_fs_t *vfs) {
     vfs->handles_path = handles_path;
     vfs->name = "ext2";
 
-    vfs->handler.fs.mount = ext2_mount;
-    vfs->handler.fs.unmount = ext2_umount;
+    vfs->api.fs.mount = ext2_mount;
+    vfs->api.fs.unmount = ext2_umount;
     
-    vfs->handler.fs.sync = NULL;
-    vfs->handler.fs.find_path = NULL;
-    vfs->handler.fs.open = NULL;
-    vfs->handler.fs.read = NULL;
-    vfs->handler.fs.write = NULL;
-    vfs->handler.fs.close = NULL;
-    vfs->handler.fs.locate = ext2_locate;
+    vfs->api.fs.sync = NULL;
+    vfs->api.fs.find_path = NULL;
+    vfs->api.fs.open = NULL;
+    vfs->api.fs.read = NULL;
+    vfs->api.fs.write = NULL;
+    vfs->api.fs.close = NULL;
+    vfs->api.fs.opendir = ext2_opendir;
 
     return OK;
 }
