@@ -28,6 +28,8 @@ SOFTWARE.
 #include <stdlib.h>
 #include <string.h>
 #include <nonstd.h>
+#include <unistd.h>
+#include <limits.h>
 #include <machine.h>
 
 #include "micromon.h"
@@ -39,6 +41,7 @@ void print_help(int argc, char *argv[]);
 static command_t commands[] = {
     {"help",        2, print_help},
     {"cat",         0, handle_cat_command},
+    {"cd",          0, handle_cd_command},
     {"dir",         0, handle_dir_command},
     {"disassemble", 3, handle_disasm_command},
     {"dump",        2, handle_dump_command},
@@ -124,11 +127,16 @@ void handle_command(int argc, char *argv[]) {
 
 void main(void) {
     char cmd_line[MAX_LINE];
+    char cwd[PATH_MAX];
 
     setup();
 
     while (1) {
-        kprintf("# ");
+        if (getcwd(cwd, PATH_MAX) == NULL) {
+            strcpy(cwd, "");
+        }
+
+        kprintf("%s# ", cwd);
 
         if (kgets(cmd_line) != NULL) {
             char *argv[MAX_ARGS];

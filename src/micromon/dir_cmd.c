@@ -32,6 +32,18 @@ SOFTWARE.
 
 #include "micromon.h"
 
+void handle_cd_command(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("usage: cd <path>\n");
+        return;
+    }
+
+    if (chdir(argv[1]) == NOT_OK) {
+        printf("%s: couldn't change directory.\n", argv[1]);
+        return;
+    }
+}
+
 void handle_dir_command(int argc, char *argv[]) {
     DIR *d = opendir(".");
     struct dirent *ent;

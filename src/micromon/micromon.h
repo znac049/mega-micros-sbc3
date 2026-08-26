@@ -66,6 +66,7 @@ int bios_exit(int exit_code);
 void handle_cat_command(int argc, char *argv[]);
 
 // dir_cmd.c
+void handle_cd_command(int argc, char *argv[]);
 void handle_dir_command(int argc, char *argv[]);
 void handle_pwd_command(void);
 
