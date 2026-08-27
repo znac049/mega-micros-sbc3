@@ -63,7 +63,7 @@ done:
 
 	ifnd BAREMETAL
 
-; usage: do_trap0(syscall_number, arg1, arg2, arg)
+; usage: do_trap0(syscall_number, arg1, arg2, arg3)
 ;
 do_trap0::
 	trap #0

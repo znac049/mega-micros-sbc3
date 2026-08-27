@@ -1,19 +1,24 @@
-#LIB=stdlib
-LIBOBJECTS=atoi.o \
-			atol.o \
-			exit.o \
-			getenv.o \
-			itoa.o \
-			malloc.o \
+LIBOBJECTS=fclose.o \
+			fflush.o \
+			fgetc.o \
+			fgets.o \
+			fopen.o \
+			fprintf.o \
+			fputc.o \
+			fputs.o \
+			fread.o \
+			fwrite.o \
+			getchar.o \
+			gets.o \
 			printf.o \
 			putchar.o \
 			puts.o \
-			rand.o \
-			read.o \
-			realpath.o \
 			snprintf.o \
-			srand.o \
-			strtol.o
+			sscanf.o \
+			vfprintf.o \
+			vsnprintf.o \
+			vsscanf.o
+
 
 LIBINCLUDES=$(DIR)/include
 

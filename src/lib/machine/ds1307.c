@@ -27,7 +27,7 @@ SOFTWARE.
 #include <stdlib.h>
 #include <string.h>
 #include <machine.h>
-#include <nonstd.h>
+#include <extras.h>
 
 
 static uint8_t bcd_to_dec(uint8_t bcd) {

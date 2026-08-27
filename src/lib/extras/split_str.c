@@ -22,46 +22,36 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <ctype.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
 #include <extras.h>
-#include <machine.h>
+#include <string.h>
 
-#include "micromon.h"
+int split_str(const char *s, char sep, char *bits[], int max_bits) {
+    int bit_num = 0;
+    char *next_sep = strchr(s, sep);
 
-static long dump_address = 0;
-static size_t dump_window_size = 256;
-
-void handle_dump_command(int argc, char *argv[]) {
-    long val;
-    expr_error_t res;
-    int error_pos;
-
-    if (argc >= 2) {
-        res = expr_evaluate(argv[1], &val, &error_pos);
-        if (res == EXPR_OK) {
-            dump_address = val;
-        }
-        else {
-            kprintf("Couldn't evaluate expression: '%s'\n", argv[1]);
-            return;
-        }
-
-        if (argc == 3) {
-            res = expr_evaluate(argv[2], &val, &error_pos);
-            if (res == EXPR_OK) {
-                dump_window_size = (size_t)val;
-            }
-            else {
-                kprintf("Couldn't evaluate expression: '%s'\n", argv[2]);
-                return;
-            }
-        }
+    if (sep == 0) {
+        return -1;
     }
 
-    dump((uint8_t *)dump_address, dump_window_size, YES, NULL, YES);
+    max_bits--;
 
-    dump_address += dump_window_size;
+    while ((next_sep != NULL) && (bit_num < max_bits)) {
+        bits[bit_num++] = (char *)s;
+        *next_sep++ = EOS;
+
+        s = next_sep;
+        while (*s == sep) {
+            s++;
+        }
+
+        if (*s == EOS) {
+            return bit_num;
+        }
+
+        next_sep = strchr(s, sep);
+    }
+
+    bits[bit_num++] = (char *)s;
+
+    return bit_num;
 }

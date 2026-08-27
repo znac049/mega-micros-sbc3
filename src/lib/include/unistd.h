@@ -22,46 +22,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#pragma once
+
 #include <ctype.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <extras.h>
-#include <machine.h>
 
-#include "micromon.h"
-
-static long dump_address = 0;
-static size_t dump_window_size = 256;
-
-void handle_dump_command(int argc, char *argv[]) {
-    long val;
-    expr_error_t res;
-    int error_pos;
-
-    if (argc >= 2) {
-        res = expr_evaluate(argv[1], &val, &error_pos);
-        if (res == EXPR_OK) {
-            dump_address = val;
-        }
-        else {
-            kprintf("Couldn't evaluate expression: '%s'\n", argv[1]);
-            return;
-        }
-
-        if (argc == 3) {
-            res = expr_evaluate(argv[2], &val, &error_pos);
-            if (res == EXPR_OK) {
-                dump_window_size = (size_t)val;
-            }
-            else {
-                kprintf("Couldn't evaluate expression: '%s'\n", argv[2]);
-                return;
-            }
-        }
-    }
-
-    dump((uint8_t *)dump_address, dump_window_size, YES, NULL, YES);
-
-    dump_address += dump_window_size;
-}
+int chdir(const char *path);
+int close(int fd);
+char *getcwd(char *buf, size_t size);
+pid_t getpid(void);
+int isatty(int fd);
+size_t read(int fd, void *buf, size_t count);
+size_t write(int fd, void *buf, size_t count);

@@ -2,6 +2,9 @@ ifndef MEGA_MICROS_DIR
 $(error MEGA_MICROS_DIR is not set)
 endif
 
+INSTALL_DIR=$(MEGA_MICROS_DIR)/built
+INCDIR=$(MEGA_MICROS_DIR)/src/lib/include
+
 CPU?=68030
 EXTRA_CFLAGS?=-g -O2
 EXTRA_CXXFLAGS?=-g -O2
@@ -10,6 +13,7 @@ FLAGS=-ffreestanding -ffunction-sections -fdata-sections				\
 			-nostartfiles -Wall -Wpedantic -Werror      				\
 			-mcpu=$(CPU) -march=$(CPU) -mtune=$(CPU) -msoft-float		\
 			-nostdinc													\
+			-I$(INCDIR)													\
 			$(DEFINES)
 CFLAGS=-std=c11 $(FLAGS)
 CXXFLAGS=-std=c++20 -fno-exceptions -fno-rtti $(FLAGS)
@@ -30,8 +34,6 @@ RM_F=rm -f
 RM_RF=$(RM_F) -r
 MKDIR_P=mkdir -p
 CP_R=cp -r
-
-INSTALL_DIR=$(MEGA_MICROS_DIR)/built
 
 ifeq ($(BAREMETAL),true)
 INSTALL_LIB=$(INSTALL_DIR)/lib/bare
@@ -56,12 +58,22 @@ USERLIB=$(OBJ_DIR)libmega.a
 decoy: all
 	@echo Please use \"make all\" to build all the libraries.
 
-VPATH = machine stdlib nonstdlib crt0
+VPATH = machine ctype dirent err extras fcntl setjmp stdio stdlib string strings time unistd crt0
 
-include machine/include.mk
-include stdlib/include.mk
 include crt0/include.mk
-include nonstdlib/include.mk
+include ctype/include.mk
+include dirent/include.mk
+include err/include.mk
+include fcntl/include.mk
+include machine/include.mk
+include extras/include.mk
+include setjmp/include.mk
+include stdio/include.mk
+include stdlib/include.mk
+include string/include.mk
+include strings/include.mk
+include time/include.mk
+include unistd/include.mk
 
 #$(info VPATH is $(VPATH))
 
@@ -101,6 +113,7 @@ actual_install: build
 	$(MKDIR_P) $(INSTALL_INC)
 	$(MKDIR_P) $(INSTALL_LIB)
 	$(MKDIR_P) $(INSTALL_DIR)/ld
+	$(CP_R) $(INCDIR)/*.h $(INSTALL_INC)
 	$(CP_R) $(INCLUDES) $(INSTALL_INC)
 	$(CP_R) $(USERLIB) $(INSTALL_LIB)
 	$(CP_R) $(SCRIPT_DIR)/* $(INSTALL_LIB)

@@ -22,9 +22,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <stddef.h>
-#include <dirent.h>
+#include <machine.h>
+#include <extras.h>
 
-struct dirent *readdir(DIR *dirp) {
-    return OK;
+int char_available(void) {
+#if defined(BAREMETAL)
+    return NO;
+#else
+    return do_trap0(BIOS_CHAR_AVAILABLE, 0, 0, 0);
+#endif
 }

@@ -24,7 +24,7 @@ SOFTWARE.
 
 #include <stdio.h>
 #include <dirent.h>
-#include <nonstd.h>
+#include <extras.h>
 #include <limits.h>
 #include "unittest.h"
 
@@ -46,7 +46,7 @@ void test_main(void) {
     SUITE("dirent.h");
     TEST(opendir(".")!=NULL);
 
-    SUITE("nonstd.h");
+    SUITE("extras.h");
     do {
         char *bits[8];
         char str[16];

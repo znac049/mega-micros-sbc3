@@ -27,7 +27,7 @@ SOFTWARE.
 #include <errno.h>
 #include <limits.h>
 #include <string.h>
-#include <nonstd.h>
+#include <extras.h>
 #include <machine.h>
 
 static int find_slashes(char *path, int *indexes, int max_indexes) {

@@ -22,33 +22,37 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <stddef.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <dirent.h>
-#include <errno.h>
-#include <limits.h>
-#include <machine.h>
+#pragma once
 
-DIR *opendir(const char *name) {
-    char real_path[PATH_MAX];
+typedef unsigned char uint8_t;
+typedef unsigned short uint16_t;
+typedef unsigned int uint32_t;
+typedef unsigned long long uint64_t;
 
-    if (realpath(name, real_path) == NULL) {
-        return NULL;
-    }
+typedef char int8_t;
+typedef short int16_t;
+typedef int int32_t;
+typedef long long int64_t;
 
-#if defined(BAREMETAL)
-    return (DIR *)vfs_opendir(real_path);
-#else
-    int res = do_trap0(BIOS_OPENDIR, (uint32_t)real_path, 0, 0);
+typedef unsigned int size_t;
+typedef unsigned int time_t;
 
-    if (res == 0) {
-        errno = res;
-        return NULL;
-    }
+typedef unsigned short int mode_t;
 
-    return (DIR *)res;
-#endif
+typedef unsigned char bool_t;
 
-    return NULL;
-}
+typedef unsigned int pid_t;
+
+#define TRUE 1
+#define FALSE 0
+#define YES 1
+#define NO 0
+
+int isalnum(int c);
+int isalpha(int c);
+int isblank(int c);
+int isdigit(int c);
+int isspace(int c);
+int isxdigit(int c);
+int tolower(int c);
+int toupper(int c);

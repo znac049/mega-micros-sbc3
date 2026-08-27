@@ -1,9 +1,9 @@
-% opendir(3) Version 1.0 | Library Functions Manual
+% syscall(3) Version 1.0 | Library Functions Manual
 ***
 
 ## NAME
 
-**opendir** — short description
+**syscall** — short description
 
 ### LIBRARY
 
@@ -12,9 +12,10 @@ libmega C library (-lmega)
 ### SYNOPSIS
 
 ```
-#include <stdlib>
+#include <unistd.h>
 
-DIR *opendir(const char *name);
+int syscall(int number, int p1, int p2, int p3);
+
 ```
 
 ### DESCRIPTION
@@ -24,7 +25,7 @@ DIR *opendir(const char *name);
 
 
 ### ERRORS
-**opendir()** can fail with the following errors:
+**syscall()** can fail with the following errors:
 
 * 
 

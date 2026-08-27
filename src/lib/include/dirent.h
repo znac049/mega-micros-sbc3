@@ -24,41 +24,31 @@ SOFTWARE.
 
 #pragma once
 
-#include <stdarg.h>
 #include <ctype.h>
 
-// Stream object
-typedef struct file {
+typedef unsigned int ino_t;
+typedef unsigned int off_t;
+
+struct dirent {
+    ino_t           d_ino;
+    off_t           d_off;
+    unsigned short  d_reclen;
+    unsigned char   d_type;
+    char            d_name[256];
+};
+
+typedef struct {
     int fd;
-    uint8_t is_open;
-} FILE;
+    bool_t open;
 
-#define STREAM_TABLE_SIZE 16
+    struct dirent ent;
+} DIR;
 
-#define FHAND_DUART 1
 
-extern FILE *stdin;
-extern FILE *stdout;
-extern FILE *stderr;
-
-int char_available(void);
-int fclose(FILE *stream);
-int fflush(FILE *stream);
-int fgetc(FILE *stream);
-char *fgets(char *s, int size, FILE *stream);
-extern FILE *fopen(const char *pathname, const char *mode);
-int fprintf(FILE *stream, const char *fmt, ...);
-int fputc(int c, FILE *stream);
-int fputs(const char *s, FILE *stream);
-size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
-size_t fwrite(void *ptr, size_t size, size_t nmemb, FILE *stream);
-int getchar(void);
-char *gets(char *s);
-int printf(const char *format, ...);
-int putchar(int c);
-int puts(const char *s);
-int snprintf(char *buffer, size_t n, const char *fmt, ...);
-int sscanf(const char *str, const char *format, ...);
-int vfprintf(FILE *stream, const char *format, va_list ap);
-int vsnprintf(char *str, size_t size, const char *format, va_list ap);
-int vsscanf(const char *str, const char *format, va_list ap);
+DIR *opendir(const char *name);
+int closedir(DIR *dirp);
+int dirfd(DIR *dirp);
+struct dirent *readdir(DIR *dirp);
+void rewinddir(DIR *dirp);
+void seekdir(DIR *dirp, long loc);
+long telldir(DIR *dirp);

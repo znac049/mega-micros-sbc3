@@ -29,7 +29,7 @@ SOFTWARE.
 #include <machine.h>
 #include <disk.h>
 #include <ext2.h>
-#include <nonstd.h>
+#include <extras.h>
 
 #include "micromon.h"
 #include "expr.h"

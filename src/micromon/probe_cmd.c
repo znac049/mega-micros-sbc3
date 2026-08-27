@@ -25,8 +25,6 @@ SOFTWARE.
 #include <ctype.h>
 #include <stddef.h>
 #include <stdlib.h>
-#include <string.h>
-#include <nonstd.h>
 #include <machine.h>
 
 #include "micromon.h"

@@ -1,9 +1,9 @@
-% readdir(3) Version 1.0 | Library Functions Manual
+% strncmp(3) Version 1.0 | Library Functions Manual
 ***
 
 ## NAME
 
-**readdir** — short description
+**strncmp** — short description
 
 ### LIBRARY
 
@@ -12,9 +12,9 @@ libmega C library (-lmega)
 ### SYNOPSIS
 
 ```
-#include <stdlib>
+#include <string.h>
 
-struct dirent *readdir(DIR *dirp);
+int strncmp(const char *s1, const char *s2, size_t n);
 ```
 
 ### DESCRIPTION
@@ -24,7 +24,7 @@ struct dirent *readdir(DIR *dirp);
 
 
 ### ERRORS
-**readdir()** can fail with the following errors:
+**strncat()** can fail with the following errors:
 
 * 
 

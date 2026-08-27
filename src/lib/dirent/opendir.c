@@ -22,12 +22,69 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <stddef.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <errno.h>
+#include <limits.h>
 #include <machine.h>
 
-int char_available(void) {
+#define OPEN_DIR_MAX    8
+
+static bool_t initialised = NO;
+
+DIR dirs[OPEN_DIR_MAX];
+
+static void init_structures(void) {
+    for (int i=0; i<OPEN_DIR_MAX; i++) {
+        dirs[i].open = NO;
+    }
+
+    initialised = YES;
+}
+
+static DIR *find_free_dir(void) {
+    for (int i=0; i<OPEN_DIR_MAX; i++) {
+        if (dirs[i].open == NO) {
+            return &dirs[i];
+        }
+    }
+
+    return NULL;
+}
+
+DIR *opendir(const char *name) {
+    char real_path[PATH_MAX];
+    int dirfd;
+    DIR *dirp;
+
+    if (initialised == NO) {
+        init_structures();
+    }
+
+    dirp = find_free_dir();
+    if (dirp == NULL) {
+        errno = EMFILE;
+        return NULL;
+    }
+
+    if (realpath(name, real_path) == NULL) {
+        return NULL;
+    }
+
 #if defined(BAREMETAL)
-    return NO;
+    dirfd = vfs_opendir(real_path);
 #else
-    return do_trap0(BIOS_CHAR_AVAILABLE, 0, 0, 0);
+    dirfd = do_trap0(BIOS_OPENDIR, (uint32_t)real_path, 0, 0);
+
+    if (dirfd == 0) {
+        return NULL;
+    }
 #endif
+
+    dirp->fd = dirfd;
+    dirp->open = YES;
+    
+    return dirp;
 }

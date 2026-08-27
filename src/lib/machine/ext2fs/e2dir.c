@@ -26,7 +26,7 @@ SOFTWARE.
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <nonstd.h>
+#include <extras.h>
 #include <machine.h>
 #include <ext2.h>
 

@@ -22,9 +22,33 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+#include <ctype.h>
+#include <errno.h>
+#include <string.h>
+#include <extras.h>
 
-void dump_mem(uint8_t *buf, size_t count, uint8_t print_zeroes);
-char *midstr(char *dest, size_t max_len, const char *s, int from, int to);
-int split_str(const char *s, char sep, char *bits[], int max_bits);
-int strpad(char *str, int width, char pad_ch);
+static inline int min(int a, int b) {
+    return (a<b)?a:b;
+}
+
+char *midstr(char *dest, size_t max_len, const char *s, int from, int to) {
+    int num_chars;
+    int len = strlen(s);
+    char *d = dest;
+
+    to = min(to, len);
+    num_chars = to - from;
+
+    if (num_chars >= max_len) {
+        errno = ERANGE;
+
+        return NULL;
+    }
+
+    for (int i=from; i<=to; i++) {
+        *d++ = s[i];
+    }
+    *d = EOS;
+
+    return dest;
+}

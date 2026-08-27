@@ -23,32 +23,13 @@ SOFTWARE.
 */
 
 #include <ctype.h>
-#include <errno.h>
-#include <string.h>
-#include <nonstd.h>
+#include <stddef.h>
+#include <unistd.h>
 
-static inline int min(int a, int b) {
-    return (a<b)?a:b;
-}
-
-char *midstr(char *dest, size_t max_len, const char *s, int from, int to) {
-    int num_chars;
-    int len = strlen(s);
-    char *d = dest;
-
-    to = min(to, len);
-    num_chars = to - from;
-
-    if (num_chars >= max_len) {
-        errno = ERANGE;
-
-        return NULL;
-    }
-
-    for (int i=from; i<=to; i++) {
-        *d++ = s[i];
-    }
-    *d = EOS;
-
-    return dest;
+pid_t getpid(void) {
+#if defined(BAREMETAL)
+    return 1;
+#else
+    return 2;
+#endif
 }

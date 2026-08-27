@@ -22,35 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <string.h>
+#include <unistd.h>
+#include <stddef.h>
 
-int split_str(const char *s, char sep, char *bits[], int max_bits) {
-    int bit_num = 0;
-    char *next_sep = strchr(s, sep);
-
-    if (sep == 0) {
-        return -1;
-    }
-
-    max_bits--;
-
-    while ((next_sep != NULL) && (bit_num < max_bits)) {
-        bits[bit_num++] = (char *)s;
-        *next_sep++ = EOS;
-
-        s = next_sep;
-        while (*s == sep) {
-            s++;
-        }
-
-        if (*s == EOS) {
-            return bit_num;
-        }
-
-        next_sep = strchr(s, sep);
-    }
-
-    bits[bit_num++] = (char *)s;
-
-    return bit_num;
+int syscall(int number, int p1, int p2, int p3) {
+    // This is a nop() when running on baremetal
+    return OK;
 }

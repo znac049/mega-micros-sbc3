@@ -22,23 +22,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <string.h>
-#include <nonstd.h>
+#include <stddef.h>
+#include <dirent.h>
+#include <errno.h>
 
-int strpad(char *str, int width, char pad_ch) {
-    int len = strlen(str);
-
-    // No padding required
-    if (len >= width) {
-        // No padding required
-        return 0;
+struct dirent *readdir(DIR *dirp) {
+    if (dirp == NULL) {
+        errno = EBADF;
+        return NULL;
     }
 
-    str = &str[len];
-    for (int i=len; i<width; i++) {
-        *str++ = pad_ch;
-    }
-    *str = EOS;
-
-    return 0;
+    return OK;
 }

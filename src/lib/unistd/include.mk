@@ -1,19 +1,12 @@
-#LIB=stdlib
-LIBOBJECTS=atoi.o \
-			atol.o \
-			exit.o \
-			getenv.o \
-			itoa.o \
-			malloc.o \
-			printf.o \
-			putchar.o \
-			puts.o \
-			rand.o \
+LIBOBJECTS=chdir.o \
+			close.o \
+			getcwd.o \
+			getpid.o \
+			isatty.o \
+			mktime.o \
 			read.o \
-			realpath.o \
-			snprintf.o \
-			srand.o \
-			strtol.o
+			syscall.o \
+			write.o
 
 LIBINCLUDES=$(DIR)/include
 

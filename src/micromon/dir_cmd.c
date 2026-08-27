@@ -34,12 +34,12 @@ SOFTWARE.
 
 void handle_cd_command(int argc, char *argv[]) {
     if (argc != 2) {
-        printf("usage: cd <path>\n");
+        kprintf("usage: cd <path>\n");
         return;
     }
 
     if (chdir(argv[1]) == NOT_OK) {
-        printf("%s: couldn't change directory.\n", argv[1]);
+        kprintf("%s: couldn't change directory.\n", argv[1]);
         return;
     }
 }
@@ -49,20 +49,20 @@ void handle_dir_command(int argc, char *argv[]) {
     struct dirent *ent;
 
     if (d == NULL) {
-        printf("opendir() failed. errno=%d\n", errno);
+        kprintf("opendir() failed. errno=%d\n", errno);
         return;
     }
 
-    printf("dir opened ok\n");
+    kprintf("dir opened ok\n");
 
     ent = readdir(d);
     while (ent != NULL) {
-        printf("%s\n", ent->d_name);
+        kprintf("%s\n", ent->d_name);
 
         ent = readdir(d);
     }
 
-    printf("closing dir\n");
+    kprintf("closing dir\n");
 
     if (closedir(d) == NOT_OK) {
         printf("closedir() failed. errno=%d\n", errno);
@@ -76,7 +76,7 @@ void handle_pwd_command(void) {
     char pwd[PATH_MAX];
 
     if (getcwd(pwd, PATH_MAX) == NULL) {
-        printf("Very bad karma!\n");
+        kprintf("Very bad karma!\n");
         return;
     }
 

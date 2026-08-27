@@ -37,5 +37,6 @@ char *strchr(const char *s, int c);
 int strcmp(const char *s1, const char *s2);
 char *strcpy(char *dst, const char *src);
 size_t strlen(const char *str);
+int strncmp(const char *s1, const char *s2, size_t n);
 char *strncpy(char *dst, const char *src, size_t dsize);
 char *strrchr(const char *s, int c);

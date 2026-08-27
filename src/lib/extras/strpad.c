@@ -22,46 +22,23 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <ctype.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
 #include <extras.h>
-#include <machine.h>
+#include <string.h>
 
-#include "micromon.h"
+int strpad(char *str, int width, char pad_ch) {
+    int len = strlen(str);
 
-static long dump_address = 0;
-static size_t dump_window_size = 256;
-
-void handle_dump_command(int argc, char *argv[]) {
-    long val;
-    expr_error_t res;
-    int error_pos;
-
-    if (argc >= 2) {
-        res = expr_evaluate(argv[1], &val, &error_pos);
-        if (res == EXPR_OK) {
-            dump_address = val;
-        }
-        else {
-            kprintf("Couldn't evaluate expression: '%s'\n", argv[1]);
-            return;
-        }
-
-        if (argc == 3) {
-            res = expr_evaluate(argv[2], &val, &error_pos);
-            if (res == EXPR_OK) {
-                dump_window_size = (size_t)val;
-            }
-            else {
-                kprintf("Couldn't evaluate expression: '%s'\n", argv[2]);
-                return;
-            }
-        }
+    // No padding required
+    if (len >= width) {
+        // No padding required
+        return 0;
     }
 
-    dump((uint8_t *)dump_address, dump_window_size, YES, NULL, YES);
+    str = &str[len];
+    for (int i=len; i<width; i++) {
+        *str++ = pad_ch;
+    }
+    *str = EOS;
 
-    dump_address += dump_window_size;
+    return 0;
 }

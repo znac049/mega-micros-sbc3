@@ -24,25 +24,10 @@ SOFTWARE.
 
 #pragma once
 
-typedef unsigned int ino_t;
-typedef unsigned int off_t;
+#include <ctype.h>
 
-typedef struct {
-    int zob;
-} DIR;
-
-
-struct dirent {
-    ino_t           d_ino;
-    off_t           d_off;
-    unsigned short  d_reclen;
-    unsigned char   d_type;
-    char            d_name[256];
-};
-
-DIR *opendir(const char *name);
-int closedir(DIR *dirp);
-struct dirent *readdir(DIR *dirp);
-void rewinddir(DIR *dirp);
-void seekdir(DIR *dirp, long loc);
-long telldir(DIR *dirp);
+int char_available(void);
+void dump_mem(uint8_t *buf, size_t count, uint8_t print_zeroes);
+char *midstr(char *dest, size_t max_len, const char *s, int from, int to);
+int split_str(const char *s, char sep, char *bits[], int max_bits);
+int strpad(char *str, int width, char pad_ch);

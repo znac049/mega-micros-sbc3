@@ -73,5 +73,6 @@ SOFTWARE.
 #define ENOSYS        (_SIGN 38)  /* function not implemented */
 #define ENOTEMPTY     (_SIGN 39)  /* directory not empty */
 #define	ELOOP	      (_SIGN 40)  /* too many levels of symlinks detected */
+#define ENOTSUP       (_SIGN 41)  /* Operation not supported */
 
 extern int errno;
