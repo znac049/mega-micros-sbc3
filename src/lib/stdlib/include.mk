@@ -1,7 +1,9 @@
 #LIB=stdlib
 LIBOBJECTS=atoi.o \
 			atol.o \
+			calloc.o \
 			exit.o \
+			free.o \
 			getenv.o \
 			itoa.o \
 			malloc.o \
