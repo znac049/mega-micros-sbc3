@@ -36,7 +36,7 @@ SOFTWARE.
 uint32_t heap_start;
 
 struct heap_chunk {
-	int size;
+	uint32_t size;
     pid_t owner;
 	struct heap_chunk *next;
     struct heap_chunk *next_allocated;
@@ -188,7 +188,7 @@ void bios_free(void *ptr, pid_t pid)
 
 void clean_heap(pid_t pid) {
 	heap_chunk_t *cur;
- 	heap_chunk_t *prev;
+ 	heap_chunk_t *prev = NULL;
 
    for (cur=allocated_chunks; cur != NULL; prev=cur, cur=cur->next_allocated) {
         if (cur->owner == pid) {
