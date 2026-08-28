@@ -28,6 +28,7 @@ SOFTWARE.
 
 int chdir(const char *path);
 int close(int fd);
+void exit(int);
 char *getcwd(char *buf, size_t size);
 pid_t getpid(void);
 int isatty(int fd);
