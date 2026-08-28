@@ -23,7 +23,7 @@ SOFTWARE.
 */
 
 #include <err.h>
-#include <stdlib.h>
+#include <unistd.h>
 
 void warn(const char *fmt, ...) {
   exit(42);
