@@ -41,7 +41,7 @@ SCRIPT_DIR=../link_scripts/bare
 INSTALL_INC=$(INSTALL_DIR)/include
 OBJ_DIR=bare/
 DEFINES += -DBAREMETAL
-CRT0_OBJECTS=crt0.o rom_crt0.o
+CRT0_OBJECTS=rom_crt0.o
 else
 INSTALL_LIB=$(INSTALL_DIR)/lib/bios
 SCRIPT_DIR=../link_scripts/bios
@@ -60,7 +60,6 @@ decoy: all
 
 VPATH = machine ctype dirent err extras fcntl setjmp stdio stdlib string strings time unistd crt0
 
-include crt0/include.mk
 include ctype/include.mk
 include dirent/include.mk
 include err/include.mk
@@ -74,6 +73,7 @@ include string/include.mk
 include strings/include.mk
 include time/include.mk
 include unistd/include.mk
+include crt0/include.mk
 
 #$(info VPATH is $(VPATH))
 
@@ -91,13 +91,14 @@ $(OBJ_DIR)%.o : %.S
 	$(AS) $(ASFLAGS) -o $@ $<
 
 $(OBJ_DIR)%.o : %.asm
-	$(VASM) $(VASMFLAGS) -o $@ $<
+	$(VASM) $(VASMFLAGS) -L $(basename $<).lst -o $@ $<
 
 .PHONY: all bare bios build install actual_install clean actual_clean decoy manpages
 
 all: bare bios
 
 build: $(USERLIB) $(ALL_OBJS) $(CRT0_OBJS)
+	@echo ZOB $(CRT0_OBJS)
 
 bare:
 	make build BAREMETAL=true
@@ -133,4 +134,4 @@ clean:
 	make actual_clean BAREMETAL=false
 
 actual_clean: 
-	$(RM_F) $(ALL_OBJS) $(USERLIB)
+	$(RM_F) $(ALL_OBJS) $(CRT0_OBJS) $(USERLIB)

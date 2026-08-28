@@ -48,7 +48,7 @@ GCC_LIBS?=$(shell $(CC) --print-search-dirs \
           | sed 's/:/\/ -L/g')
 LIBS=$(EXTRA_LIBS) -lmega -lgcc
 ASFLAGS=-mcpu=$(CPU) -march=$(ARCH)
-VASMFLAGS=-Felf -m$(CPU) -quiet -Lnf $(DEFINES)
+VASMFLAGS=-Felf -m$(CPU) -quiet $(DEFINES)
 COMMON_LDFLAGS=-L$(SYSLIBDIR) -Map=$(MAP) -z noexecstack --gc-sections --oformat=elf32-m68k $(EXTRA_LDFLAGS)
 LDFLAGS=$(COMMON_LDFLAGS) -T$(LDSCRIPT) 
 ROM_LDFLAGS=$(COMMON_LDFLAGS) -T$(ROM_LDSCRIPT) 
