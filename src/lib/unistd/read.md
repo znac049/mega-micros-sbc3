@@ -1,4 +1,4 @@
-% read(3) Version 1.0 | Library Functions Manual
+% read(2) Version 1.0 | Library Functions Manual
 ***
 
 ## NAME

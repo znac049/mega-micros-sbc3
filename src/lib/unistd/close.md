@@ -1,4 +1,4 @@
-% close(3) Version 1.0 | Library Functions Manual
+% close(2) Version 1.0 | Library Functions Manual
 ***
 
 ## NAME

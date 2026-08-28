@@ -1,4 +1,4 @@
-% getpid(3) Version 1.0 | Library Functions Manual
+% getpid(2) Version 1.0 | Library Functions Manual
 ***
 
 ## NAME

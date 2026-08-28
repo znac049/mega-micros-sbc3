@@ -1,4 +1,4 @@
-% creat(3) Version 1.0 | Library Functions Manual
+% creat(2) Version 1.0 | Library Functions Manual
 ***
 
 ## NAME

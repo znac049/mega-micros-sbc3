@@ -1,4 +1,4 @@
-% chdir(3) Version 1.0 | Library Functions Manual
+% chdir(2) Version 1.0 | Library Functions Manual
 ***
 
 ## NAME
