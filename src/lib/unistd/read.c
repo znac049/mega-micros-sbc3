@@ -23,13 +23,13 @@ SOFTWARE.
 */
 
 #include <unistd.h>
-#include <fcntl.h>
+#include <bios.h>
 #include <errno.h>
-#include <machine.h>
+// #include <machine.h>
 
 size_t read(int fd, void *buff, size_t count) {
 #if defined(BAREMETAL)
-    return vfs_read(fd, buff, count);
+    return bios_read(fd, buff, count);
 #else
     return do_trap0(BIOS_READ, fd, (uint32_t)buff, count);
 #endif

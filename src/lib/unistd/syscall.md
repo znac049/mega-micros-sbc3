@@ -1,4 +1,4 @@
-% syscall(3) Version 1.0 | Library Functions Manual
+% syscall(2) Version 1.0 | Library Functions Manual
 ***
 
 ## NAME

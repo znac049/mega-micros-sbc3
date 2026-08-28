@@ -23,11 +23,11 @@ SOFTWARE.
 */
 
 #include <stdio.h>
-#include <machine.h>
+#include <bios.h>
 
 int putchar(int c) {
 #if defined(BAREMETAL)
-    return vfs_write(0, (const char *)&c, 1);
+    return bios_write(0, (const char *)&c, 1);
 #else
     do_trap0(BIOS_PUTCHAR, 0, c, 0);
 #endif

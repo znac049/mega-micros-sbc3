@@ -23,13 +23,12 @@ SOFTWARE.
 */
 
 #include <unistd.h>
-#include <fcntl.h>
 #include <errno.h>
-#include <machine.h>
+#include <bios.h>
 
 int close(int fd) {
 #if defined(BAREMETAL)
-    return vfs_close(fd);
+    return bios_close(fd);
 #else
     int res = do_trap0(BIOS_CLOSE, fd, 0, 0);
 

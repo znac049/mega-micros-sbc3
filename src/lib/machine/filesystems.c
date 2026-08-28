@@ -26,6 +26,7 @@ SOFTWARE.
 #include <string.h>
 #include <machine.h>
 #include <filesystems.h>
+#include <bios.h>
 #include <extras.h>
 
 #if defined(BAREMETAL)
@@ -37,8 +38,6 @@ static vfs_fs_t filesystems[MAX_VIRTUAL_FILESYSTEMS];
 // Note files include directories
 static vfile_t vfs_files[MAX_FILES];
 static vmp_t mounts[MAX_MOUNTS];
-
-int vfs_open(const char *pathname, int flags);
 
 static vmp_t *find_free_vmp(void) {
     for (int i=0; i<MAX_MOUNTS; i++) {
@@ -155,15 +154,15 @@ int vfs_init(void) {
     res = setup_vfs_ext2_handler(find_free_fs());
 
     // Open stdin/out/err
-    if ((fd = vfs_open("//usb1", O_RDONLY)) < 0) {
+    if ((fd = bios_open("//usb1", O_RDONLY)) < 0) {
         res = fd;
     }
 
-    if ((fd = vfs_open("//usb1", O_WRONLY)) < 0) {
+    if ((fd = bios_open("//usb1", O_WRONLY)) < 0) {
         res = fd;
     }
 
-    if ((fd = vfs_open("//usb2", O_WRONLY)) < 0) {
+    if ((fd = bios_open("//usb2", O_WRONLY)) < 0) {
         res = fd;
     }
 
@@ -198,7 +197,7 @@ int vfs_shutdown(void) {
 
     for (int i=0; i<MAX_FILES; i++) {
         if (vfs_files[i].open == YES) {
-            vfs_close(i);
+            bios_close(i);
         }
     }
 
@@ -260,7 +259,7 @@ int vfs_creat(const char *pathname, mode_t mode) {
     return NOT_OK;
 }
 
-int vfs_open(const char *pathname, int flags) {
+int bios_open(const char *pathname, int flags) {
     int fd = find_free_file();
     vfile_t *file;
 
@@ -279,7 +278,7 @@ int vfs_open(const char *pathname, int flags) {
     return fd;
 }
 
-int vfs_close(int fd) {
+int bios_close(int fd) {
     if ((fd < 0) || (fd >= MAX_FILES)) {
         return -1;
     }
@@ -287,7 +286,7 @@ int vfs_close(int fd) {
     return 0;
 }
 
-int vfs_read(int fd, char *buff, size_t num_bytes) {
+int bios_read(int fd, char *buff, size_t num_bytes) {
     if ((fd < 0) || (fd >= MAX_FILES)) {
         return -1;
     }
@@ -295,7 +294,7 @@ int vfs_read(int fd, char *buff, size_t num_bytes) {
     return 0;
 }
 
-size_t vfs_write(int fd, const char *buff, size_t num_bytes) {
+size_t bios_write(int fd, const char *buff, size_t num_bytes) {
     if ((fd < 0) || (fd >= MAX_FILES)) {
         return NOT_OK;
     }

@@ -34,7 +34,7 @@ SOFTWARE.
 #include <disk.h>
 #include <ext2.h>
 #include <fs.h>
-#include <syscalls.h>
+#include <bios.h>
 
 typedef short lock_state_t;
 
@@ -143,10 +143,6 @@ int create_cf_dev(block_device_t *dev);
 int create_rom_dev(block_device_t *dev);
 
 
-// crt0.asm
-int do_trap0(uint32_t syscall_num, uint32_t arg1, uint32_t arg2, uint32_t arg3);
-
-
 // ds1307.c
 int ds1307_read(int addr, uint8_t *buf, size_t num_bytes);
 int ds1307_write(int addr, uint8_t *buf, size_t num_bytes);
@@ -166,10 +162,7 @@ int vfs_chdir(const char *path);
 int vfs_getcwd(char*buff, size_t size);
 vfile_t *vfs_locate(const char *path);
 int vfs_creat(const char *pathname, mode_t mode);
-int vfs_open(const char *pathname, int flags);
-int vfs_close(int fd);
-int vfs_read(int fd, char *buff, size_t num_bytes);
-size_t vfs_write(int fd, const char *buff, size_t num_bytes);
+
 int vfs_opendir(const char *name);
 
 #endif

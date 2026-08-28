@@ -22,23 +22,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+#include <stdlib.h>
+#include <stdio.h>
+#include <limits.h>
 
-// BIOS calls
-#define BIOS_PUTCHAR		0
-#define BIOS_GETCHAR		1
-#define BIOS_CHAR_AVAILABLE	2
-#define BIOS_EXIT			3
-#define BIOS_TICKS			4
-#define BIOS_OPEN			5
-#define BIOS_CLOSE			6
-#define BIOS_CREAT          7
-#define BIOS_READ			8
-#define BIOS_WRITE			9
-#define BIOS_RESET_TICKS    10
-#define BIOS_CHDIR          11
-#define BIOS_GETCWD         12
-#define BIOS_OPENDIR        13
+void *calloc(size_t nmemb, size_t size) {
+    long long nbytes = (long long)nmemb * (long long)size;
 
-#define NUM_BIOS_CALLS	    14
+    if (nbytes > LONG_MAX) {
+        // overflow
+        return NULL;
+    }
 
+    return malloc((size_t)nbytes);
+}

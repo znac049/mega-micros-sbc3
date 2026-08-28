@@ -96,6 +96,11 @@ extern uint32_t go_address;
 extern jmp_buf go_env;
 void handle_go_command(int argc, char *argv[]);
 
+// heap.c
+void bios_free(void *ptr, pid_t pid);
+void *bios_malloc(size_t size, pid_t pid);
+void clean_heap(pid_t pid);
+
 
 // io.c
 int dbgf(const char *format, ...);

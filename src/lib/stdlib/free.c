@@ -22,16 +22,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <fcntl.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <bios.h>
-#include <string.h>
+#include <errno.h>
 
-int open(const char *pathname, int flags) {
+void free(void *ptr)
+{
 #if defined(BAREMETAL)
-    return bios_open(pathname, flags);
+    bios_free(ptr, getpid());
 #else
-    return do_trap0(BIOS_OPEN, (uint32_t)pathname, flags, 0);
+    do_trap0(BIOS_FREE, (uint32_t)ptr, getpid(), 0);
 #endif
-
-    return -1;
 }

@@ -1,4 +1,4 @@
-% malloc(3) Version 1.0 | Library Functions Manual
+% free(3) Version 1.0 | Library Functions Manual
 ***
 
 ## NAME
@@ -24,7 +24,7 @@ libmega C library (-lmega)
 
 
 ### ERRORS
-**malloc()** can fail with the following errors:
+**free()** can fail with the following errors:
 
 * 
 

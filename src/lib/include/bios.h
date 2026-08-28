@@ -22,16 +22,35 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <fcntl.h>
-#include <bios.h>
-#include <string.h>
+// BIOS calls
+#define BIOS_PUTCHAR		0
+#define BIOS_GETCHAR		1
+#define BIOS_CHAR_AVAILABLE	2
+#define BIOS_EXIT			3
+#define BIOS_TICKS			4
+#define BIOS_OPEN			5
+#define BIOS_CLOSE			6
+#define BIOS_CREAT          7
+#define BIOS_READ			8
+#define BIOS_WRITE			9
+#define BIOS_RESET_TICKS    10
+#define BIOS_CHDIR          11
+#define BIOS_GETCWD         12
+#define BIOS_MALLOC         13
+#define BIOS_FREE           14
 
-int open(const char *pathname, int flags) {
-#if defined(BAREMETAL)
-    return bios_open(pathname, flags);
-#else
-    return do_trap0(BIOS_OPEN, (uint32_t)pathname, flags, 0);
-#endif
+#define NUM_BIOS_CALLS	    15
 
-    return -1;
-}
+
+
+void bios_free(void *ptr, pid_t pid);
+void *bios_malloc(size_t size, pid_t pid);
+
+
+int do_trap0(uint32_t syscall_num, uint32_t arg1, uint32_t arg2, uint32_t arg3);
+
+
+int bios_open(const char *pathname, int flags);
+int bios_close(int fd);
+int bios_read(int fd, char *buff, size_t num_bytes);
+size_t bios_write(int fd, const char *buff, size_t num_bytes);
