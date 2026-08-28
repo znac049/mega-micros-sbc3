@@ -35,7 +35,7 @@ SOFTWARE.
 
 static int major = 0;
 static int minor = 4;
-static int MAGIC_BUILD_NUMBER = 438;
+static int MAGIC_BUILD_NUMBER = 451;
 
 
 uint32_t ram_end;
@@ -231,7 +231,7 @@ void setup(void) {
 
     // Setup the heap so malloc can be used
     _init_heap();
-    heap_print_free();
+    _heap_print_free();
 
     // Activate any block devices
     printk("\nActivating block devices\n");
