@@ -28,8 +28,12 @@ SOFTWARE.
 #include <string.h>
 #include <machine.h>
 
+#if defined(BAREMETAL)
+# define printf kprintf
+#endif 
+
 void cf_init(void) {
-   _cf_wait_busy();
+    _cf_wait_busy();
 	*cf_reg_feature = CF_FEATURE_8BIT;
     *cf_reg_command = CF_CMD_SET_FEATURE;
     _cf_wait_busy();
@@ -47,7 +51,10 @@ int cf_read(uint8_t drive_num, uint32_t sector, uint8_t *buffer) {
 
     *cf_reg_sector_count = 1;
     *cf_reg_command = CF_CMD_READ_SECTORS;
-	_cf_wait_busy();
+	if (_cf_wait_busy() == NOT_OK) {
+        // Timed out
+        return NOT_OK;
+    }
 
     // Check for error
 	//dump_regs();

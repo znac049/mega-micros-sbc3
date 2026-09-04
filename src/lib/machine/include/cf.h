@@ -96,7 +96,7 @@ struct cf_info {
 
 typedef struct cf_info cf_info_t;
 
-void _cf_wait_busy(void);
+int _cf_wait_busy(void);
 void _cf_wait_data(void);
 void cf_init(void);
 int cf_read(uint8_t drive_num, uint32_t sector, uint8_t *buffer);

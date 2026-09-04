@@ -25,7 +25,6 @@ SOFTWARE.
 #include <unistd.h>
 #include <bios.h>
 #include <errno.h>
-// #include <machine.h>
 
 size_t read(int fd, void *buff, size_t count) {
 #if defined(BAREMETAL)

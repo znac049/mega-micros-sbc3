@@ -30,7 +30,7 @@ SOFTWARE.
 
 char *getcwd(char *buf, size_t size) {
 #if defined(BAREMETAL)
-    return (char *)vfs_getcwd(buf, size);
+    return (char *)bios_getcwd(buf, size);
 #else
     int res = do_trap0(BIOS_GETCWD, (uint32_t)buf, size, 0);
 

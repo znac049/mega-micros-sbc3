@@ -1,6 +1,7 @@
 LIBOBJECTS=chdir.o \
 			close.o \
 			getcwd.o \
+			getdents.o \
 			getpid.o \
 			isatty.o \
 			mktime.o \
