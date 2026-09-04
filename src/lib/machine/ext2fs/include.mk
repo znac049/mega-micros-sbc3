@@ -4,7 +4,8 @@ LIBOBJECTS := $(LIBOBJECTS) \
 			e2dump.o \
 			e2endian.o \
 			ext2.o \
-			e2file.o
+			e2file.o \
+			e2search.o
 
 LIBINCLUDES=$(SUBDIR)/include
 

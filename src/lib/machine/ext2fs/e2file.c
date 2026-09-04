@@ -22,14 +22,113 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <stddef.h>
 #include <ctype.h>
 #include <machine.h>
 #include <ext2.h>
+#include <string.h>
+#include <extras.h>
 
 #if defined(BAREMETAL)
 
-int ext2_file_reader(ext2_fs_t *fs, uint32_t inode_num) {
-    return -1;
+int ext2_open(vfile_t *file, const char *name, vfile_t *cwd) {
+    ext2_file_t *filep = &file->private.data.ext2_file_inf;
+    int file_inode_num = EXT2_ROOT_INO;
+    char *dirv[EXT2_MAX_DIR_DEPTH];
+    int dirc;
+    ext2_fs_t *fs;
+
+    // kprintf("ext2_open: '%s'\n", name);
+
+    if (file->mp == NULL) {
+        kprintf("NULL vmp_t in vfile_t\n");
+        return NOT_OK;
+    }
+
+    fs = &file->mp->private.data.ext2_fs_inf;
+
+    if (strcmp(name, "") == 0) {
+        if (cwd->open == YES) {
+            // use the current directory
+            // kprintf("ext2_open: using the current directory\n");
+
+            memcpy(file, cwd, sizeof(vfile_t));
+            ext2_init_block_follower(&filep->bf, file->mp, file_inode_num);
+
+            dump_ext2_fs(fs);
+            
+            return OK;
+        }
+        else {
+            // We don't currently have a current dir. Assume root of current mount
+            strcpy(file->path, "");
+            file->open = YES;
+            ext2_init_block_follower(&filep->bf, file->mp, file_inode_num);
+
+            filep->offset = 0;
+
+            return OK;
+        }
+    }
+    
+    dirc = split_str(name, '/', dirv, EXT2_MAX_DIR_DEPTH);
+
+    // kprintf("ext2_open: '%s' splits into %d parts:\n", name, dirc);
+    for (int i=0; i<dirc; i++) {
+        kprintf("  %s\n", dirv[i]);
+    }
+
+    for (int i=0; i<dirc; i++) {
+        int parent_inode_num = file_inode_num;
+
+        if ((file_inode_num = e2_search(file->mp, file_inode_num, dirv[i])) == 0) {
+            kprintf("ext2_open: couldn't find '%s' in directory with inode %d\n", dirv[i], parent_inode_num);
+            return NOT_OK;
+        }
+    }
+
+    kprintf("ext_open: final inode is %d\n");
+
+    ext2_init_block_follower(&filep->bf, file->mp, file_inode_num);
+
+    // print what we know so far...
+    // kprintf("printing file internals (assuming ext2):\n");
+    // kprintf("vfile\n");
+    // kprintf("  path: '%s'\n", file->path);
+    // kprintf("  open: %s\n", file->open?"YES":"NO");
+    // kprintf("  mp: 0x%08x\n", file->mp);
+    // kprintf("  fs.filep: 0x%08x\n", filep);
+
+    // kprintf("\n");
+
+    // if (filep == NULL) {
+    //     kprintf("fs.ext2_filep is NULL\n");
+    // }
+    // else {
+    //     kprintf("filep:\n");
+    //     kprintf("  offset: %d\n", filep->offset);
+    //     kprintf("  bf:\n");
+    //     kprintf("    inode_num: %d\n", filep->bf.inode_num);
+    //     kprintf("    inode: 0x%08x\n", &filep->bf.inode);
+    //     kprintf("    direct_offset: %d\n", filep->bf.direct_offset);
+    //     kprintf("    single_offset: %d\n", filep->bf.single_offset);
+    //     kprintf("    double_offset: %d\n", filep->bf.double_offset);
+    //     kprintf("    triple_offset: %d\n", filep->bf.triple_offset);
+    // }
+
+    return OK;
+}
+
+int ext2_read(vfile_t *file, char *buff, size_t count) {
+    return NOT_OK;
+}
+
+int ext2_write(vfile_t *file, const char *buff, size_t count) {
+    return NOT_OK;
+}
+
+int ext2_close(vfile_t *file) {
+    return NOT_OK;
 }
 
 #endif

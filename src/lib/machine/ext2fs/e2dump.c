@@ -84,68 +84,68 @@ void dump_ext2_sb(ext2_sb_t *sb) {
         bg2++;
     }
 
-    printf("Superblock:\n");
-    printf("  Filesystem volume name:  %s\n", sb->s_volume_name);
-    printf("  Last mounted as:         %s\n", sb->s_last_mounted);
-    printf("  Filesystem UUID:\n");
-    printf("  Filesystem magic number: 0x%04x\n", sb->s_magic);
-    printf("  Filesystem revision #:   %d.%d\n", sb->s_rev_level, sb->s_minor_rev_level);
-    printf("  Filesystem features:     ", sb->s_feature_compat);
+    kprintf("Superblock @ 0x%08x:\n", sb);
+    kprintf("  Filesystem volume name:  %s\n", sb->s_volume_name);
+    kprintf("  Last mounted as:         %s\n", sb->s_last_mounted);
+    kprintf("  Filesystem UUID:\n");
+    kprintf("  Filesystem magic number: 0x%04x\n", sb->s_magic);
+    kprintf("  Filesystem revision #:   %d.%d\n", sb->s_rev_level, sb->s_minor_rev_level);
+    kprintf("  Filesystem features:     ", sb->s_feature_compat);
     for (int i=0; compat_features[i].mask; i++) {
         if (sb->s_feature_compat & compat_features[i].mask) {
-            printf("%s(c) ", compat_features[i].feature);
+            kprintf("%s(c) ", compat_features[i].feature);
         }
     }
 
     for (int i=0; incompat_features[i].mask; i++) {
         if (sb->s_feature_incompat & incompat_features[i].mask) {
-            printf("%s(i) ", incompat_features[i].feature);
+            kprintf("%s(i) ", incompat_features[i].feature);
         }
     }
 
     for (int i=0; ro_features[i].mask; i++) {
         if (sb->s_feature_ro_compat & ro_features[i].mask) {
-            printf("%s(ro) ", ro_features[i].feature);
+            kprintf("%s(ro) ", ro_features[i].feature);
         }
     }
-    printf("\n");
+    kprintf("\n");
     
-    printf("  Filesystem state:        ");
+    kprintf("  Filesystem state:        ");
     switch(sb->s_state) {
-        case 1:     printf("clean\n"); break;
-        case 2:     printf("errors\n"); break;
+        case 1:     kprintf("clean\n"); break;
+        case 2:     kprintf("errors\n"); break;
     }
 
-    printf("  Errors behaviour:        ");
+    kprintf("  Errors behaviour:        ");
     switch(sb->s_errors) {
-        case 1:     printf("Continue\n"); break;
-        case 2:     printf("Remount RO\n"); break;
-        case 3:     printf("Panic\n"); break;
+        case 1:     kprintf("Continue\n"); break;
+        case 2:     kprintf("Remount RO\n"); break;
+        case 3:     kprintf("Panic\n"); break;
     }
 
-    printf("  Filesystem OS type:      %s\n", (sb->s_creator_os <= 4)?os_types[sb->s_creator_os]:"<unknown>");
+    kprintf("  Filesystem OS type:      %s\n", (sb->s_creator_os <= 4)?os_types[sb->s_creator_os]:"<unknown>");
 
-    printf("  Inode count:             %d\n", sb->s_inodes_count);
-    printf("  Block count:             %d\n", sb->s_blocks_count);
-    printf("  Reserved block count:    %d\n", sb->s_r_blocks_count);
-    printf("  Overhead clusters:       ????\n");
-    printf("  Free blocks:             %d\n", sb->s_free_blocks_count);
-    printf("  Free inodes:             %d\n", sb->s_free_inodes_count);
-    printf("  First block:             %d\n", sb->s_first_data_block);
-    printf("  Block Size:              %d\n", 1024<<sb->s_log_block_size);
-    printf("  Fragment size:           %d\n", 1024<<sb->s_log_frag_size);
-    printf("  Reserved GDT blocks:     ????\n");
-    printf("  Blocks per group:        %d\n", sb->s_blocks_per_group);
-    printf("  Fragments per group:     %d\n", sb->s_frags_per_group);
-    printf("  Inodes per group:        %d\n", sb->s_inodes_per_group);
-    printf("  Inode blocks per group   %d\n", sb->s_inodes_per_group / inodes_per_block);
-    printf("  Last mount time:         %s", ctime(&sb->s_mtime));
-    printf("  Last write time:         %s", ctime(&sb->s_wtime));
-    printf("  Mount count:             %d\n", sb->s_mnt_count);
-    printf("  Maximum mount count:     %d\n", sb->s_max_mnt_count);
-    printf("  Last checked:            %s\n", ctime(&sb->s_lastcheck));
-    printf("  Check interval:          %d\n", sb->s_checkinterval);
-    printf("  Inode size:              %d\n", sb->s_inode_size);
+    kprintf("  Inode count:             %d\n", sb->s_inodes_count);
+    kprintf("  Block count:             %d\n", sb->s_blocks_count);
+    kprintf("  Reserved block count:    %d\n", sb->s_r_blocks_count);
+    kprintf("  Overhead clusters:       ????\n");
+    kprintf("  Free blocks:             %d\n", sb->s_free_blocks_count);
+    kprintf("  Free inodes:             %d\n", sb->s_free_inodes_count);
+    kprintf("  First block:             %d\n", sb->s_first_data_block);
+    kprintf("  Block Size:              %d\n", 1024<<sb->s_log_block_size);
+    kprintf("  Fragment size:           %d\n", 1024<<sb->s_log_frag_size);
+    kprintf("  Reserved GDT blocks:     ????\n");
+    kprintf("  Blocks per group:        %d\n", sb->s_blocks_per_group);
+    kprintf("  Fragments per group:     %d\n", sb->s_frags_per_group);
+    kprintf("  Inodes per group:        %d\n", sb->s_inodes_per_group);
+    kprintf("  Inode blocks per group   %d\n", sb->s_inodes_per_group / inodes_per_block);
+    kprintf("  Last mount time:         %s", ctime(&sb->s_mtime));
+    kprintf("  Last write time:         %s", ctime(&sb->s_wtime));
+    kprintf("  Mount count:             %d\n", sb->s_mnt_count);
+    kprintf("  Maximum mount count:     %d\n", sb->s_max_mnt_count);
+    kprintf("  Last checked:            %s\n", ctime(&sb->s_lastcheck));
+    kprintf("  Check interval:          %d\n", sb->s_checkinterval);
+    kprintf("  Inode size:              %d\n", sb->s_inode_size);
 }
 
 void dump_ext2_bg(ext2_bg_t *bg, int bg_num, ext2_sb_t *sb) {
@@ -153,53 +153,68 @@ void dump_ext2_bg(ext2_bg_t *bg, int bg_num, ext2_sb_t *sb) {
     uint32_t num_inode_blocks = sb->s_inodes_per_group / inodes_per_block;
     uint32_t first_block = bg_num * sb->s_blocks_per_group;
 
-    printf("\nBlock Group %d: (Blocks %d-%d\n", bg_num, bg_num * sb->s_blocks_per_group, ((bg_num + 1) * sb->s_blocks_per_group) - 1);
+    kprintf("\nBlock Group %d @ 0x%08x: (Blocks %d-%d\n", bg_num, bg, bg_num * sb->s_blocks_per_group, ((bg_num + 1) * sb->s_blocks_per_group) - 1);
     if (ext2_has_superblock(bg_num) == YES) {
-        printf("  %s superblock at %d, Group descriptors at %d-%d\n", (bg_num == 0)?"Primary":"Backup", first_block, first_block+1, first_block+1);  // TODO: Fix end of bgdt
+        kprintf("  %s superblock at %d, Group descriptors at %d-%d\n", (bg_num == 0)?"Primary":"Backup", first_block, first_block+1, first_block+1);  // TODO: Fix end of bgdt
     }
-    printf("  Block Bitmap at %d (+%d)\n", bg->bg_block_bitmap, bg->bg_block_bitmap - first_block);
-    printf("  Inode Bitmap at %d (+%d)\n", bg->bg_inode_bitmap, bg->bg_inode_bitmap - first_block);
-    printf("  Inode Table at %d-%d (+%d)\n", bg->bg_inode_table, bg->bg_inode_table + num_inode_blocks - 1, bg->bg_inode_table - first_block);
-    printf("  %d free blocks, %d free inodes, %d directories\n", 
+    kprintf("  Block Bitmap at %d (+%d)\n", bg->bg_block_bitmap, bg->bg_block_bitmap - first_block);
+    kprintf("  Inode Bitmap at %d (+%d)\n", bg->bg_inode_bitmap, bg->bg_inode_bitmap - first_block);
+    kprintf("  Inode Table at %d-%d (+%d)\n", bg->bg_inode_table, bg->bg_inode_table + num_inode_blocks - 1, bg->bg_inode_table - first_block);
+    kprintf("  %d free blocks, %d free inodes, %d directories\n", 
         bg->bg_free_blocks_count, bg->bg_free_inodes_count, bg->bg_used_dirs_count);   
 }
 
 void dump_ext2_inode(ext2_inode_t *in, int in_num) {
-    printf("Inode %d:\n", in_num);
-    printf("  Mode:              %04x\n", in->i_mode);
-    printf("  User/Group Id:     %d:%d\n", in->i_uid, in->i_gid);
-    printf("  Size:              %d\n", in->i_size);
-    printf("  Last access:       %s", ctime(&in->i_atime));
-    printf("  Created:           %s", ctime(&in->i_ctime));
-    printf("  Modified:          %s", ctime(&in->i_mtime));
-    printf("  Deleted:           %s", ctime(&in->i_dtime));
-    printf("  # Links:           %d\n", in->i_links_count);
-    printf("  # Blocks:          %d\n", in->i_blocks);
-    printf("  Flags:             %08x\n", in->i_flags);
-    printf("  OS val:            %08x\n", in->i_osdl);
+    kprintf("Inode %d @ 0x%08x:\n", in_num, in);
+    kprintf("  Mode:              %04x\n", in->i_mode);
+    kprintf("  User/Group Id:     %d:%d\n", in->i_uid, in->i_gid);
+    kprintf("  Size:              %d\n", in->i_size);
+    kprintf("  Last access:       %s", ctime(&in->i_atime));
+    kprintf("  Created:           %s", ctime(&in->i_ctime));
+    kprintf("  Modified:          %s", ctime(&in->i_mtime));
+    kprintf("  Deleted:           %s", ctime(&in->i_dtime));
+    kprintf("  # Links:           %d\n", in->i_links_count);
+    kprintf("  # Blocks:          %d\n", in->i_blocks);
+    kprintf("  Flags:             %08x\n", in->i_flags);
+    kprintf("  OS val:            %08x\n", in->i_osdl);
 
-    printf("  Blocks:            ");
+    kprintf("  Blocks:            ");
     for (int i=0; i<15; i++) {
         switch (i) {
             case EXT2_SNGL_IND:
-                printf("[%d], ", in->i_block[i]);
+                kprintf("[%d], ", in->i_block[i]);
                 break;
 
             case EXT2_DBL_IND:
-                printf("[[%d]], ", in->i_block[i]);
+                kprintf("[[%d]], ", in->i_block[i]);
                 break;
 
             case EXT2_TRIP_IND:
-                printf("[[[%d]]]\n", in->i_block[i]);
+                kprintf("[[[%d]]]\n", in->i_block[i]);
                 break;
 
             default:
-                printf("%d, ", in->i_block[i]);
+                kprintf("%d, ", in->i_block[i]);
                 break;
         }
     }
 
-    printf("  Generation #:      %d\n", in->i_generation);
+    kprintf("  Generation #:      %d\n", in->i_generation);
+}
+
+void dump_ext2_fs(ext2_fs_t *fs) {
+    kprintf("\next2 private data @ 0x%08x\n==============================\n", fs);
+
+    kprintf("  num_blockgroups:   %d\n", fs->num_blockgroups);
+    kprintf("  sectors_per_block: %d\n", fs->sectors_per_block);
+    
+    dump_ext2_sb(&fs->sb);
+
+    for (int i=0; i<fs->num_blockgroups; i++) {
+        ext2_bg_t *bg = &fs->bgdt[i];
+
+        dump_ext2_bg(bg, i, &fs->sb);
+    }
 }
 
 #endif

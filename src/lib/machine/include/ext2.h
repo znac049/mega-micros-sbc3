@@ -25,7 +25,8 @@ SOFTWARE.
 #pragma once
 
 #include <ctype.h>
-#include <filesystems.h>
+#include <blockdev.h>
+// #include <filesystems.h>
 
 #define MAX_EXT2_FS   4
 
@@ -85,6 +86,7 @@ SOFTWARE.
 #define S_ISSOCK(m) ((m&0xf000)==EXT2_S_IFSOCK)
 
 
+// defined in filesystems.h
 typedef struct vmp vmp_t;
 
 
@@ -200,10 +202,9 @@ typedef struct ext2_inode ext2_inode_t;
 #define EXT2_DBL_IND    13
 #define EXT2_TRIP_IND   14
 
+
+
 struct ext2_fs {
-    uint8_t     block_buffer[BLOCK_DEVICE_BLOCK_SIZE];
-    uint32_t    block_num_in_buffer;
-    uint8_t     block_in_buffer_valid;
     ext2_sb_t   sb;
     uint32_t    num_blockgroups;
     uint8_t     sectors_per_block;
@@ -213,6 +214,8 @@ struct ext2_fs {
 };
 
 typedef struct ext2_fs ext2_fs_t;
+
+
 
 struct ext2_dirent {
     uint32_t    inode;
@@ -226,7 +229,7 @@ typedef struct ext2_dirent ext2_dirent_t;
 
 
 struct ext2_block_follower {
-    ext2_fs_t       *fs;
+    vmp_t           *mp;
     uint32_t        inode_num;
     ext2_inode_t    inode;
     uint32_t        direct_offset;
@@ -238,11 +241,11 @@ struct ext2_block_follower {
 typedef struct ext2_block_follower ext2_block_follower_t;
 
 
-struct ext2_dirp {
+struct ext2_file {
     ext2_block_follower_t   bf;
     ext2_dirent_t           dirent;
     uint32_t                offset;
     vmp_t                   *mp;
 };
 
-typedef struct ext2_dirp ext2_dirp_t;
+typedef struct ext2_file ext2_file_t;

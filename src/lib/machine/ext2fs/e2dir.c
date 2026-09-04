@@ -33,75 +33,119 @@ SOFTWARE.
 #if defined(BAREMETAL)
 
 void dump_dirent (ext2_dirent_t *ent) {
-    printf("\nDirectory entry:\n");
-    printf(" inode #:    %d\n", ent->inode);
-    printf(" record len: %d\n", ent->rec_len);
-    printf(" name_len:   %d\n", ent->name_len);
-    printf(" file type:  0x%02x\n", ent->file_type);
-    printf(" name:       ");
+    kprintf("\nDirectory entry:\n");
+    kprintf(" inode #:    %d\n", ent->inode);
+    kprintf(" record len: %d\n", ent->rec_len);
+    kprintf(" name_len:   %d\n", ent->name_len);
+    kprintf(" file type:  0x%02x\n", ent->file_type);
+    kprintf(" name:       ");
     for (int i=0; i<ent->name_len; i++) {
-        printf("%c", ent->name[i]);
+        kprintf("%c", ent->name[i]);
     }
-    printf("\n");
+    kprintf("\n");
 }
 
+#if 0
 static int names_match(const char *target, const uint8_t *possible, uint8_t plen) {
     int tlen = strlen(target);
 
+    kprintf("do '%s' and '%s' match? ", target, possible);
+
     if (tlen != plen) {
-        return 0;
+        kprintf("NO :-(\n");
+        return NO;
     }
 
     for (int i=0; i<plen; i++) {
         if (target[i] != possible[i]) {
-            return 0;
+            kprintf("NO :-(\n");
+            return NO;
         }
     }
 
-    return 1;
+    kprintf("YES!\n");
+    return YES;
 }
+#endif
 
-static uint32_t find_dir_inode_in(ext2_fs_t *fs, uint32_t parent_inode_num, const char *dir_name) {
+#if 0
+uint32_t ext2_find_item_inode_in(vmp_t *mp, uint32_t parent_inode_num, const char *item_name, bool_t is_dir) {
     ext2_inode_t parent;
-    int res = ext2_get_inode(fs, parent_inode_num, &parent);
+    int res = ext2_get_inode(mp, parent_inode_num, &parent);
+    ext2_block_follower_t bf;
+    ext2_dirent_t *dirent;
 
-    printf("Looking for a subdirectory called '%s' in directory at inode # %d\n", dir_name, parent_inode_num);
+    kprintf("Looking for a %s called '%s' in directory at inode # %d\n", 
+        is_dir?"directory":"file",
+        item_name, parent_inode_num);
 
-    if (res != 0) {
-        return -1;
+    if (res == NOT_OK) {
+        kprintf("ext2_get_inode(%d) failed\n", parent_inode_num);
+        return NOT_OK;
     }
 
-    // We have the parent directory inode, look through the directory
-    for (int block_index=0; block_index < EXT2_SNGL_IND; block_index++) {
+    // We have the parent directory inode, look through it's ext2_dirent_t entries
+    ext2_init_block_follower(fs, parent_inode_num, &bf);
+    for (uint32_t block_num=ext2_get_next_block_num(&bf); block_num != 0; block_num=ext2_get_next_block_num(&bf)) {
         ext2_dirent_t ent;
         uint32_t offset = 0;
 
-        if (parent.i_block[block_index] == 0) {
-            printf("Not found!\n");
-            return -1;
-        }
+        kprintf("Read block %d\n", block_num);
 
-        printf("Read block %d\n", parent.i_block[block_index]);
-
-        ext2_read_fs_block(fs, parent.i_block[block_index]);
+        ext2_read_fs_block(fs, block_num);
         while (offset < BLOCK_DEVICE_BLOCK_SIZE) {
-            ext2_sanitize_dirent((ext2_dirent_t *)&fs->block_buffer[offset], &ent);
+            dirent = (ext2_dirent_t *)&fs->block_buffer[offset];
+            ext2_sanitize_dirent(dirent, &ent);
 
-            if (ent.file_type == EXT2_FT_DIR) {
-                if (names_match(dir_name, ent.name, ent.name_len)) {
-                    printf("BINGO! in=%d, rl=%d, nl=%d\n", ent.inode, ent.rec_len, ent.name_len);
+            kprintf("  name->'%s'\n", ent.name);
+
+            if ( ((is_dir == YES) && (ent.file_type == EXT2_FT_DIR)) ||
+                 ((is_dir == NO) && (ent.file_type != EXT2_FT_DIR)) ) {
+                if (names_match(item_name, ent.name, ent.name_len)) {
+                    kprintf("BINGO! in=%d, rl=%d, nl=%d\n", ent.inode, ent.rec_len, ent.name_len);
                     return ent.inode;
                 }
             }
 
             offset += ent.rec_len;
         }
+
     }
+
+    // for (int block_index=0; block_index < EXT2_SNGL_IND; block_index++) {
+    //     ext2_dirent_t ent;
+    //     uint32_t offset = 0;
+
+    //     if (parent.i_block[block_index] == 0) {
+    //         kprintf("Not found!\n");
+    //         return NOT_OK;
+    //     }
+
+    //     kprintf("Read block %d\n", parent.i_block[block_index]);
+
+    //     ext2_read_fs_block(fs, parent.i_block[block_index]);
+    //     while (offset < BLOCK_DEVICE_BLOCK_SIZE) {
+    //         ext2_sanitize_dirent((ext2_dirent_t *)&fs->block_buffer[offset], &ent);
+
+
+    //         if ( ((is_dir == YES) && (ent.file_type == EXT2_FT_DIR)) ||
+    //              ((is_dir == NO) && (ent.file_type != EXT2_FT_DIR)) ) {
+    //             if (names_match(item_name, ent.name, ent.name_len)) {
+    //                 kprintf("BINGO! in=%d, rl=%d, nl=%d\n", ent.inode, ent.rec_len, ent.name_len);
+    //                 return ent.inode;
+    //             }
+    //         }
+
+    //         offset += ent.rec_len;
+    //     }
+    // }
 
     return parent_inode_num;
 }
+#endif
 
-int ext2_opendir(vfile_t *dir, const char *name) {
+#if 0
+static int ext2_find_path(vfile_t *dir, const char *name) {
     char name_copy[EXT2_MAX_PATH_LEN];
     char *s = name_copy;
     char *dirv[EXT2_MAX_DIR_DEPTH];
@@ -110,14 +154,14 @@ int ext2_opendir(vfile_t *dir, const char *name) {
     ext2_dirp_t *dirp;
     vmp_t *mp = dir->mp;
 
-    printf("ext2_opendir: '%s'\n", name);
+    kprintf("ext2_find_path: '%s'\n", name);
 
     if (mp == NULL) {
         kprintf("NULL vmp_t in vfile_t\n");
         return NOT_OK;
     }
 
-    dirp = &dir->fs.e2dir;
+    dirp = &dir->fs.private;
     dirp->offset = 0;
     dirp->mp = mp;
 
@@ -139,18 +183,20 @@ int ext2_opendir(vfile_t *dir, const char *name) {
     // do stuff
     if (dirc) {
         for (int i=0; (i<dirc) && (dir_inode_num != -1); i++) {
-            dir_inode_num = find_dir_inode_in(&mp->fs_data.e2fs, dir_inode_num, dirv[i]);
+            dir_inode_num = ext2_find_item_inode_in(&mp->fs_data.e2fs, dir_inode_num, dirv[i], YES);
             kprintf("Directory inode # is %d\n", dir_inode_num);
         }
     }
 
     kprintf("The final dir inode # is %d\n", dir_inode_num);
+
     ext2_init_block_follower(&mp->fs_data.e2fs, dir_inode_num, &dirp->bf);
 
     return OK;
 }
+#endif
 
-int ext2_closedir(ext2_dirp_t *dirp) {
+int ext2_closedir(ext2_file_t *dirp) {
     if (dirp == NULL) {
         errno = EBADF;
         return NOT_OK;
@@ -161,70 +207,50 @@ int ext2_closedir(ext2_dirp_t *dirp) {
     return OK;
 }
 
-ext2_dirent_t *ext2_readdir(ext2_dirp_t *dirp) {
-    uint8_t *buf = (uint8_t *)&dirp->mp->block_buff;
+ext2_dirent_t *ext2_readdir(ext2_file_t *file) {
+    uint8_t *buf = (uint8_t *)&file->mp->block_buffer;
 
-    if (dirp == NULL) {
+    if (file == NULL) {
         errno = EBADF;
         return NULL;
     }
 
     // do stuff
-    if (dirp->offset == 0) {
-        uint32_t block_num = ext2_get_next_block_num(&dirp->bf);
+    if (file->offset == 0) {
+        uint32_t block_num = ext2_get_next_block_num(&file->bf);
 
         if (block_num == 0) {
             return NULL;
         }
 
-        printf("Grab dir block %d\n", block_num);
-        if (ext2_read_fs_block(&dirp->mp->fs_data.e2fs, block_num) != 0) {
-            printf("Failed to read block %d\n", block_num);
+        kprintf("Grab dir block %d\n", block_num);
+        if (ext2_read_fs_block(file->mp, block_num, YES) != 0) {
+            kprintf("Failed to read block %d\n", block_num);
             return NULL;
         }
     }
 
-    printf("dirent offset=%d\n", dirp->offset);
-    ext2_sanitize_dirent((ext2_dirent_t *)&buf[dirp->offset], &dirp->dirent);
-    // dump_dirent((ext2_dirent_t *)&buf[dirp->offset]);
+    kprintf("dirent offset=%d\n", file->offset);
+    ext2_sanitize_dirent((ext2_dirent_t *)&buf[file->offset], &file->dirent);
+    // dump_dirent((ext2_dirent_t *)&buf[file->offset]);
 
     // update the offset ready for the next call
-    dirp->offset += dirp->dirent.rec_len;
-    if (dirp->offset >= BLOCK_DEVICE_BLOCK_SIZE) {
-        dirp->offset = 0;
+    file->offset += file->dirent.rec_len;
+    if (file->offset >= BLOCK_DEVICE_BLOCK_SIZE) {
+        file->offset = 0;
     }
 
-    return &dirp->dirent;
+    return &file->dirent;
 }
 
-void ext2_rewinddir(ext2_dirp_t *dirp) {
-    if (dirp == NULL) {
+void ext2_rewinddir(ext2_file_t *file) {
+    if (file == NULL) {
         errno = EBADF;
         return;
     }
 
-    ext2_reset_block_follower(&dirp->bf);
-    dirp->offset = 0;
+    ext2_reset_block_follower(&file->bf);
+    file->offset = 0;
 }
-
-// vfile_t *ext2_locate(vmp_t *mp, vfile_t *dir, const char *pathname) {
-//     ext2_dirp_t *e2_dir;
-
-//     kprintf("ext2_locate(..., '%s')\n", pathname);
-
-//     if ((mp == NULL) || (dir == NULL)) {
-//         kprintf("mp and/or dir set to NULL\n");
-//         return NULL;
-//     }
-
-//     e2_dir = ext2_opendir(mp, dir, pathname);
-
-//     if (e2_dir == NULL) {
-//         kprintf("Failed to open ext2 dir '%s'\n", pathname);
-//         return NULL;
-//     }
-
-//     return dir;
-// }
 
 #endif

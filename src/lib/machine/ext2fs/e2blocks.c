@@ -32,40 +32,42 @@ SOFTWARE.
 
 #if defined(BAREMETAL)
 
-int ext2_read_fs_block(ext2_fs_t *fs, uint32_t block_num) {
+int ext2_read_block(vmp_t *mp, uint32_t block_num, uint8_t *buffer) {
+    kprintf("ext2_read_block %d, device='%s%d'\n", block_num, mp->dev_driver->name, mp->subdev);
+
+    return bd_read(mp->dev_driver, block_num, buffer, mp->subdev);
+}
+
+// Read a block into the block buffer associated with the mount-point
+int ext2_read_fs_block(vmp_t *mp, uint32_t block_num, uint8_t force_read) {
     int res;
     
     // Do we already have that block?
-    if ((fs->block_num_in_buffer == block_num) &&
-        (fs->block_in_buffer_valid == 1)) {
-            // printf("block %d already in the buffer\n", block_num);
-            return OK;
+    if ((force_read == NO) && 
+        (mp->block_num_in_buffer == block_num) &&
+        (mp->block_in_buffer_valid == YES)) {
+        // printf("block %d already in the buffer\n", block_num);
+        return OK;
     }
 
-    res = ext2_read_block(fs, block_num, fs->block_buffer);
+    res = ext2_read_block(mp, block_num, mp->block_buffer);
     
     if (res == OK) {
-        fs->block_num_in_buffer = block_num;
-        fs->block_in_buffer_valid = 1;
+        mp->block_num_in_buffer = block_num;
+        mp->block_in_buffer_valid = YES;
     }
     else {
-        fs->block_in_buffer_valid = 0;
+        mp->block_in_buffer_valid = NO;
     }
 
     return res;
 }
 
-int ext2_read_block(ext2_fs_t *fs, uint32_t block_num, uint8_t *buffer) {
-    // kprintf("ext2_read_block %d, device='%s%d'\n", block_num, fs->mp->dev->name, fs->mp->subdev);
-
-    return bd_read(fs->mp->dev_driver, block_num, buffer, fs->mp->subdev);
-}
-
-int ext2_read_blocks(ext2_fs_t *fs, uint32_t block_num, int num_blocks, uint8_t *buffer) {
+int ext2_read_blocks(vmp_t *mp, uint32_t block_num, int num_blocks, uint8_t *buffer) {
     uint8_t *buf = buffer;
 
     for (int i=0; i<num_blocks; i++) {
-        if (ext2_read_block(fs, block_num+i, buf) != 0) {
+        if (ext2_read_block(mp, block_num+i, buf) != 0) {
             return i;
         }
 
@@ -75,6 +77,21 @@ int ext2_read_blocks(ext2_fs_t *fs, uint32_t block_num, int num_blocks, uint8_t 
     return num_blocks;
 }
 
+void ext2_dump_block_follower(ext2_block_follower_t *bf) {
+    kprintf("\nBlock Fololower (0x%08x):\n", bf);
+
+    if (bf == NULL) {
+        return;
+    }
+
+    kprintf("  inode_num: %d\n", bf->inode_num);
+    kprintf("  inode: 0x%08x\n", bf->inode);
+    kprintf("  direct_offset: %d\n", bf->direct_offset);
+    kprintf("  single_offset: %d\n", bf->single_offset);
+    kprintf("  double_offset: %d\n", bf->double_offset);
+    kprintf("  triple_offset: %d\n", bf->triple_offset);
+} 
+
 void ext2_reset_block_follower(ext2_block_follower_t *bf) {
     bf->direct_offset = 0;
     bf->single_offset = 0;
@@ -82,21 +99,20 @@ void ext2_reset_block_follower(ext2_block_follower_t *bf) {
     bf->triple_offset = 0;
 }
 
-int ext2_init_block_follower(ext2_fs_t *fs, uint32_t inode_num, ext2_block_follower_t *bf) {
-    bf->fs = fs;
+int ext2_init_block_follower(ext2_block_follower_t *bf, vmp_t *mp, uint32_t inode_num) {
     bf->inode_num = inode_num;
+    bf->mp = mp;
 
     ext2_reset_block_follower(bf);
 
-    printf("Grab inode %d\n", inode_num);
-    if (ext2_get_inode(fs, inode_num, &bf->inode) != 0) {
-        return -1;
+    // kprintf("ext2_init_block_follower: get inode %d\n", inode_num);
+    if (ext2_get_inode(bf->mp, inode_num, &bf->inode) != 0) {
+        return NOT_OK;
     }
 
-    return 0;
+    return OK;
 }
 
-#if 0
 uint32_t ext2_get_next_block_num(ext2_block_follower_t *bf) {
     ext2_inode_t *in = &bf->inode;
     uint32_t block_num = 0;
@@ -112,9 +128,9 @@ uint32_t ext2_get_next_block_num(ext2_block_follower_t *bf) {
     else if (bf->direct_offset == EXT2_SNGL_IND) {
         // Grab a copy of the single indirect block - remember to deal with
         // endianness.
-        uint32_t    *bp = (uint32_t *)bf->fs->block_buffer;
+        uint32_t *bp = (uint32_t *)bf->mp->block_buffer;
 
-        if (ext2_read_fs_block(bf->fs, in->i_block[EXT2_SNGL_IND]) != 0) {
+        if (ext2_read_fs_block(bf->mp, in->i_block[EXT2_SNGL_IND], YES) != 0) {
             return 0;
         }
 
@@ -126,10 +142,12 @@ uint32_t ext2_get_next_block_num(ext2_block_follower_t *bf) {
         }
     }
     else if (bf->direct_offset == EXT2_DBL_IND) {
-        ;
+        kprintf("BLOCK FOLLOWER DOUBLE PROBLEM!\n");
+        return 0;
     }
     else if (bf->direct_offset == EXT2_TRIP_IND) {
-        ;
+        kprintf("BLOCK FOLLOWER TRIPLE PROBLEM!\n");
+        return 0;
     }
     else {
         return 0;
@@ -137,7 +155,5 @@ uint32_t ext2_get_next_block_num(ext2_block_follower_t *bf) {
 
     return block_num;
 }
-
-#endif
 
 #endif // BAREMETAL
