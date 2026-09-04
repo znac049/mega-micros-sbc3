@@ -25,6 +25,7 @@ SOFTWARE.
 #pragma once
 
 #include <ctype.h>
+#include <ext2.h>
 #include <filesystems.h>
 #include <duart.h>
 #include <pit.h>
@@ -32,7 +33,6 @@ SOFTWARE.
 #include <vectors.h>
 #include <blockdev.h>
 #include <disk.h>
-#include <ext2.h>
 #include <fs.h>
 #include <bios.h>
 
@@ -158,12 +158,17 @@ int ds1307_write_nvram(int addr, uint8_t *buf, size_t num_bytes);
 
 int vfs_init(void);
 int vfs_shutdown(void);
-int vfs_chdir(const char *path);
-int vfs_getcwd(char*buff, size_t size);
-vfile_t *vfs_locate(const char *path);
-int vfs_creat(const char *pathname, mode_t mode);
 
-int vfs_opendir(const char *name);
+int bios_chdir(const char *path);
+int bios_getcwd(char*buff, size_t size);
+vfile_t *bios_locate(const char *path);
+int bios_creat(const char *pathname, mode_t mode);
+int bios_open(const char *pathname, int flags);
+int bios_close(int fd);
+int bios_read(int fd, char *buff, size_t num_bytes);
+size_t bios_write(int fd, const char *buff, size_t num_bytes);
+int bios_opendir(const char *name);
+ssize_t bios_getdents(int fd, void *dirp, size_t count);
 
 #endif
 
@@ -204,24 +209,25 @@ long trap0(long syscall_num, long arg1, long arg2, long arg3);
 
 // ext2...
 // ext2/e2block.c
-int ext2_read_block(ext2_fs_t *fs, uint32_t block_num, uint8_t *buffer);
-int ext2_read_blocks(ext2_fs_t *fs, uint32_t block_num, int num_blocks, uint8_t *buffer);
-int ext2_read_fs_block(ext2_fs_t *fs, uint32_t block_num);
-int ext2_init_block_follower(ext2_fs_t *fs, uint32_t inode_num, ext2_block_follower_t *bf);
+int ext2_read_block(vmp_t *mp, uint32_t block_num, uint8_t *buffer);
+int ext2_read_blocks(vmp_t *mp, uint32_t block_num, int num_blocks, uint8_t *buffer);
+int ext2_read_fs_block(vmp_t *mp, uint32_t block_num, uint8_t force_read);
+int ext2_init_block_follower(ext2_block_follower_t *bf, vmp_t *mp, uint32_t inode_num);
 void ext2_reset_block_follower(ext2_block_follower_t *bf);
 uint32_t ext2_get_next_block_num(ext2_block_follower_t *bf);
+void ext2_dump_block_follower(ext2_block_follower_t *bf);
 
 // ext2/e2dir.c
-int ext2_closedir(ext2_dirp_t *dirp);
-int ext2_opendir(vfile_t *dir, const char *name);
-ext2_dirent_t *ext2_readdir(ext2_dirp_t *dirp);
-void ext2_rewinddir(ext2_dirp_t *dirp);
-vfile_t *ext2_locate(vmp_t *mp, vfile_t *dir, const char *pathname);
+int ext2_closedir(ext2_file_t *dirp);
+ext2_dirent_t *ext2_readdir(ext2_file_t *dirp);
+void ext2_rewinddir(ext2_file_t *dirp);
+uint32_t ext2_find_item_inode_in(vmp_t *mp, uint32_t parent_inode_num, const char *item_name, bool_t is_dir);
 
 // ext2/e2dump.c
 void dump_ext2_bg(ext2_bg_t *bg, int bg_num, ext2_sb_t *sb);
 void dump_ext2_inode(ext2_inode_t *in, int in_num);
 void dump_ext2_sb(ext2_sb_t *sb);
+void dump_ext2_fs(ext2_fs_t *fs);
 
 // ext2/e2endian.c
 void ext2_sanitize_superblock(ext2_sb_t *src_sb, ext2_sb_t *dst_sb);
@@ -231,7 +237,7 @@ void ext2_sanitize_dirent(ext2_dirent_t *src_dp, ext2_dirent_t *dst_dp);
 
 // ext2/ext2.c
 ext2_bg_t *ext2_get_bg(ext2_fs_t *fs, uint32_t blockgroup_num);
-int ext2_get_inode(ext2_fs_t *fs, uint32_t inode_num, ext2_inode_t *inode);
+int ext2_get_inode(vmp_t *mp, uint32_t inode_num, ext2_inode_t *inode);
 vmp_t *ext2_mount(vmp_t *mp);
 int ext2_umount(vmp_t *mp);
 int is_ext2(ext2_sb_t *sb);
@@ -239,9 +245,14 @@ bool_t ext2_has_superblock(uint32_t bg_num);
 int setup_vfs_ext2_handler(vfs_fs_t *vfs);
 
 // ext2/e2file.c
-int ext2_file_reader(ext2_fs_t *fs, uint32_t inode_num);
-
+int ext2_open(vfile_t *file, const char *name, vfile_t *cwd);
+int ext2_read(vfile_t *file, char *buff, size_t count);
+int ext2_write(vfile_t *file, const char *buff, size_t count);
+int ext2_close(vfile_t *file);
 // ext2/utils.c
 // void printn(const char *pfx, const uint8_t *str, int len);
+
+// ext2/e2search.c
+uint32_t e2_search(vmp_t *mp, uint32_t dir_inode_num, const char *target_name);
 
 #endif

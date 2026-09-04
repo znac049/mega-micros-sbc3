@@ -38,8 +38,9 @@ SOFTWARE.
 #define BIOS_GETCWD         12
 #define BIOS_MALLOC         13
 #define BIOS_FREE           14
+#define BIOS_GETDENTS       15
 
-#define NUM_BIOS_CALLS	    15
+#define NUM_BIOS_CALLS	    16
 
 
 

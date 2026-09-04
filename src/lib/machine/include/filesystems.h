@@ -26,7 +26,6 @@ SOFTWARE.
 
 #include <ctype.h>
 #include <blockdev.h>
-#include <filesystems.h>
 #include <ext2.h>
 #include <limits.h>
 
@@ -46,22 +45,33 @@ typedef union vfs vfs_t;
 typedef struct vfs_fs vfs_fs_t;
 typedef struct vfile vfile_t;
 
+typedef struct vmp_private vmp_private_t;
+typedef struct vfile_private vfile_private_t;
+
+
+struct vmp_private {
+    int fs_type;
+
+    union {
+        ext2_fs_t ext2_fs_inf;
+    } data;
+};
 
 struct vmp {
+    char name[16];
+    uint8_t block_buffer[BLOCK_DEVICE_BLOCK_SIZE];
+    uint32_t block_num_in_buffer;
+    uint8_t block_in_buffer_valid;
+
     block_device_t *dev_driver;
     vfs_fs_t *fs_driver;
-    char name[16];
-
-    uint8_t block_buff[BLOCK_DEVICE_BLOCK_SIZE];
 
     unsigned int mounted : 1;
     unsigned int read_only : 1;
     uint8_t subdev;
 
     // This data depends on the specific filesystem type
-    union {
-        ext2_fs_t   e2fs;
-    } fs_data;
+    vmp_private_t private;
 };
 
 
@@ -77,14 +87,12 @@ union vfs {
     struct {
         vmp_t *(*mount)(vmp_t *mp);
         int (*unmount)(vmp_t *mp);
-        int (*sync)(void);
-        int (*find_path)(void);
-        int (*open)(vfile_t *pwd, const char *fname);
-        int (*read)(vfile_t *file, size_t n_bytes);
+        // int (*sync)(void);
+        // int (*find_path)(vfile_t *dir, const char *name);
+        int (*open)(vfile_t *pwd, const char *fname, vfile_t *cwd);
+        int (*read)(vfile_t *file, char *buf, size_t n_bytes);
         int (*write)(vfile_t *file, const char *buf, size_t n_bytes);
         int (*close)(vfile_t *file);
-        int (*chdir)(const char *path);
-        int (*opendir)(vfile_t *dir, const char *name);
     } fs;
 };
 
@@ -98,15 +106,24 @@ struct vfs_fs {
 };
 
 
+struct vfile_private {
+    int fs_type;
+
+    union {
+        ext2_file_t ext2_file_inf;
+    } data;
+};
 
 struct vfile {
     char path[PATH_MAX];
     bool_t open;
     vmp_t *mp;
 
-    union {
-        ext2_dirp_t e2dir;
-    } fs;
+    char buffer[512];
+    int index;
+    int count;
+
+    vfile_private_t private;
 };
 
 

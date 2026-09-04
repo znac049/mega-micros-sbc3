@@ -24,6 +24,7 @@ SOFTWARE.
 
 #include <stddef.h>
 #include <string.h>
+#include <libgen.h>
 #include <machine.h>
 #include <filesystems.h>
 #include <bios.h>
@@ -84,31 +85,32 @@ static vmp_t *find_mount(const char *pathname) {
     return NULL;
 }
 
-int attempt_to_mount(block_device_t *dev, uint8_t subdev) {
+static vmp_t *attempt_to_mount(block_device_t *dev, uint8_t subdev) {
     vmp_t *vmp = find_free_vmp();
     vmp_t *res;
 
     if (vmp == NULL) {
         // kprintf("NULL vmp passed in!\n");
-        return NOT_OK;
+        return NULL;
     }
+
+    vmp->dev_driver = dev;
+    vmp->subdev = subdev;
+    vmp->read_only = YES;
+    vmp->block_num_in_buffer = -1;
+
 
     // Try each filesystem type in turn...
     for (int fs=0; fs<MAX_VIRTUAL_FILESYSTEMS; fs++) {
         vfs_fs_t *hand = &filesystems[fs];
 
         if (hand->type == VFS_TYPE_FS) {
-            vmp->dev_driver = dev;
-            vmp->subdev = subdev;
-
             vmp->fs_driver = hand;
-            vmp->read_only = YES;
             vmp->mounted = NO;
 
             // kprintf("...trying to mount as '%s'\n", hand->name);
 
             res = hand->api.fs.mount(vmp);
-
             if ((res != NULL) && (vmp->mounted == YES)) {
                 // Success
                 kprintf("%s%d: mounted as %s\n", vmp->dev_driver->name, vmp->subdev, vmp->fs_driver->name);
@@ -116,12 +118,12 @@ int attempt_to_mount(block_device_t *dev, uint8_t subdev) {
                 // save the mountpoint name
                 snprintf(vmp->name, 16, "%s%d", vmp->dev_driver->name, vmp->subdev);
 
-                return OK;
+                return vmp;
             }
         }
     }
 
-    return NOT_OK;
+    return NULL;
 }
 
 static void init_structures(void) {
@@ -153,37 +155,44 @@ int vfs_init(void) {
     // Register a handler for ext2 filesystems
     res = setup_vfs_ext2_handler(find_free_fs());
 
-    // Open stdin/out/err
-    if ((fd = bios_open("//usb1", O_RDONLY)) < 0) {
-        res = fd;
-    }
-
-    if ((fd = bios_open("//usb1", O_WRONLY)) < 0) {
-        res = fd;
-    }
-
-    if ((fd = bios_open("//usb2", O_WRONLY)) < 0) {
-        res = fd;
-    }
-
     // Anything we can mount?
+    kprintf("vfs_init: what can we mount?\n");
     for (int bd=0; bd<MAX_BLOCK_DEVICES; bd++) { 
         block_device_t *dev = &block_devices[bd];
 
         if (dev->active == YES) {
-            // kprintf("Looking at blockdev '%s', subdevs=%d\n", dev->name, dev->num_sub_devices);
+            kprintf("Looking at blockdev '%s', subdevs=%d\n", dev->name, dev->num_sub_devices);
 
             // Check if we can mount anything on each subdev
             for (uint8_t subdev=0; subdev<dev->num_sub_devices; subdev++) {
-                if (attempt_to_mount(dev, subdev) == NOT_OK) {
-                    kprintf("%s%d not mounted\n", dev->name, subdev);
+                vmp_t *mp;
+            
+                if ((mp = attempt_to_mount(dev, subdev)) == NULL) {
+                    kprintf("vfs_init: %s%d not mounted\n", dev->name, subdev);
+                }
+                else {
+                    kprintf("vfs_init: Success: %s%d mounted as %s\n", mp->dev_driver->name, mp->subdev, mp->fs_driver->name);
                 }
             }
         }
     }
 
-    kprintf("Calling chdir()...\n");
-    if (vfs_chdir("/rom0") == NOT_OK) {
+    // Open stdin/out/err
+    kprintf("vfs_init: open stdin/out/err...\n");
+    if ((fd = bios_open("//ser1", O_RDONLY)) < 0) {
+        res = fd;
+    }
+
+    if ((fd = bios_open("//ser1", O_WRONLY)) < 0) {
+        res = fd;
+    }
+
+    if ((fd = bios_open("//ser2", O_WRONLY)) < 0) {
+        res = fd;
+    }
+
+    kprintf("vfs_init: Calling chdir()...\n");
+    if (bios_chdir("/rom0") == NOT_OK) {
         kprintf("chdir() failed|||\n");
 
         return NOT_OK;
@@ -201,44 +210,65 @@ int vfs_shutdown(void) {
         }
     }
 
+
+    // unomunt everything
+    for (int i=0; i<MAX_MOUNTS; i++) {
+        vmp_t *mp = &mounts[i];
+
+        if (mp->mounted == YES) {
+            mp->fs_driver->api.fs.unmount(mp);
+            mp->mounted = NO;
+            mp->dev_driver = NULL;
+            mp->fs_driver = NULL;
+            mp->name[0] = EOS;
+            mp->subdev = 0;
+        }
+    }
+
+
     return OK;
 }
 
-int vfs_chdir(const char *path) {
+
+// Bios handlers
+int bios_chdir(const char *path) {
     vmp_t *mp;
     vfile_t free_dir;
     int len;
 
-    kprintf("chdir('%s')\n", path);
+    kprintf("\nbios_chdir('%s')\n", path);
 
     mp = find_mount(path);
     if (mp == NULL) {
-        kprintf("No path handler found!\n");
+        kprintf("bios_chdir: No path handler found for '%s'\n", path);
         return NOT_OK;
     }
-    free_dir.mp = mp;
 
-    kprintf("It's on %s%d (%s)\n", mp->dev_driver->name, mp->subdev, mp->fs_driver->name);
+    free_dir.mp = mp;
+    free_dir.open = NO;
+
+    // kprintf("bios_chdir: It's on %s%d (%s)\n", mp->dev_driver->name, mp->subdev, mp->fs_driver->name);
 
     len = strlen(mp->dev_driver->name)+2;   // 1 for leading slash and 1 for trailing subdev number
 
-    kprintf("Locating '%s'\n", &path[len]);
-    if (mp->fs_driver->api.fs.opendir(&free_dir, &path[len]) == NOT_OK) {
-        kprintf("opendir('%s') failed, path='%s'\n", path, &path[len]);
+    // kprintf("bios_chdir: opening '%s'\n", &path[len]);
+
+    if (mp->fs_driver->api.fs.open(&free_dir, &path[len], &cwd) == NOT_OK) {
+        kprintf("bios_chdir: (*open)('%s') failed, path='%s'\n", path, &path[len]);
         return NOT_OK;
     }
 
-    kprintf("opendir() returned ok\n");
+    // kprintf("bios_chdir: open() returned ok\n");
 
     memcpy(&cwd, &free_dir, sizeof(vfile_t));
     cwd.open = YES;
     cwd.mp = mp;
 
-    kprintf("chdir() success\n");
+    kprintf("bios_chdir: success\n");
     return OK;
 }
 
-int vfs_getcwd(char*buff, size_t size) {
+int bios_getcwd(char*buff, size_t size) {
     if (cwd.open == NO) {
         strcpy(buff, "/limbo");
         return (int)buff;
@@ -249,7 +279,7 @@ int vfs_getcwd(char*buff, size_t size) {
     return (int)buff;
 }
 
-int vfs_creat(const char *pathname, mode_t mode) {
+int bios_creat(const char *pathname, mode_t mode) {
     vmp_t *mp = find_mount(pathname);
 
     if (mp == NULL) {
@@ -261,20 +291,58 @@ int vfs_creat(const char *pathname, mode_t mode) {
 
 int bios_open(const char *pathname, int flags) {
     int fd = find_free_file();
+    char dir_path[PATH_MAX];
+    char filename[PATH_MAX];
     vfile_t *file;
+
+    kprintf("open('%s')\n", pathname);
 
     if (fd == -1) {
         printf("No free file descriptors\n");
-        return -1;
+        return NOT_OK;
     }
 
     file = &vfs_files[fd];
+    file->mp = find_mount(pathname);
+    if (file->mp == NULL) {
+        // No handler found
+        return NOT_OK;
+    }
+
+    // kprintf("bios_open: Gotta remove '/%s' from '%s'\n", file->mp->name, pathname);
+
+    pathname += strlen(file->mp->name)+1;
+    // kprintf("bios_open: pathname adjusted to '%s'\n", pathname);
+
+    strcpy(dir_path, dirname((char *)pathname));
+    strcpy(filename, basename((char *)pathname));
+
+    // kprintf("bios_open: going to open '%s' in directory '%s'\n", filename, dir_path);
+
+    // invoke the filesystem specific open function
+    switch (file->mp->fs_driver->type) {
+        case VFS_TYPE_CHAR:
+            kprintf("bios_open: opening char device - not coded yet!\n");
+            break;
+
+        case VFS_TYPE_FS:
+            // kprintf("bios_open: opening file on a filesystem\n");
+            if (file->mp->fs_driver->api.fs.open(file, filename, &cwd) == NOT_OK) {
+                kprintf("bios_open(): failed to open '$s' in '%s'\n", filename, dir_path);
+            }
+
+            break;
+
+        default:
+            kprintf("bios_open: Bad fs type\n");
+            return NOT_OK;
+    }
+
+
     file->open = YES;
+    file->count = file->index = 0;
     strcpy(file->path, pathname);
 
-    // Invoke the specific filesystem handler
-    file->mp = cwd.mp;
-    
     return fd;
 }
 
@@ -287,11 +355,58 @@ int bios_close(int fd) {
 }
 
 int bios_read(int fd, char *buff, size_t num_bytes) {
+    vfile_t *file;
+    int available = 0;
+
     if ((fd < 0) || (fd >= MAX_FILES)) {
         return -1;
     }
 
-    return 0;
+    file = &vfs_files[fd];
+    available = file->count - file->index;
+
+    if (available <= 0) {
+        // Buffer is empty - ask the lower layer for more
+
+        kprintf("bios_read: asking for more data\n");
+
+        switch (file->mp->fs_driver->type) {
+            case VFS_TYPE_CHAR:
+                kprintf("bios_read: reading char device - not coded yet!\n");
+
+                break;
+
+            case VFS_TYPE_FS:
+                {
+                    int count = file->mp->fs_driver->api.fs.read(file, file->buffer, sizeof(file->buffer));
+
+                    if (count == NOT_OK) {
+                        kprintf("bios_read(): failed to read up to '%d' bytes\n", sizeof(file->buffer));
+                        return NOT_OK;
+                    }
+
+                    file->index = 0;
+                    file->count = count;
+                }
+                break;
+
+            default:
+                kprintf("bios_open: Bad fs type\n");
+                return NOT_OK;
+        }
+    }
+
+    available = file->count - file->index;
+
+    // We have data in the buffer
+    if (num_bytes > available) {
+        num_bytes = available;
+    }
+
+    memcpy(buff, &file->buffer[file->index], num_bytes);
+    file->index += num_bytes;
+
+    return num_bytes;
 }
 
 size_t bios_write(int fd, const char *buff, size_t num_bytes) {
@@ -302,7 +417,7 @@ size_t bios_write(int fd, const char *buff, size_t num_bytes) {
     return num_bytes;
 }
 
-int vfs_opendir(const char *pathname) {
+int bios_opendir(const char *pathname) {
     int fd = find_free_file();
     vfile_t *dir;
 
@@ -330,4 +445,8 @@ int vfs_opendir(const char *pathname) {
     return (int)dir;
 }
 
-#endif
+ssize_t bios_getdents(int fd, void *dirp, size_t count) {
+    return NOT_OK;
+}
+
+#endif // BAREMETAL

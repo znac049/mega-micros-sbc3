@@ -30,7 +30,7 @@ SOFTWARE.
 
 int creat(const char *pathname, mode_t mode) {
 #if defined(BAREMETAL)
-    return vfs_creat(pathname, mode);
+    return bios_creat(pathname, mode);
 #else
     return do_trap0(BIOS_CREAT, (uint32_t)pathname, mode, 0);
 #endif
