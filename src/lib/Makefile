@@ -58,12 +58,13 @@ USERLIB=$(OBJ_DIR)libmega.a
 decoy: all
 	@echo Please use \"make all\" to build all the libraries.
 
-VPATH = machine ctype dirent err extras fcntl setjmp stdio stdlib string strings time unistd crt0
+VPATH = machine ctype dirent err extras fcntl libgen setjmp stdio stdlib string strings time unistd crt0
 
 include ctype/include.mk
 include dirent/include.mk
 include err/include.mk
 include fcntl/include.mk
+include libgen/include.mk
 include machine/include.mk
 include extras/include.mk
 include setjmp/include.mk
@@ -93,7 +94,7 @@ $(OBJ_DIR)%.o : %.S
 $(OBJ_DIR)%.o : %.asm
 	$(VASM) $(VASMFLAGS) -L $(basename $<).lst -o $@ $<
 
-.PHONY: all bare bios build install actual_install clean actual_clean decoy manpages
+.PHONY: all bare bios build install actual_install clean actual_clean decoy manpages install_headers
 
 all: bare bios
 
@@ -110,15 +111,17 @@ $(USERLIB): $(ALL_OBJS)
 	$(AR)	$(ARFLAGS) rs $@ $^
 	$(RANLIB) $@
 
-actual_install: build
+actual_install: build install_headers
 	$(MKDIR_P) $(INSTALL_INC)
 	$(MKDIR_P) $(INSTALL_LIB)
 	$(MKDIR_P) $(INSTALL_DIR)/ld
-	$(CP_R) $(INCDIR)/*.h $(INSTALL_INC)
-	$(CP_R) $(INCLUDES) $(INSTALL_INC)
 	$(CP_R) $(USERLIB) $(INSTALL_LIB)
 	$(CP_R) $(SCRIPT_DIR)/* $(INSTALL_LIB)
 	$(CP_R) $(CRT0_OBJS) $(INSTALL_LIB)
+
+install_headers:
+	$(CP_R) $(INCDIR)/*.h $(INSTALL_INC)
+	$(CP_R) $(INCLUDES) $(INSTALL_INC)
 
 install:
 	make actual_install BAREMETAL=true
