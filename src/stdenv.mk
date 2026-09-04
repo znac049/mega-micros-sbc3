@@ -39,7 +39,7 @@ endif
 
 FLAGS=-ffreestanding -ffunction-sections -fdata-sections -fomit-frame-pointer	\
       -Wall -Wextra -Werror -Wno-unused-function -pedantic -I$(SYSINCDIR)			\
-      -mcpu=$(CPU) -march=$(ARCH) -mtune=$(TUNE) -msoft-float -g -O2 $(DEFINES)
+      -mcpu=$(CPU) -march=$(ARCH) -mtune=$(TUNE) -msoft-float -g -O2 $(DEFINES) 
 CFLAGS=-std=c11 $(FLAGS)
 CXXFLAGS=-std=c++20 -fno-exceptions -fno-rtti $(FLAGS)
 GCC_LIBS?=$(shell $(CC) --print-search-dirs \
