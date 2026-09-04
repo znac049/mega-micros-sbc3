@@ -28,7 +28,7 @@ SOFTWARE.
 #include <dirent.h>
 #include <errno.h>
 #include <limits.h>
-#include <machine.h>
+// #include <machine.h>
 
 int dirfd(DIR *dirp) {
     return ENOTSUP;

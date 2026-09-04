@@ -28,7 +28,8 @@ SOFTWARE.
 #include <dirent.h>
 #include <errno.h>
 #include <limits.h>
-#include <machine.h>
+#include <fcntl.h>
+// #include <machine.h>
 
 #define OPEN_DIR_MAX    8
 
@@ -73,15 +74,10 @@ DIR *opendir(const char *name) {
         return NULL;
     }
 
-#if defined(BAREMETAL)
-    dirfd = vfs_opendir(real_path);
-#else
-    dirfd = do_trap0(BIOS_OPENDIR, (uint32_t)real_path, 0, 0);
-
-    if (dirfd == 0) {
+    dirfd = open(real_path, O_DIRECTORY);
+    if (dirfd == NOT_OK) {
         return NULL;
     }
-#endif
 
     dirp->fd = dirfd;
     dirp->open = YES;
