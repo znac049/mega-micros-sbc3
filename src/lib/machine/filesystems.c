@@ -356,7 +356,7 @@ int bios_close(int fd) {
 
 int bios_read(int fd, char *buff, size_t num_bytes) {
     vfile_t *file;
-    int available = 0;
+    int available;
 
     if ((fd < 0) || (fd >= MAX_FILES)) {
         return -1;
@@ -378,7 +378,7 @@ int bios_read(int fd, char *buff, size_t num_bytes) {
 
             case VFS_TYPE_FS:
                 {
-                    int count = file->mp->fs_driver->api.fs.read(file, file->buffer, sizeof(file->buffer));
+                    int count = file->mp->fs_driver->api.fs.read(file, file->buffer, BLOCK_DEVICE_BLOCK_SIZE);
 
                     if (count == NOT_OK) {
                         kprintf("bios_read(): failed to read up to '%d' bytes\n", sizeof(file->buffer));

@@ -41,7 +41,7 @@ int ext2_open(vfile_t *file, const char *name, vfile_t *cwd) {
     // kprintf("ext2_open: '%s'\n", name);
 
     if (file->mp == NULL) {
-        kprintf("NULL vmp_t in vfile_t\n");
+        kprintf("ext2_open: NULL vmp_t in vfile_t\n");
         return NOT_OK;
     }
 
@@ -91,36 +91,37 @@ int ext2_open(vfile_t *file, const char *name, vfile_t *cwd) {
 
     ext2_init_block_follower(&filep->bf, file->mp, file_inode_num);
 
-    // print what we know so far...
-    // kprintf("printing file internals (assuming ext2):\n");
-    // kprintf("vfile\n");
-    // kprintf("  path: '%s'\n", file->path);
-    // kprintf("  open: %s\n", file->open?"YES":"NO");
-    // kprintf("  mp: 0x%08x\n", file->mp);
-    // kprintf("  fs.filep: 0x%08x\n", filep);
-
-    // kprintf("\n");
-
-    // if (filep == NULL) {
-    //     kprintf("fs.ext2_filep is NULL\n");
-    // }
-    // else {
-    //     kprintf("filep:\n");
-    //     kprintf("  offset: %d\n", filep->offset);
-    //     kprintf("  bf:\n");
-    //     kprintf("    inode_num: %d\n", filep->bf.inode_num);
-    //     kprintf("    inode: 0x%08x\n", &filep->bf.inode);
-    //     kprintf("    direct_offset: %d\n", filep->bf.direct_offset);
-    //     kprintf("    single_offset: %d\n", filep->bf.single_offset);
-    //     kprintf("    double_offset: %d\n", filep->bf.double_offset);
-    //     kprintf("    triple_offset: %d\n", filep->bf.triple_offset);
-    // }
-
     return OK;
 }
 
 int ext2_read(vfile_t *file, char *buff, size_t count) {
-    return NOT_OK;
+    ext2_file_t *filep = &file->private.data.ext2_file_inf;
+    uint32_t block_num;
+
+    kprintf("ext2_read: request to read %d bytes into buffer @ 0x%08x\n", count, buff);
+
+    if (file->mp == NULL) {
+        kprintf("ext2_read: NULL vmp_t in vfile_t\n");
+        return NOT_OK;
+    }
+
+    if (count < BLOCK_DEVICE_BLOCK_SIZE) {
+        kprintf("ext2_read: target buffer is not big enough (%d)\n", count);
+        return NOT_OK;
+    }
+
+    block_num = ext2_get_next_block_num(&filep->bf);
+    if (block_num == 0) {
+        kprintf("ext2_read: no more blocks to read\n");
+        return NOT_OK;
+    }
+
+    if (ext2_read_block(file->mp, block_num, (uint8_t *)buff) == NOT_OK) {
+        kprintf("ext2_read: failed to read block %d\n", block_num);
+        return NOT_OK;
+    }
+
+    return BLOCK_DEVICE_BLOCK_SIZE;
 }
 
 int ext2_write(vfile_t *file, const char *buff, size_t count) {

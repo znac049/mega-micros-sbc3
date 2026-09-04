@@ -119,7 +119,7 @@ struct vfile {
     bool_t open;
     vmp_t *mp;
 
-    char buffer[512];
+    char buffer[BLOCK_DEVICE_BLOCK_SIZE];
     int index;
     int count;
 
