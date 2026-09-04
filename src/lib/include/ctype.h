@@ -35,6 +35,7 @@ typedef int int32_t;
 typedef long long int64_t;
 
 typedef unsigned int size_t;
+typedef int ssize_t;
 typedef unsigned int time_t;
 
 typedef unsigned short int mode_t;
@@ -42,6 +43,8 @@ typedef unsigned short int mode_t;
 typedef unsigned char bool_t;
 
 typedef unsigned int pid_t;
+
+typedef unsigned int * uintptr_t;
 
 #define TRUE 1
 #define FALSE 0
