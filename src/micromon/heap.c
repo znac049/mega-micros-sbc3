@@ -29,17 +29,12 @@ SOFTWARE.
 #include <duart.h>
 #include <errno.h>
 
-#if defined(BAREMETAL)
-#define printf(...) kprintf(__VA_ARGS__)
-#endif
-
 uint32_t heap_start;
 
 struct heap_chunk {
 	uint32_t size;
     pid_t owner;
 	struct heap_chunk *next;
-    struct heap_chunk *next_allocated;
 };
 
 typedef struct heap_chunk heap_chunk_t;
@@ -51,29 +46,40 @@ static heap_chunk_t *allocated_chunks = NULL;
 
 uint32_t get_heap_start(void);
 
-void _heap_print_free(void)
-{
-    int i=0;
+static void dump_heap_item(heap_chunk_t *chunk) {
+    kprintf("Chunk @0x%08x:\n", chunk);
+    kprintf("  size:           %d\n", chunk->size);
+    kprintf("  owner pid:      %d\n", chunk->owner);
+    kprintf("  next:           0x%08x\n", chunk->next);
+}
 
-    printf("\nHeap free list:\n");
-    printf("  End of BSS is 0x%08x\n", get_heap_start());
+static void dump_heap(void) {
+    kprintf("\nHeap free list:\n");
+    kprintf("  End of BSS is 0x%08x\n", get_heap_start());
+    kprintf("FREE:\n");
 	for (heap_chunk_t *cur = free_heap; cur != NULL; cur = cur->next) {
-        printf("Chunk #%d: 0x%08x, (%d)\n", i++, CP(cur), cur->size);
+        dump_heap_item(cur);
 	} 
-    printf("\n");
+    kprintf("\n");
+
+    kprintf("ALLOCATED:\n");
+	for (heap_chunk_t *cur = allocated_chunks; cur != NULL; cur = cur->next) {
+        dump_heap_item(cur);
+	} 
+    kprintf("\n");
 }
 
 void _init_heap(void) {
     free_heap = (heap_chunk_t *) get_heap_start();
 
     free_heap->size = 0x3fffff - get_heap_start();
+    free_heap->owner = 0;
     free_heap->next = NULL;
 
-    //heap_print_free();
+    dump_heap();
 }
 
-void *bios_malloc(size_t size, pid_t pid)
-{
+void *bios_malloc(size_t size, pid_t pid) {
 	heap_chunk_t *cur;
 
 	// Align the size to 4 bytes
@@ -89,8 +95,11 @@ void *bios_malloc(size_t size, pid_t pid)
             new_chunk->owner = pid;
             cur->size = cur->size - block_size;
 
-            new_chunk->next_allocated = allocated_chunks;
+            new_chunk->next = allocated_chunks;
             allocated_chunks = new_chunk;
+
+            kprintf("malloc(%d) -> 0x%08x\n", size, ((char *) new_chunk) + sizeof(heap_chunk_t));
+            dump_heap();
 
             return ((char *) new_chunk) + sizeof(heap_chunk_t);
         }
@@ -113,20 +122,20 @@ void bios_free(void *ptr, pid_t pid)
     //printf("free(0x%08x)\n", ptr);
 
     // remove it from the list of allocated chunks.
-    for (cur=allocated_chunks; cur != NULL; prev=cur, cur=cur->next_allocated) {
+    for (cur=allocated_chunks; cur != NULL; prev=cur, cur=cur->next) {
         if (cur == block) {
             if (cur->owner != pid) {
-                printf("sys_free() - found block but it has the wrong pid\n");
+                kprintf("sys_free: found block but it has the wrong pid\n");
             }
 
             if (cur == allocated_chunks) {
                 allocated_chunks = cur->next;
             }
             else {
-                prev->next_allocated = cur->next_allocated;
+                prev->next = cur->next;
             }
 
-            cur = NULL;
+            break;
         }
     }
  
@@ -190,13 +199,13 @@ void clean_heap(pid_t pid) {
 	heap_chunk_t *cur;
  	heap_chunk_t *prev = NULL;
 
-   for (cur=allocated_chunks; cur != NULL; prev=cur, cur=cur->next_allocated) {
+   for (cur=allocated_chunks; cur != NULL; prev=cur, cur=cur->next) {
         if (cur->owner == pid) {
             if (cur == allocated_chunks) {
                 allocated_chunks = cur->next;
             }
             else {
-                prev->next_allocated = cur->next_allocated;
+                prev->next = cur->next;
             }
 
             free(cur);

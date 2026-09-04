@@ -71,14 +71,15 @@ trap0_call_table::
         dc.l    ticks
         dc.l    bios_open
         dc.l    bios_close
-        dc.l    vfs_creat
+        dc.l    bios_creat
         dc.l    bios_read
         dc.l    bios_write
         dc.l    reset_ticks
-        dc.l    vfs_chdir
-        dc.l    vfs_getcwd
+        dc.l    bios_chdir
+        dc.l    bios_getcwd
         dc.l    bios_malloc
         dc.l    bios_free
+        dc.l    bios_getdents
 t0ct_end     
 
         end

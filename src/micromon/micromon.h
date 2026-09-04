@@ -100,7 +100,7 @@ void handle_go_command(int argc, char *argv[]);
 void bios_free(void *ptr, pid_t pid);
 void *bios_malloc(size_t size, pid_t pid);
 void clean_heap(pid_t pid);
-void _heap_print_free(void);
+// void _heap_print_free(void);
 
 
 // io.c
