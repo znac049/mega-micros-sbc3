@@ -31,6 +31,7 @@ SOFTWARE.
 
 
 #include <stdio.h>
+#include <unistd.h>
 #include "unittest.h"
 
 int test_number		= 0;
@@ -46,15 +47,12 @@ static void begin_tests(void) {
 
 static void end_tests(void) {
     printf("\n%sTest pass completed%s.\n", TERM_BRIGHT_MAGENTA, TERM_RESET);
-    printf("Evaluated %s%d%s module%s. ", TERM_GREEN, test_modules, TERM_RESET, (test_modules!=1)?"s":"");
-    printf("%s%d%s suite%s, and ", TERM_GREEN, test_suites, TERM_RESET, (test_suites!=1)?"s":"");
-    printf("%s%d%s test%s passed with ", TERM_GREEN, test_number, TERM_RESET, (test_number!=1)?"s":"");
+    printf("Evaluated %s%d%s module%s and ", TERM_GREEN, test_modules, TERM_RESET, (test_modules!=1)?"s":"");
+    printf("%s%d%s suite%s. ", TERM_GREEN, test_suites, TERM_RESET, (test_suites!=1)?"s":"");
+    printf("A total of %d test%s were run. ", test_number, (test_number!=1)?"s":"");
+    printf("%s%d%s test%s passed with ", TERM_GREEN, test_number-test_failures, TERM_RESET, (test_number!=1)?"s":"");
     printf("%s%d%s failed and ", test_failures?TERM_BRIGHT_RED:TERM_GREEN, test_failures, TERM_RESET, (test_failures!=1)?"s":"");
     printf("%s%d%s skipped test case(s).\n", TERM_YELLOW, test_skipped, TERM_RESET);
-
-    printf("one ");
-    printf("two ");
-    printf("three\n");
 
     exit(test_failures);
 }

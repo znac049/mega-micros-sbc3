@@ -24,8 +24,10 @@ SOFTWARE.
 
 #include <stdio.h>
 #include <dirent.h>
+#include <unistd.h>
 #include <extras.h>
 #include <limits.h>
+#include <libgen.h>
 #include "unittest.h"
 
 void test_main(void) {
@@ -80,4 +82,23 @@ void test_main(void) {
         TEST(realpath("./subby", path) != NULL);
         TEST(strcmp(path, "/rom0/subby") == 0);
     } while (0);
+
+    SUITE("libgen");
+    do {
+        TEST(strcmp(dirname("/usr/lib/gcc"), "/usr/lib") == 0);
+        TEST(strcmp(dirname("/usr/lib"), "/usr") == 0);
+        TEST(strcmp(dirname("/usr/"), "/") == 0);
+        TEST(strcmp(dirname("usr"), ".") == 0);
+        TEST(strcmp(dirname("/"), "/") == 0);
+        TEST(strcmp(dirname("."), ".") == 0);
+        TEST(strcmp(dirname(".."), ".") == 0);
+
+        TEST(strcmp(basename("/usr/lib/gcc"), "gcc") == 0);
+        TEST(strcmp(basename("/usr/lib"), "lib") == 0);
+        TEST(strcmp(basename("/usr/"), "usr") == 0);
+        TEST(strcmp(basename("usr"), "usr") == 0);
+        TEST(strcmp(basename("/"), "/") == 0);
+        TEST(strcmp(basename("."), ".") == 0);
+        TEST(strcmp(basename(".."), "..") == 0);
+    } while(0);
 }
