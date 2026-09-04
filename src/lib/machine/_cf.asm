@@ -28,9 +28,18 @@ cf_reg_status   equ     cf_reg_base+$0e
 cf_status_busy  equ     $80
 cf_status_drq   equ     $08
 
+; returns (d0):
+; 0 - good (busy gone away)
+; -1 - timed out
 _cf_wait_busy::
+                move.l  #10000,d0
+_cfwb_test
                 btst.b  #cf_status_busy,cf_reg_status
-                bne     _cf_wait_busy
+                dbne     d0,_cfwb_test
+                cmp.l   #-1,d0
+                beq     _cfwb_timed_out         ; return -1
+                move.l  #0,d0                   ; return 0
+_cfwb_timed_out
                 rts
 
 _cf_wait_data::
