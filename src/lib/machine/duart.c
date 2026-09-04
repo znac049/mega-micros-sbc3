@@ -485,7 +485,7 @@ int bios_flush(uint8_t port) {
 }
 
 static int handles_path(const char *pathname) {
-    if ((strcasecmp(pathname, "//usb1") == 0) || (strcasecmp(pathname, "//usb2") == 0)) {
+    if ((strcasecmp(pathname, "//ser1") == 0) || (strcasecmp(pathname, "//ser2") == 0)) {
         return YES;
     }
 

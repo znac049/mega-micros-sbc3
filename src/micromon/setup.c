@@ -35,7 +35,7 @@ SOFTWARE.
 
 static int major = 0;
 static int minor = 4;
-static int MAGIC_BUILD_NUMBER = 451;
+static int MAGIC_BUILD_NUMBER = 494;
 
 
 uint32_t ram_end;
@@ -225,13 +225,13 @@ void setup(void) {
     if (oled_present) {
         i2c_speed(400);
         sh1107_clear();
-        sh1107_pstr(0, 0, "SBC-3\n\nusb1@230400\nusb2@230400", NULL);
+        sh1107_pstr(0, 0, "SBC-3\n\nser1@230400\nser2@230400", NULL);
         sh1107_display();
     }
 
     // Setup the heap so malloc can be used
     _init_heap();
-    _heap_print_free();
+    // _heap_print_free();
 
     // Activate any block devices
     printk("\nActivating block devices\n");
