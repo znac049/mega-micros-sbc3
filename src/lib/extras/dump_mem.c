@@ -25,6 +25,11 @@ SOFTWARE.
 #include <extras.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <duart.h>
+
+#if defined(BAREBONES)
+# define printf kprintf
+#endif
 
 void dump_mem(uint8_t *buf, size_t count, uint8_t print_zeroes) {
     int all_zeroes = 0;
