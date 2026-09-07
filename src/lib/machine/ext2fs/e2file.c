@@ -37,6 +37,7 @@ int ext2_open(vfile_t *file, const char *name, vfile_t *cwd) {
     char *dirv[EXT2_MAX_DIR_DEPTH];
     int dirc;
     ext2_fs_t *fs;
+    ext2_inode_t inode;
 
     // kprintf("ext2_open: '%s'\n", name);
 
@@ -85,11 +86,29 @@ int ext2_open(vfile_t *file, const char *name, vfile_t *cwd) {
             kprintf("ext2_open: couldn't find '%s' in directory with inode %d\n", dirv[i], parent_inode_num);
             return NOT_OK;
         }
+
+        if (ext2_get_inode(file->mp, file_inode_num, &inode) == NOT_OK) {
+            kprintf("ext2_open: failed to read inode %d\n", file_inode_num);
+            return NOT_OK;
+        }
+
+        if (i < dirc-1) {
+            // It must be a directory
+            if (!S_ISDIR(inode.i_mode)) {
+                kprintf("Found '%s' but it's not a directory!\n", dirv[i]);
+                return NOT_OK;
+            }
+        }
     }
 
-    kprintf("ext_open: final inode is %d\n");
+    kprintf("ext_open: final inode is %d\n", file_inode_num);
 
     ext2_init_block_follower(&filep->bf, file->mp, file_inode_num);
+
+    file->size = inode.i_size;
+    file->mode = inode.i_mode;
+
+    kprintf("ext2_open: '%s' opened ok. mod=%04x, size=%d\n", name, file->mode, file->size);
 
     return OK;
 }

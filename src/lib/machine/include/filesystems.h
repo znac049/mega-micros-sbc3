@@ -123,6 +123,9 @@ struct vfile {
     int index;
     int count;
 
+    uint32_t mode;
+    uint32_t size;
+
     vfile_private_t private;
 };
 

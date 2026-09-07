@@ -105,11 +105,15 @@ int ext2_init_block_follower(ext2_block_follower_t *bf, vmp_t *mp, uint32_t inod
 
     ext2_reset_block_follower(bf);
 
-    // kprintf("ext2_init_block_follower: get inode %d\n", inode_num);
-    if (ext2_get_inode(bf->mp, inode_num, &bf->inode) != 0) {
+    kprintf("ext2_init_block_follower: get inode %d\n", inode_num);
+    if (ext2_get_inode(bf->mp, inode_num, &bf->inode) != OK) {
         return NOT_OK;
     }
 
+    dump_ext2_inode(&bf->inode, inode_num);
+
+    kprintf("ext2_init_block_follower: return OK\n");
+    
     return OK;
 }
 
@@ -118,16 +122,23 @@ uint32_t ext2_get_next_block_num(ext2_block_follower_t *bf) {
     uint32_t block_num = 0;
     uint32_t indexes_per_block = BLOCK_DEVICE_BLOCK_SIZE / sizeof(uint32_t);
 
+    kprintf("ext2_get_next_block_num: inode=%d, di=%d, si=%d, db=%d,tr=%d\n",
+            bf->inode_num, bf->direct_offset, bf->single_offset, bf->double_offset, bf->triple_offset);
+
+    dump_ext2_inode(&bf->inode, bf->inode_num);
+
     if (bf->direct_offset > EXT2_TRIP_IND) {
         return 0;
     }
 
     if (bf->direct_offset < EXT2_SNGL_IND) {
+        kprintf("ext2_get_next_block_num: grab block number from offset %d in i_block table\n", bf->direct_offset);
         block_num = in->i_block[bf->direct_offset++];
     }
     else if (bf->direct_offset == EXT2_SNGL_IND) {
         // Grab a copy of the single indirect block - remember to deal with
         // endianness.
+        kprintf("ext2_get_next_block_num: grab block number from within the single indirect table\n");
         uint32_t *bp = (uint32_t *)bf->mp->block_buffer;
 
         if (ext2_read_fs_block(bf->mp, in->i_block[EXT2_SNGL_IND], YES) != 0) {
@@ -142,16 +153,19 @@ uint32_t ext2_get_next_block_num(ext2_block_follower_t *bf) {
         }
     }
     else if (bf->direct_offset == EXT2_DBL_IND) {
-        kprintf("BLOCK FOLLOWER DOUBLE PROBLEM!\n");
+        kprintf("ext2_get_next_block_num: BLOCK FOLLOWER DOUBLE PROBLEM!\n");
         return 0;
     }
     else if (bf->direct_offset == EXT2_TRIP_IND) {
-        kprintf("BLOCK FOLLOWER TRIPLE PROBLEM!\n");
+        kprintf("ext2_get_next_block_num: BLOCK FOLLOWER TRIPLE PROBLEM!\n");
         return 0;
     }
     else {
+        kprintf("ext2_get_next_block_num: SHOULD NEVER HAPPEN (How many times have you heard that before!)\n");
         return 0;
     }
+
+    kprintf("ext2:get_next_block_num: return %d\n", block_num);
 
     return block_num;
 }
