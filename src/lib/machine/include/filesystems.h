@@ -89,7 +89,7 @@ union vfs {
         int (*unmount)(vmp_t *mp);
         // int (*sync)(void);
         // int (*find_path)(vfile_t *dir, const char *name);
-        int (*open)(vfile_t *pwd, const char *fname, vfile_t *cwd);
+        int (*open)(vfile_t *pwd, const char *fname, int flags, vfile_t *cwd);
         int (*read)(vfile_t *file, char *buf, size_t n_bytes);
         int (*write)(vfile_t *file, const char *buf, size_t n_bytes);
         int (*close)(vfile_t *file);
@@ -122,6 +122,10 @@ struct vfile {
     char buffer[BLOCK_DEVICE_BLOCK_SIZE];
     int index;
     int count;
+    off_t position;
+    int readable : 1;
+    int writeable : 1;
+    int ateof : 1;
 
     uint32_t mode;
     uint32_t size;

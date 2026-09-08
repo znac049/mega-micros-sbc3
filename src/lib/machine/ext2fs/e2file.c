@@ -31,7 +31,7 @@ SOFTWARE.
 
 #if defined(BAREMETAL)
 
-int ext2_open(vfile_t *file, const char *name, vfile_t *cwd) {
+int ext2_open(vfile_t *file, const char *name, int flags, vfile_t *cwd) {
     ext2_file_t *filep = &file->private.data.ext2_file_inf;
     int file_inode_num = EXT2_ROOT_INO;
     char *dirv[EXT2_MAX_DIR_DEPTH];

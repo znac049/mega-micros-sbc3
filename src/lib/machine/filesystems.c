@@ -253,7 +253,7 @@ int bios_chdir(const char *path) {
 
     // kprintf("bios_chdir: opening '%s'\n", &path[len]);
 
-    if (mp->fs_driver->api.fs.open(&free_dir, &path[len], &cwd) == NOT_OK) {
+    if (mp->fs_driver->api.fs.open(&free_dir, &path[len], O_DIRECTORY, &cwd) == NOT_OK) {
         kprintf("bios_chdir: (*open)('%s') failed, path='%s'\n", path, &path[len]);
         return NOT_OK;
     }
@@ -317,6 +317,8 @@ int bios_open(const char *pathname, int flags) {
     strcpy(dir_path, dirname((char *)pathname));
     strcpy(filename, basename((char *)pathname));
 
+    file->position = 0;
+
     // kprintf("bios_open: going to open '%s' in directory '%s'\n", filename, dir_path);
 
     // invoke the filesystem specific open function
@@ -327,7 +329,7 @@ int bios_open(const char *pathname, int flags) {
 
         case VFS_TYPE_FS:
             // kprintf("bios_open: opening file on a filesystem\n");
-            if (file->mp->fs_driver->api.fs.open(file, filename, &cwd) == NOT_OK) {
+            if (file->mp->fs_driver->api.fs.open(file, filename, flags, &cwd) == NOT_OK) {
                 kprintf("bios_open(): failed to open '$s' in '%s'\n", filename, dir_path);
             }
 
@@ -341,6 +343,8 @@ int bios_open(const char *pathname, int flags) {
 
     file->open = YES;
     file->count = file->index = 0;
+    file->ateof = NO;
+    
     strcpy(file->path, pathname);
 
     return fd;

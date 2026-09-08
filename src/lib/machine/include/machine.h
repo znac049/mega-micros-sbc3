@@ -245,7 +245,7 @@ bool_t ext2_has_superblock(uint32_t bg_num);
 int setup_vfs_ext2_handler(vfs_fs_t *vfs);
 
 // ext2/e2file.c
-int ext2_open(vfile_t *file, const char *name, vfile_t *cwd);
+int ext2_open(vfile_t *file, const char *name, int flags, vfile_t *cwd);
 int ext2_read(vfile_t *file, char *buff, size_t count);
 int ext2_write(vfile_t *file, const char *buff, size_t count);
 int ext2_close(vfile_t *file);
