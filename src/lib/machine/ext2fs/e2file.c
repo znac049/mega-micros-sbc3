@@ -153,7 +153,7 @@ int ext2_write(vfile_t *file, const char *buff, size_t count) {
 }
 
 int ext2_close(vfile_t *file) {
-    return NOT_OK;
+    return OK;
 }
 
 #endif

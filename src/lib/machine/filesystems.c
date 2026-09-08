@@ -156,12 +156,12 @@ int vfs_init(void) {
     res = setup_vfs_ext2_handler(find_free_fs());
 
     // Anything we can mount?
-    kprintf("vfs_init: what can we mount?\n");
+    // kprintf("vfs_init: what can we mount?\n");
     for (int bd=0; bd<MAX_BLOCK_DEVICES; bd++) { 
         block_device_t *dev = &block_devices[bd];
 
         if (dev->active == YES) {
-            kprintf("Looking at blockdev '%s', subdevs=%d\n", dev->name, dev->num_sub_devices);
+            // kprintf("Looking at blockdev '%s', subdevs=%d\n", dev->name, dev->num_sub_devices);
 
             // Check if we can mount anything on each subdev
             for (uint8_t subdev=0; subdev<dev->num_sub_devices; subdev++) {
@@ -178,7 +178,7 @@ int vfs_init(void) {
     }
 
     // Open stdin/out/err
-    kprintf("vfs_init: open stdin/out/err...\n");
+    // kprintf("vfs_init: open stdin/out/err...\n");
     if ((fd = bios_open("//ser1", O_RDONLY)) < 0) {
         res = fd;
     }
@@ -191,7 +191,7 @@ int vfs_init(void) {
         res = fd;
     }
 
-    kprintf("vfs_init: Calling chdir()...\n");
+    // kprintf("vfs_init: Calling chdir()...\n");
     if (bios_chdir("/rom0") == NOT_OK) {
         kprintf("chdir() failed|||\n");
 
@@ -236,7 +236,7 @@ int bios_chdir(const char *path) {
     vfile_t free_dir;
     int len;
 
-    kprintf("\nbios_chdir('%s')\n", path);
+    // kprintf("\nbios_chdir('%s')\n", path);
 
     mp = find_mount(path);
     if (mp == NULL) {
@@ -353,11 +353,44 @@ int bios_open(const char *pathname, int flags) {
 }
 
 int bios_close(int fd) {
+    vfile_t *file;
+    int res = OK;
+
     if ((fd < 0) || (fd >= MAX_FILES)) {
-        return -1;
+        return NOT_OK;
     }
 
-    return 0;
+    file = &vfs_files[fd];
+
+    // invoke the filesystem specific close function
+    switch (file->mp->fs_driver->type) {
+        case VFS_TYPE_CHAR:
+            kprintf("bios_close: closing char device - not coded yet!\n");
+            break;
+
+        case VFS_TYPE_FS:
+            // kprintf("bios_close: closing file on a filesystem\n");
+            if (file->mp->fs_driver->api.fs.close(file) == NOT_OK) {
+                kprintf("bios_close(): failed to close fd %d ('%s')\n", fd, file->path);
+            }
+
+            break;
+
+        default:
+            kprintf("bios_close: Bad fs type\n");
+            res = NOT_OK;
+            break;
+    }
+
+    file->open = NO;
+    file->mp = NULL;
+
+    file->index = file->count = 0;
+    file->position = 0;
+
+    file->file_type = VFS_FT_UNKNOWN;    
+
+    return res;
 }
 
 int bios_read(int fd, char *buff, size_t num_bytes) {
