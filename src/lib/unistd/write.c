@@ -27,7 +27,7 @@ SOFTWARE.
 #include <bios.h>
 #include <errno.h>
 
-size_t write(int fd, void *buff, size_t count) {
+ssize_t write(int fd, void *buff, size_t count) {
 #if defined(BAREMETAL)
     return bios_write(fd, buff, count);
 #else

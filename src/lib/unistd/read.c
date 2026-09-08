@@ -26,7 +26,7 @@ SOFTWARE.
 #include <bios.h>
 #include <errno.h>
 
-size_t read(int fd, void *buff, size_t count) {
+ssize_t read(int fd, void *buff, size_t count) {
 #if defined(BAREMETAL)
     return bios_read(fd, buff, count);
 #else

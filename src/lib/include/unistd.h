@@ -32,5 +32,5 @@ void exit(int);
 char *getcwd(char *buf, size_t size);
 pid_t getpid(void);
 int isatty(int fd);
-size_t read(int fd, void *buf, size_t count);
-size_t write(int fd, void *buf, size_t count);
+ssize_t read(int fd, void *buf, size_t count);
+ssize_t write(int fd, void *buf, size_t count);
