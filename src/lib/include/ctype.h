@@ -37,6 +37,7 @@ typedef long long int64_t;
 typedef unsigned int size_t;
 typedef int ssize_t;
 typedef unsigned int time_t;
+typedef int off_t;
 
 typedef unsigned short int mode_t;
 

@@ -27,7 +27,6 @@ SOFTWARE.
 #include <ctype.h>
 
 typedef unsigned int ino_t;
-typedef unsigned int off_t;
 
 struct dirent {
     ino_t           d_ino;
