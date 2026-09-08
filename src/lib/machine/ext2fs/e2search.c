@@ -34,21 +34,21 @@ SOFTWARE.
 static int names_match(const char *target, const uint8_t *possible, uint8_t plen) {
     int tlen = strlen(target);
 
-    kprintf("do '%s' and '%s' match? ", target, possible);
+    // kprintf("do '%s' and '%s' match? ", target, possible);
 
     if (tlen != plen) {
-        kprintf("NO :-(\n");
+        // kprintf("NO :-(\n");
         return NO;
     }
 
     for (int i=0; i<plen; i++) {
         if (target[i] != possible[i]) {
-            kprintf("NO :-(\n");
+            // kprintf("NO :-(\n");
             return NO;
         }
     }
 
-    kprintf("YES!\n");
+    // kprintf("YES!\n");
     return YES;
 }
 
@@ -56,12 +56,12 @@ static int names_match(const char *target, const uint8_t *possible, uint8_t plen
  * Given a starting directory inode number, find the inode number of target_name
  *
  */
-uint32_t e2_search(vmp_t *mp, uint32_t dir_inode_num, const char *target_name) {
+uint32_t e2_search(vmp_t *mp, uint32_t dir_inode_num, const char *target_name, uint8_t *file_type) {
     ext2_inode_t dir_inode;
     ext2_block_follower_t bf;
     ext2_dirent_t *dirent;
 
-    kprintf("e2_search: looking for an entry called '%s' in directory at inode # %d\n", target_name, dir_inode_num); 
+    // kprintf("e2_search: looking for an entry called '%s' in directory at inode # %d\n", target_name, dir_inode_num); 
 
     if (target_name[0] == EOS) {
         return dir_inode_num;
@@ -73,23 +73,39 @@ uint32_t e2_search(vmp_t *mp, uint32_t dir_inode_num, const char *target_name) {
     }
 
     // Loolk through all the directory entries for the target_name
-    kprintf("e2_search: scanning the directory at inode %d...\n", dir_inode_num);
+    // kprintf("e2_search: scanning the directory at inode %d...\n", dir_inode_num);
     ext2_init_block_follower(&bf, mp, dir_inode_num);
     for (uint32_t block_num=ext2_get_next_block_num(&bf); block_num != 0; block_num=ext2_get_next_block_num(&bf)) {
         ext2_dirent_t ent;
         uint32_t offset = 0;
 
-        kprintf("e2_search: Read block %d\n", block_num);
+        // kprintf("e2_search: Read block %d\n", block_num);
 
         ext2_read_fs_block(mp, block_num, NO);
         while (offset < BLOCK_DEVICE_BLOCK_SIZE) {
             dirent = (ext2_dirent_t *)&mp->block_buffer[offset];
             ext2_sanitize_dirent(dirent, &ent);
 
-            kprintf("  name->'%s'\n", ent.name);
+            // kprintf("  name->'%s'\n", ent.name);
 
             if (names_match(target_name, ent.name, ent.name_len)) {
-                kprintf("BINGO! in=%d, rl=%d, nl=%d\n", ent.inode, ent.rec_len, ent.name_len);
+                // kprintf("BINGO! in=%d, rl=%d, nl=%d\n", ent.inode, ent.rec_len, ent.name_len);
+                if (file_type != NULL) {
+                    switch (ent.file_type) {
+                        case EXT2_FT_DIR:
+                            *file_type = VFS_FT_DIR;
+                            break;
+
+                        case EXT2_FT_REG_FILE:
+                            *file_type = VFS_FT_REG;
+                            break;
+
+                        default:
+                            *file_type = VFS_FT_UNKNOWN;
+                            break;
+                    }
+                }
+
                 return ent.inode;
             }
 

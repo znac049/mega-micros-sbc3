@@ -253,6 +253,6 @@ int ext2_close(vfile_t *file);
 // void printn(const char *pfx, const uint8_t *str, int len);
 
 // ext2/e2search.c
-uint32_t e2_search(vmp_t *mp, uint32_t dir_inode_num, const char *target_name);
+uint32_t e2_search(vmp_t *mp, uint32_t dir_inode_num, const char *target_name, uint8_t *file_type);
 
 #endif

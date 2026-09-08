@@ -85,7 +85,7 @@ bool_t ext2_has_superblock(uint32_t bg_num) {
 }
 
 ext2_bg_t *ext2_get_bg(ext2_fs_t *fs, uint32_t bg_num) {
-    kprintf("ext2_get_bg: bg_num=%d\n", bg_num);
+    // kprintf("ext2_get_bg: bg_num=%d\n", bg_num);
 
     if (bg_num >= fs->num_blockgroups) {
         kprintf("ext2_get_bg: block group %d is out of range\n", bg_num);
@@ -106,8 +106,8 @@ int ext2_get_inode(vmp_t *mp, uint32_t inode_num, ext2_inode_t *inode) {
     uint32_t block_num;
     uint32_t offset;
 
-    kprintf("ext2_get_inode: inode %d from %s\n", inode_num, mp->name);
-    kprintf("ext2_inode: the inode table we want is in bgdt %d\n", block_group_num);
+    // kprintf("ext2_get_inode: inode %d from %s\n", inode_num, mp->name);
+    // kprintf("ext2_inode: the inode table we want is in bgdt %d\n", block_group_num);
 
     if (block_group_num >= fs->num_blockgroups) {
         kprintf("ext2_get_inode: block group %d is out of range\n", block_group_num);
@@ -123,20 +123,18 @@ int ext2_get_inode(vmp_t *mp, uint32_t inode_num, ext2_inode_t *inode) {
         return NOT_OK;
     }
 
-    kprintf("ext2_get_inode: we retrieved bgdt %d:\n", block_group_num);
-    dump_ext2_bg(bg, block_group_num, &fs->sb);
-
+    // kprintf("ext2_get_inode: we retrieved bgdt %d:\n", block_group_num);
 
     block_num = (index * fs->sb.s_inode_size) / BLOCK_DEVICE_BLOCK_SIZE;
 
     offset = (index * fs->sb.s_inode_size) % BLOCK_DEVICE_BLOCK_SIZE; 
 
-    kprintf("ext2_get_inode: inode %d is in block %d + %d + %d, offset %d\n", 
-            inode_num,
-            block_group_num * fs->sb.s_blocks_per_group,
-            bg->bg_inode_table, 
-            block_num, 
-            offset);
+    // kprintf("ext2_get_inode: inode %d is in block %d + %d + %d, offset %d\n", 
+    //         inode_num,
+    //         block_group_num * fs->sb.s_blocks_per_group,
+    //         bg->bg_inode_table, 
+    //         block_num, 
+    //         offset);
 
     block_num = block_num +  (block_group_num * fs->sb.s_blocks_per_group) + bg->bg_inode_table;
     if (ext2_read_fs_block(mp, block_num, NO) != 0) {
@@ -146,11 +144,9 @@ int ext2_get_inode(vmp_t *mp, uint32_t inode_num, ext2_inode_t *inode) {
 
     ent = (ext2_inode_t *) &mp->block_buffer[offset];
     ext2_sanitize_inode(ent, inode);
-    kprintf("Block Buffer:\n");
-    dump_mem(mp->block_buffer, BLOCK_DEVICE_BLOCK_SIZE, YES);
 
-    kprintf("ext2_get_inode: inode %d:\n", inode_num);
-    dump_ext2_inode(ent, inode_num);
+    // kprintf("ext2_get_inode: inode %d:\n", inode_num);
+    // dump_ext2_inode(inode, inode_num);
 
     return OK;
 }
@@ -169,7 +165,7 @@ vmp_t *ext2_mount(vmp_t *mp) {
     ext2_bg_t *bgdt;
     ext2_fs_t *ext2_private_data;
 
-    kprintf("\next2_mount: Attempting ext2 mount of %s%d\n", mp->dev_driver->name, mp->subdev);
+    // kprintf("\next2_mount: Attempting ext2 mount of %s%d\n", mp->dev_driver->name, mp->subdev);
 
     if (mp == NULL) {
         kprintf("NULL mp\n");
@@ -215,10 +211,10 @@ vmp_t *ext2_mount(vmp_t *mp) {
         return null(EGENERIC);
     }
 
-    kprintf("bg table entries=%d, entry size=%d\n", bg1, sizeof(ext2_bg_t));
-    kprintf("bg table entries per block=%d\n", block_size / sizeof(ext2_bg_t));
+    // kprintf("bg table entries=%d, entry size=%d\n", bg1, sizeof(ext2_bg_t));
+    // kprintf("bg table entries per block=%d\n", block_size / sizeof(ext2_bg_t));
 
-    kprintf("ext2_mount: malloc(%d)...\n", sizeof(ext2_bg_t) * bg1);
+    // kprintf("ext2_mount: malloc(%d)...\n", sizeof(ext2_bg_t) * bg1);
     bgdt = malloc(sizeof(ext2_bg_t) * bg1);
 
     if (bgdt == NULL) {
@@ -237,7 +233,7 @@ vmp_t *ext2_mount(vmp_t *mp) {
     // kprintf("ext2_mount: num_blockgroups=%d\n", bg1);
     // kprintf("ext2_mount: Reading bgdt, bgdt=0x%08x, num_blockgroups=%d...\n", bgdt, ext2_private_data->num_blockgroups);
 
-    kprintf("ext2_mount: need to read %d block group descriptor tables\n", bg1);
+    // kprintf("ext2_mount: need to read %d block group descriptor tables\n", bg1);
 
     // Read the bgdt one at a time
     for (uint32_t i=0; i<bg1; i++) {
@@ -255,10 +251,10 @@ vmp_t *ext2_mount(vmp_t *mp) {
         }
 
         ext2_sanitize_bg((ext2_bg_t *)mp->block_buffer, &bgdt[i]);
-        dump_ext2_bg(&bgdt[i], i, sb);
+        // dump_ext2_bg(&bgdt[i], i, sb);
     }
 
-    kprintf("ext2_mount: read and sanitized %d block group descriptor tables\n", bg1);
+    // kprintf("ext2_mount: read and sanitized %d block group descriptor tables\n", bg1);
 
     mp->mounted = YES;
 

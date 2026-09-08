@@ -295,7 +295,7 @@ int bios_open(const char *pathname, int flags) {
     char filename[PATH_MAX];
     vfile_t *file;
 
-    kprintf("open('%s')\n", pathname);
+    // kprintf("open('%s')\n", pathname);
 
     if (fd == -1) {
         printf("No free file descriptors\n");
@@ -343,7 +343,9 @@ int bios_open(const char *pathname, int flags) {
 
     file->open = YES;
     file->count = file->index = 0;
+    file->position = 0;
     file->ateof = NO;
+    file->file_type = VFS_FT_UNKNOWN;
     
     strcpy(file->path, pathname);
 
@@ -361,6 +363,7 @@ int bios_close(int fd) {
 int bios_read(int fd, char *buff, size_t num_bytes) {
     vfile_t *file;
     int available;
+    int num_read = 0;
 
     if ((fd < 0) || (fd >= MAX_FILES)) {
         return -1;
@@ -369,10 +372,19 @@ int bios_read(int fd, char *buff, size_t num_bytes) {
     file = &vfs_files[fd];
     available = file->count - file->index;
 
+    // kprintf("bios_read: available bytes = %d, file position=%d, index=%d, count=%d, size=%d\n",
+    //         available,
+    //         file->position, file->index, file->count, file->size);
+
+    if (file->ateof == YES) {
+        // kprintf("bios_read: already at EOF\n");
+        return 0;
+    }
+            
     if (available <= 0) {
         // Buffer is empty - ask the lower layer for more
 
-        kprintf("bios_read: asking for more data\n");
+        // kprintf("bios_read: asking for more data\n");
 
         switch (file->mp->fs_driver->type) {
             case VFS_TYPE_CHAR:
@@ -382,15 +394,20 @@ int bios_read(int fd, char *buff, size_t num_bytes) {
 
             case VFS_TYPE_FS:
                 {
-                    int count = file->mp->fs_driver->api.fs.read(file, file->buffer, BLOCK_DEVICE_BLOCK_SIZE);
+                    num_read = file->mp->fs_driver->api.fs.read(file, file->buffer, BLOCK_DEVICE_BLOCK_SIZE);
 
-                    if (count == NOT_OK) {
+                    if (num_read == NOT_OK) {
                         kprintf("bios_read(): failed to read up to '%d' bytes\n", sizeof(file->buffer));
                         return NOT_OK;
                     }
 
+                    if (num_read == 0) {
+                        // kprintf("bios_read: EOF detected\n");
+                        file->ateof = YES;
+                    }
+
                     file->index = 0;
-                    file->count = count;
+                    file->count = num_read;
                 }
                 break;
 
@@ -409,6 +426,21 @@ int bios_read(int fd, char *buff, size_t num_bytes) {
 
     memcpy(buff, &file->buffer[file->index], num_bytes);
     file->index += num_bytes;
+    file->position = num_bytes;
+
+    // Have we read past the end of file?
+    if (file->position > file->size) {
+        // We have. Adjust num_bytes to reflect that;
+        int extra = file->position - file->size;
+
+        file->position = file->size;
+        file->ateof = YES;
+
+        num_bytes = num_bytes - extra;
+    }
+
+    // kprintf("bios_read complete: num_read=%d, file position=%d, index=%d, count=%d, size=%d\n",
+    //         num_read, file->position, file->index, file->count, file->size);
 
     return num_bytes;
 }

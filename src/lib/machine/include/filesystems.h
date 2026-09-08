@@ -40,6 +40,12 @@ SOFTWARE.
 #define VFS_TYPE_CHAR 1
 #define VFS_TYPE_FS   2
 
+// File types
+#define VFS_FT_UNKNOWN  0
+#define VFS_FT_REG      1
+#define VFS_FT_DIR      2
+#define VFS_FT_SYMLINK  7
+
 typedef struct vmp vmp_t;
 typedef union vfs vfs_t;
 typedef struct vfs_fs vfs_fs_t;
@@ -123,9 +129,10 @@ struct vfile {
     int index;
     int count;
     off_t position;
-    int readable : 1;
-    int writeable : 1;
-    int ateof : 1;
+    unsigned int readable : 1;
+    unsigned int writeable : 1;
+    unsigned int ateof : 1;
+    uint8_t file_type;
 
     uint32_t mode;
     uint32_t size;

@@ -38,6 +38,7 @@ int ext2_open(vfile_t *file, const char *name, int flags, vfile_t *cwd) {
     int dirc;
     ext2_fs_t *fs;
     ext2_inode_t inode;
+    uint8_t file_type;
 
     // kprintf("ext2_open: '%s'\n", name);
 
@@ -75,14 +76,14 @@ int ext2_open(vfile_t *file, const char *name, int flags, vfile_t *cwd) {
     dirc = split_str(name, '/', dirv, EXT2_MAX_DIR_DEPTH);
 
     // kprintf("ext2_open: '%s' splits into %d parts:\n", name, dirc);
-    for (int i=0; i<dirc; i++) {
-        kprintf("  %s\n", dirv[i]);
-    }
+    // for (int i=0; i<dirc; i++) {
+    //     kprintf("  %s\n", dirv[i]);
+    // }
 
     for (int i=0; i<dirc; i++) {
         int parent_inode_num = file_inode_num;
 
-        if ((file_inode_num = e2_search(file->mp, file_inode_num, dirv[i])) == 0) {
+        if ((file_inode_num = e2_search(file->mp, file_inode_num, dirv[i], &file_type)) == 0) {
             kprintf("ext2_open: couldn't find '%s' in directory with inode %d\n", dirv[i], parent_inode_num);
             return NOT_OK;
         }
@@ -94,21 +95,22 @@ int ext2_open(vfile_t *file, const char *name, int flags, vfile_t *cwd) {
 
         if (i < dirc-1) {
             // It must be a directory
-            if (!S_ISDIR(inode.i_mode)) {
+            if (file_type != VFS_FT_DIR) {
                 kprintf("Found '%s' but it's not a directory!\n", dirv[i]);
                 return NOT_OK;
             }
         }
     }
 
-    kprintf("ext_open: final inode is %d\n", file_inode_num);
+    // kprintf("ext_open: final inode is %d\n", file_inode_num);
 
     ext2_init_block_follower(&filep->bf, file->mp, file_inode_num);
 
     file->size = inode.i_size;
     file->mode = inode.i_mode;
+    file->file_type = file_type;
 
-    kprintf("ext2_open: '%s' opened ok. mod=%04x, size=%d\n", name, file->mode, file->size);
+    kprintf("ext2_open: '%s' opened ok. mode=%04x, size=%d\n", name, file->mode, file->size);
 
     return OK;
 }
@@ -117,7 +119,8 @@ int ext2_read(vfile_t *file, char *buff, size_t count) {
     ext2_file_t *filep = &file->private.data.ext2_file_inf;
     uint32_t block_num;
 
-    kprintf("ext2_read: request to read %d bytes into buffer @ 0x%08x\n", count, buff);
+    // kprintf("ext2_read: request to read %d bytes into buffer @ 0x%08x\n", count, buff);
+    // kprintf("ext2_read: file size=%d, pos=%d\n", file->size, file->position);
 
     if (file->mp == NULL) {
         kprintf("ext2_read: NULL vmp_t in vfile_t\n");
@@ -131,8 +134,10 @@ int ext2_read(vfile_t *file, char *buff, size_t count) {
 
     block_num = ext2_get_next_block_num(&filep->bf);
     if (block_num == 0) {
-        kprintf("ext2_read: no more blocks to read\n");
-        return NOT_OK;
+        // kprintf("ext2_read: no more blocks to read -> EOF\n");
+        // file->ateof = YES;
+
+        return 0;
     }
 
     if (ext2_read_block(file->mp, block_num, (uint8_t *)buff) == NOT_OK) {
