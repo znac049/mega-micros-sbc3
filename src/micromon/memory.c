@@ -31,7 +31,7 @@ SOFTWARE.
 #define RAM_MAX ((1024*1024*8)-1)
 #define ONE_MEG (1024*1024)
 
-static uint16_t check_address(volatile uint16_t *addr) {
+static inline uint16_t check_address(volatile uint16_t *addr) {
     uint16_t orig = addr[0];
     uint16_t x,y;
 
@@ -44,6 +44,16 @@ static uint16_t check_address(volatile uint16_t *addr) {
     addr[0] = orig;
 
     return ((x == 0x5555) && (y == 0xaaaa));
+}
+
+static void spin(void) {
+    static char flips[4] = "|/-\\";
+    static int i=0;
+
+    printk("%c%c", BS, flips[i++]);
+    if (i == sizeof(flips)) {
+        i = 0;
+    }
 }
 
 /*
@@ -59,4 +69,35 @@ uint32_t get_ram_end(void) {
     }
 
     return 0x007fffff;
+}
+
+int test_ram(uint32_t start_addr, uint32_t end_addr) {
+    int i = 0;
+
+    if (start_addr & 1)
+        start_addr++;
+    
+    if (end_addr && 1) 
+        end_addr--;
+
+    printk(" Testing......");
+    for (uint32_t addr=start_addr; addr<end_addr; addr += 2) {
+        if (!check_address((uint16_t *)addr)) {
+            printk("\nMemory test failed at $%08x\n", addr);
+            return addr;
+        }
+
+        if (++i == 40000) {
+            i = 0;
+            spin();
+        }
+    }
+
+    for (int j=0; j<5; j++) {
+        printk("%c", BS);
+    }
+
+    printk(": PASS          \n");
+
+    return OK;
 }

@@ -118,6 +118,7 @@ bool_t is_command(const char *cmd, const char *target, int min_target_len);
 
 // memory.c
 uint32_t get_ram_end(void);
+int test_ram(uint32_t start_addr, uint32_t end_addr);
 
 
 // probe_cmd.c

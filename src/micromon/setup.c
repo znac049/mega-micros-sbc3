@@ -35,7 +35,7 @@ SOFTWARE.
 
 static int major = 0;
 static int minor = 4;
-static int MAGIC_BUILD_NUMBER = 494;
+static int MAGIC_BUILD_NUMBER = 495;
 
 
 uint32_t ram_end;
@@ -70,9 +70,12 @@ static void padstr(const char *s, int cols) {
     }
 }
 
-static void pr_info(const char *msg, uint32_t start, uint32_t end) {
+static void pr_info(const char *msg, uint32_t start, uint32_t end, int print_nl) {
     padstr(msg, PAD_COL);
-    printk(" [ $%06X-$%06X ]\n", start, end);
+    printk(" [ $%06X-$%06X ]", start, end);
+    if (print_nl) {
+        printk("\n");
+    }
 }
 
 static void pr_i2c(const char *msg, uint8_t addr) {
@@ -154,33 +157,34 @@ void setup(void) {
 
     // RAM
     snprintf(tmp_str, sizeof(tmp_str), "%dMB RAM detected", (ram_end+1)/(1024*1024));
-    pr_info(tmp_str, 0, ram_end);
+    pr_info(tmp_str, 0, ram_end, NO);
+    test_ram(0x00000400, ram_end);
 
     // Duart
     snprintf(tmp_str, sizeof(tmp_str), "%s duart running at %sMHz", 
             (jumpers & 0x04)?"xr68c681":"generic mc68681",
             duart_clock_doubled()?"7.3728":"3.6864"
         );
-    pr_info(tmp_str, (uint32_t)duart_base, (uint32_t)duart_opr_reset);
+    pr_info(tmp_str, (uint32_t)duart_base, (uint32_t)duart_opr_reset, YES);
 
     // PI/T
     if (pit_present) {
-        pr_info("68230 PI/T detected", (uint32_t)pit_base, (uint32_t)pit_tsr);
+        pr_info("68230 PI/T detected", (uint32_t)pit_base, (uint32_t)pit_tsr, YES);
     }
 
     // CF
     if (cf_present) {
-        pr_info("Compact Flash hardware detected", (uint32_t)cf_base, (uint32_t)cf_reg_command);
+        pr_info("Compact Flash hardware detected", (uint32_t)cf_base, (uint32_t)cf_reg_command, YES);
     }
 
     // Hex Display
     if (hex_display_present) {
-        pr_info("Hex Display board detected", 0xab0000, 0xab0003);
+        pr_info("Hex Display board detected", 0xab0000, 0xab0003, YES);
     }
 
     // ACRTC3
     if (acrtc3_present) {
-        pr_info("ACRTC3 detected", 0xaa0000, 0xaaffff);
+        pr_info("ACRTC3 detected", 0xaa0000, 0xaaffff, YES);
     }
 
     if (rtc_present) {
@@ -239,13 +243,9 @@ void setup(void) {
     
     // Prepare filesystems for use
     if (experimental) {
-        char pwd[PATH_MAX];
-        
         printk("Attempting mounts\n");
         vfs_init();
-
-        kprintf("PWD is '%s'\n", getcwd(pwd, PATH_MAX));
     }
 
-    kprintf("Entering command loop.\n");
+    kprintf("\n");
 }
