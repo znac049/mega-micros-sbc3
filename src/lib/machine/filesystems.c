@@ -25,6 +25,7 @@ SOFTWARE.
 #include <stddef.h>
 #include <string.h>
 #include <libgen.h>
+#include <dirent.h>
 #include <machine.h>
 #include <filesystems.h>
 #include <bios.h>
@@ -113,7 +114,7 @@ static vmp_t *attempt_to_mount(block_device_t *dev, uint8_t subdev) {
             res = hand->api.fs.mount(vmp);
             if ((res != NULL) && (vmp->mounted == YES)) {
                 // Success
-                kprintf("%s%d: mounted as %s\n", vmp->dev_driver->name, vmp->subdev, vmp->fs_driver->name);
+                // kprintf("%s%d: mounted as %s\n", vmp->dev_driver->name, vmp->subdev, vmp->fs_driver->name);
 
                 // save the mountpoint name
                 snprintf(vmp->name, 16, "%s%d", vmp->dev_driver->name, vmp->subdev);
@@ -171,7 +172,7 @@ int vfs_init(void) {
                     kprintf("vfs_init: %s%d not mounted\n", dev->name, subdev);
                 }
                 else {
-                    kprintf("vfs_init: Success: %s%d mounted as %s\n", mp->dev_driver->name, mp->subdev, mp->fs_driver->name);
+                    kprintf("%s%d: mounted as %s\n", mp->dev_driver->name, mp->subdev, mp->fs_driver->name);
                 }
             }
         }
@@ -264,7 +265,7 @@ int bios_chdir(const char *path) {
     cwd.open = YES;
     cwd.mp = mp;
 
-    kprintf("bios_chdir: success\n");
+    // kprintf("bios_chdir: success\n");
     return OK;
 }
 
@@ -289,6 +290,16 @@ int bios_creat(const char *pathname, mode_t mode) {
     return NOT_OK;
 }
 
+/* 
+* bios_open() understands the following flags so far
+*
+* O_RDWR
+* O_RDONLY
+* O_CREAT
+* O_WRONLY
+* O_APPEND
+* O_DIRECTORY
+*/
 int bios_open(const char *pathname, int flags) {
     int fd = find_free_file();
     char dir_path[PATH_MAX];
@@ -515,6 +526,10 @@ int bios_opendir(const char *pathname) {
 }
 
 ssize_t bios_getdents(int fd, void *dirp, size_t count) {
+    int max_dents = count / sizeof(struct dirent);
+
+    kprintf("bios_getdents: can read a max of %d dents into buffer of size %d\n", max_dents, count);
+
     return NOT_OK;
 }
 

@@ -40,10 +40,19 @@ int ext2_open(vfile_t *file, const char *name, int flags, vfile_t *cwd) {
     ext2_inode_t inode;
     uint8_t file_type;
 
-    // kprintf("ext2_open: '%s'\n", name);
+    // kprintf("ext2_do_open: '%s'\n", name);
+
+    // Creating/writing is not currently coded, so reject any flags
+    // that indicate creating/writing is required
+    if (flags & (O_RDWR | O_WRONLY | O_CREAT | O_TRUNC | O_APPEND)) {
+        // Not currently supported
+        kprintf("ext2_do_open: '%s' - writing not supported yet!", name);
+
+        return NOT_OK;
+    }
 
     if (file->mp == NULL) {
-        kprintf("ext2_open: NULL vmp_t in vfile_t\n");
+        kprintf("ext2_do_open: NULL vmp_t in vfile_t\n");
         return NOT_OK;
     }
 
@@ -52,7 +61,7 @@ int ext2_open(vfile_t *file, const char *name, int flags, vfile_t *cwd) {
     if (strcmp(name, "") == 0) {
         if (cwd->open == YES) {
             // use the current directory
-            // kprintf("ext2_open: using the current directory\n");
+            // kprintf("ext2_do_open: using the current directory\n");
 
             memcpy(file, cwd, sizeof(vfile_t));
             ext2_init_block_follower(&filep->bf, file->mp, file_inode_num);
@@ -75,7 +84,7 @@ int ext2_open(vfile_t *file, const char *name, int flags, vfile_t *cwd) {
     
     dirc = split_str(name, '/', dirv, EXT2_MAX_DIR_DEPTH);
 
-    // kprintf("ext2_open: '%s' splits into %d parts:\n", name, dirc);
+    // kprintf("ext2_do_open: '%s' splits into %d parts:\n", name, dirc);
     // for (int i=0; i<dirc; i++) {
     //     kprintf("  %s\n", dirv[i]);
     // }
@@ -84,12 +93,12 @@ int ext2_open(vfile_t *file, const char *name, int flags, vfile_t *cwd) {
         int parent_inode_num = file_inode_num;
 
         if ((file_inode_num = e2_search(file->mp, file_inode_num, dirv[i], &file_type)) == 0) {
-            kprintf("ext2_open: couldn't find '%s' in directory with inode %d\n", dirv[i], parent_inode_num);
+            kprintf("ext2_do_open: couldn't find '%s' in directory with inode %d\n", dirv[i], parent_inode_num);
             return NOT_OK;
         }
 
         if (ext2_get_inode(file->mp, file_inode_num, &inode) == NOT_OK) {
-            kprintf("ext2_open: failed to read inode %d\n", file_inode_num);
+            kprintf("ext2_do_open: failed to read inode %d\n", file_inode_num);
             return NOT_OK;
         }
 

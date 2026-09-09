@@ -141,4 +141,52 @@ struct vfile {
 };
 
 
+
+// ext2/e2block.c
+int ext2_read_block(vmp_t *mp, uint32_t block_num, uint8_t *buffer);
+int ext2_read_blocks(vmp_t *mp, uint32_t block_num, int num_blocks, uint8_t *buffer);
+int ext2_read_fs_block(vmp_t *mp, uint32_t block_num, uint8_t force_read);
+int ext2_init_block_follower(ext2_block_follower_t *bf, vmp_t *mp, uint32_t inode_num);
+void ext2_reset_block_follower(ext2_block_follower_t *bf);
+uint32_t ext2_get_next_block_num(ext2_block_follower_t *bf);
+void ext2_dump_block_follower(ext2_block_follower_t *bf);
+
+// ext2/e2dir.c
+int ext2_closedir(ext2_file_t *dirp);
+ext2_dirent_t *ext2_readdir(ext2_file_t *dirp);
+void ext2_rewinddir(ext2_file_t *dirp);
+uint32_t ext2_find_item_inode_in(vmp_t *mp, uint32_t parent_inode_num, const char *item_name, bool_t is_dir);
+
+// ext2/e2dump.c
+void dump_ext2_bg(ext2_bg_t *bg, int bg_num, ext2_sb_t *sb);
+void dump_ext2_inode(ext2_inode_t *in, int in_num);
+void dump_ext2_sb(ext2_sb_t *sb);
+void dump_ext2_fs(ext2_fs_t *fs);
+
+// ext2/e2endian.c
+void ext2_sanitize_superblock(ext2_sb_t *src_sb, ext2_sb_t *dst_sb);
+void ext2_sanitize_bg(ext2_bg_t *src_bg, ext2_bg_t *dst_bg);
+void ext2_sanitize_inode(ext2_inode_t *src_in, ext2_inode_t *dst_in);
+void ext2_sanitize_dirent(ext2_dirent_t *src_dp, ext2_dirent_t *dst_dp);
+
+// ext2/ext2.c
+ext2_bg_t *ext2_get_bg(ext2_fs_t *fs, uint32_t blockgroup_num);
+int ext2_get_inode(vmp_t *mp, uint32_t inode_num, ext2_inode_t *inode);
+vmp_t *ext2_mount(vmp_t *mp);
+int ext2_umount(vmp_t *mp);
+int is_ext2(ext2_sb_t *sb);
+bool_t ext2_has_superblock(uint32_t bg_num);
+int setup_vfs_ext2_handler(vfs_fs_t *vfs);
+
+// ext2/e2file.c
+int ext2_open(vfile_t *file, const char *name, int flags, vfile_t *cwd);
+int ext2_read(vfile_t *file, char *buff, size_t count);
+int ext2_write(vfile_t *file, const char *buff, size_t count);
+int ext2_close(vfile_t *file);
+// ext2/utils.c
+// void printn(const char *pfx, const uint8_t *str, int len);
+
+// ext2/e2search.c
+uint32_t e2_search(vmp_t *mp, uint32_t dir_inode_num, const char *target_name, uint8_t *file_type);
+
 #endif

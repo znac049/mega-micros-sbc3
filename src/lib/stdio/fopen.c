@@ -27,6 +27,7 @@ SOFTWARE.
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <dirent.h>
 #include <machine.h>
 
 FILE _stream_table[STREAM_TABLE_SIZE];
@@ -86,7 +87,7 @@ FILE *fopen(const char *pathname, const char *mode) {
 
 	// now let open(2) does all the heavy lifting
 	fd = open(pathname, flags);
-	if (fd == -1) {
+	if (fd == NOT_OK) {
 		return NULL;
 	}
 

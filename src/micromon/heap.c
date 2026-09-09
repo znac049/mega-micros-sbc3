@@ -76,7 +76,7 @@ void _init_heap(void) {
     free_heap->owner = 0;
     free_heap->next = NULL;
 
-    dump_heap();
+    // dump_heap();
 }
 
 void *bios_malloc(size_t size, pid_t pid) {
@@ -98,8 +98,8 @@ void *bios_malloc(size_t size, pid_t pid) {
             new_chunk->next = allocated_chunks;
             allocated_chunks = new_chunk;
 
-            kprintf("malloc(%d) -> 0x%08x\n", size, ((char *) new_chunk) + sizeof(heap_chunk_t));
-            dump_heap();
+            // kprintf("malloc(%d) -> 0x%08x\n", size, ((char *) new_chunk) + sizeof(heap_chunk_t));
+            // dump_heap();
 
             return ((char *) new_chunk) + sizeof(heap_chunk_t);
         }
