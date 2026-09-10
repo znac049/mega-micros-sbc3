@@ -27,7 +27,11 @@ SOFTWARE.
 
 #if !defined(BAREMETAL)
 
+void post_main(int status);
+
 void exit(int code) {
+    post_main(code);
+    
     do_trap0(BIOS_EXIT, code, 0, 0);
 }
 

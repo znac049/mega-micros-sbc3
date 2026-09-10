@@ -33,11 +33,7 @@ ibloop:
 	bra.s   ibloop
 
 ibdone:
-	ifnd BAREMETAL
-
 ;	bsr		pre_main
-
-	endif
 
 ; invoke main() 
 	move.l	4(sp),d0		; pass argc, argv to main()
@@ -45,18 +41,9 @@ ibdone:
 	movem.l	d0-d1,-(sp)
 	bsr	    main
 
-;  	bra     done
-
-; exit::
-;  	move.l  4(sp),d0		; grab exit code
-done:
-	move.l  d0,-(sp)
-	bsr		post_main
-	move.l  (sp)+,d0
+; Calling exit() takes care of any housekeeping.
 	bsr		exit			; passes control back to the monitor
 
-; ; ...and pass control to the monitor
-; 	rts
 	
 
 
