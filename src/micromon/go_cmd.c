@@ -70,14 +70,11 @@ void handle_go_command(int argc, char *argv[]) {
     expr_error_t res;
     int error_pos;
 
-    kprintf("Args are:\n");
-    for (int i=0; i<argc; i++) {
-        kprintf("%d: '%s'\n", i, argv[i]);
-    }
-
-    // Lose the 'go' arg
-    argc--;
-    argv++;
+    argv[0] = program_name;
+    // kprintf("Args are:\n");
+    // for (int i=0; i<argc; i++) {
+    //     kprintf("%d: '%s'\n", i, argv[i]);
+    // }
 
     /* 
      * Possibilities:
@@ -87,28 +84,32 @@ void handle_go_command(int argc, char *argv[]) {
      *   go <address> <args>
      */
     if (argc >= 1) {
-        if (strcmp(argv[0], "--") == 0) {
+        if (strcmp(argv[1], "--") == 0) {
+            for (int i = 2; i<argc; i++) {
+                argv[i-1] = argv[i];
+            }
             argc--;
-            argv++;
         }
-        else {
+        else if (argc == 2) {
             // if it evaluates successfully, assume its a start address
             res = expr_evaluate(argv[1], &val, &error_pos);
             // If it didn't evaluate, assume it's part of the program's arguments
             if (res == EXPR_OK) {
                 // We're treating it as the start address, so don't pass it to the user code
+                for (int i = 2; i<argc; i++) {
+                    argv[i-1] = argv[i];
+                }
                 argc--;
-                argv++;
 
                 go_address = val;
             }
         }
     }
 
-    kprintf("Calling with ArgC=%d:\n", argc);
-    for (int i=0; i<argc; i++) {
-        kprintf("%d: '%s'\n", i, argv[i]);
-    }
+    // kprintf("Calling with ArgC=%d:\n", argc);
+    // for (int i=0; i<argc; i++) {
+    //     kprintf("%d: '%s'\n", i, argv[i]);
+    // }
 
     do_the_business(argc, argv);
 }

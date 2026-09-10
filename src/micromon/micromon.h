@@ -33,6 +33,8 @@ SOFTWARE.
 
 #define PIT_VECTOR_NUMBER 68
 
+#define DEFAULT_PROGRAM_NAME "s.rec"
+
 struct command {
     const char *command;
     int min_required;
@@ -48,6 +50,8 @@ extern uint32_t _pretext_start, _postinit_end;
 extern uint32_t _code_start, _code_end;
 extern uint32_t _rodata_start, _rodata_end;
 extern uint32_t _bss_start, _bss_end;
+
+extern char program_name[PATH_MAX];
 
 
 

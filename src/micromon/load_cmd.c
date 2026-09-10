@@ -165,14 +165,25 @@ static int load_single_srec(void) {
                 res = NOT_OK;
             }
             else {
+                char pname[PATH_MAX];
+                char *p = pname;
+
                 kprintf("Filename: ");
                 for (size_t i=0; i<count-3; i++) {
                     uint8_t b = (uint8_t)get_hex_bytes(2, NULL);
+
+                    if (i < PATH_MAX-1) {
+                        *p++ = isalnum(b)?b:'.';
+                    }
                     kputchar(isalnum(b)?b:'.');
                 }
+                *p = EOS;
 
                 if (compare_xsums() != OK) {
                     kprintf(" (Bad checksum)");
+                }
+                else {
+                    strcpy(program_name, pname);
                 }
                 kputchar('\n');
             }

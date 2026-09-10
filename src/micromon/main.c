@@ -94,6 +94,8 @@ void print_help(int argc, char *argv[]) {
 
     kprintf("Commands are:\n");
     kprintf("  cat <filename>\n");
+    kprintf("  cd <path>\n");
+    kprintf("  dir [ <path> ]\n");
     kprintf("  disassemble <address>\n");
     kprintf("  dump [<start_address> [<count>]]\n");
     kprintf("  eval <expression>\n");
@@ -101,7 +103,7 @@ void print_help(int argc, char *argv[]) {
     kprintf("  load\n");
     kprintf("  probe\n");
     kprintf("  rtc (erase) | (time [hh:mm[:ss]]) | (date [yyyy:mm:dd])\n");
-    kprintf("  usb1|2 baud <baudrate>\n");
+    kprintf("  ser1|2 baud <baudrate>\n");
     kprintf("  quit\n\n");
 }
 

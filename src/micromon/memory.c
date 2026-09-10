@@ -73,31 +73,54 @@ uint32_t get_ram_end(void) {
 
 int test_ram(uint32_t start_addr, uint32_t end_addr) {
     int i = 0;
+    uint8_t aborted = NO;
 
-    if (start_addr & 1)
+    if (start_addr & 3)
         start_addr++;
     
-    if (end_addr && 1) 
+    if (end_addr && 3) 
         end_addr--;
 
     printk(" Testing......");
-    for (uint32_t addr=start_addr; addr<end_addr; addr += 2) {
-        if (!check_address((uint16_t *)addr)) {
+    for (uint32_t *addr=(uint32_t *)start_addr; addr<(uint32_t *)end_addr; addr++) {
+        uint32_t orig = addr[0];
+        uint32_t x,y;
+
+        addr[0] = 0x55555555;
+        x = addr[0];
+
+        addr[0] = 0xaaaaaaaa;
+        y = addr[0];
+        
+        addr[0] = orig;
+
+        if (!((x == 0x55555555) && (y == 0xaaaaaaaa))) {
             printk("\nMemory test failed at $%08x\n", addr);
-            return addr;
+            return (int)addr;
         }
 
-        if (++i == 40000) {
+        if (++i == 0x00020000) {
             i = 0;
             spin();
+
+            if (kchar_available()) {
+                addr = (uint32_t *)end_addr;
+                aborted = YES;
+                kgetchar();
+            }
         }
     }
 
-    for (int j=0; j<5; j++) {
+    for (int j=0; j<6; j++) {
         printk("%c", BS);
     }
 
-    printk(": PASS          \n");
+    if (aborted == YES) {
+        printk(": ABORTED       \n");
+    }
+    else {
+        printk(": PASS          \n");
+    }
 
     return OK;
 }

@@ -34,8 +34,8 @@ SOFTWARE.
 #define PAD_COL 45
 
 static int major = 0;
-static int minor = 4;
-static int MAGIC_BUILD_NUMBER = 495;
+static int minor = 5;
+static int MAGIC_BUILD_NUMBER = 2;
 
 
 uint32_t ram_end;
@@ -47,6 +47,8 @@ bool_t acrtc3_present;
 bool_t rtc_present;
 bool_t oled_present;
 bool_t experimental;
+
+char program_name[PATH_MAX];
 
 static char *jumper_txt[6] = {"TxA_EN", "TxB_EN", "XR_EN", "EMU_Boot", "Experimental", "ACRTC_MODE"};
 
@@ -127,6 +129,8 @@ void setup(void) {
     acrtc3_present = NO;
     rtc_present = is_rtc_present();
     oled_present = is_oled_present();
+
+    strcpy(program_name, DEFAULT_PROGRAM_NAME);
 
     if (pit_present == YES) {
         *pit_tivr = PIT_VECTOR_NUMBER;
