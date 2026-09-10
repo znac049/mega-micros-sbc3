@@ -49,7 +49,7 @@ ibdone:
 
 	ifnd BAREMETAL
 
-; usage: do_trap0(syscall_number, arg1, arg2, arg3)
+; usage: do_trap0(syscall_number, arg1, arg2, arg3, *err_num)
 ;
 do_trap0::
 	trap #0

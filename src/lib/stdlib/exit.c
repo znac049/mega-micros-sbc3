@@ -23,16 +23,13 @@ SOFTWARE.
 */
 
 #include <stdlib.h>
+#include <unistd.h>
 #include <machine.h>
 
 #if !defined(BAREMETAL)
 
-void post_main(int status);
-
 void exit(int code) {
-    post_main(code);
-    
-    do_trap0(BIOS_EXIT, code, 0, 0);
+    syscall(BIOS_EXIT, code, 0, 0);
 }
 
 #endif

@@ -26,6 +26,7 @@ SOFTWARE.
 #include <fcntl.h>
 #include <bios.h>
 #include <string.h>
+#include <unistd.h>
 #include <filesystems.h>
 
 int open(const char *pathname, int flags) {
@@ -38,8 +39,6 @@ int open(const char *pathname, int flags) {
 #if defined(BAREMETAL)
     return bios_open(real_path, flags);
 #else
-    return do_trap0(BIOS_OPEN, (uint32_t)real_path, flags, 0);
+    return syscall(BIOS_OPEN, (uint32_t)real_path, flags, 0);
 #endif
- 
-    return -1;
 }

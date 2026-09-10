@@ -30,6 +30,6 @@ ssize_t read(int fd, void *buff, size_t count) {
 #if defined(BAREMETAL)
     return bios_read(fd, buff, count);
 #else
-    return do_trap0(BIOS_READ, fd, (uint32_t)buff, count);
+    return syscall(BIOS_READ, fd, (uint32_t)buff, count);
 #endif
 }

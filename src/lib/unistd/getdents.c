@@ -26,12 +26,13 @@ SOFTWARE.
 #include <fcntl.h>
 #include <bios.h>
 #include <string.h>
+#include <unistd.h>
 #include <machine.h>
 
 ssize_t getdents(int fd, void *dirp, size_t count) {
 #if defined(BAREMETAL)
     return bios_getdents(fd, dirp, count);
 #else
-    return do_trap0(BIOS_GETDENTS, fd, (uint32_t)dirp, count);
+    return syscall(BIOS_GETDENTS, fd, (uint32_t)dirp, count);
 #endif
 }

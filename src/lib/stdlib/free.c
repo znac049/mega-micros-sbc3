@@ -32,6 +32,6 @@ void free(void *ptr)
 #if defined(BAREMETAL)
     bios_free(ptr, getpid());
 #else
-    do_trap0(BIOS_FREE, (uint32_t)ptr, getpid(), 0);
+    syscall(BIOS_FREE, (uint32_t)ptr, getpid(), 0);
 #endif
 }

@@ -32,9 +32,6 @@ SOFTWARE.
 
 #include "micromon.h"
 
-extern volatile unsigned int pit_ticks;
-
-
 int bios_exit(int exit_code) {
     // Pass control back to the monitor via the 'go' command handler
     longjmp(go_env, exit_code);         // everyone loves a goto, right!

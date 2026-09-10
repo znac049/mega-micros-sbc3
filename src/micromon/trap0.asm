@@ -32,9 +32,9 @@ trap0_handler::
                                         ; =68 bytes total
 
         move.l  68(sp),d0               ; arguments to the trap0 C function - system call number
-        move.l  72(sp),d1               ; param1
+        move.l  72(sp),d1               ; param 1
         move.l  76(sp),d2               ; param 2
-        move.l  80(sp),d3               ; param3
+        move.l  80(sp),d3               ; param 3
 
         move.l  d0,d5                   ; Check bounds
         cmp.l   #num_syscalls,d5
@@ -50,6 +50,9 @@ trap0_handler::
         
         jsr     (a1)
         lea     12(sp),sp               ; fix the stack
+
+        move.l  84(sp),a1               ; *err_num
+        move.l  errno,(a1)              ; pass errno back to the user code
 
         bra     t0h_done
 

@@ -31,6 +31,6 @@ ssize_t write(int fd, void *buff, size_t count) {
 #if defined(BAREMETAL)
     return bios_write(fd, buff, count);
 #else
-    return do_trap0(BIOS_WRITE, fd, (uint32_t)buff, count);
+    return syscall(BIOS_WRITE, fd, (uint32_t)buff, count);
 #endif
 }

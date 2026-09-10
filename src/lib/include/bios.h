@@ -48,7 +48,7 @@ void bios_free(void *ptr, pid_t pid);
 void *bios_malloc(size_t size, pid_t pid);
 
 
-int do_trap0(uint32_t syscall_num, uint32_t arg1, uint32_t arg2, uint32_t arg3);
+int do_trap0(uint32_t syscall_num, uint32_t arg1, uint32_t arg2, uint32_t arg3, int *err_num);
 
 
 int bios_open(const char *pathname, int flags);

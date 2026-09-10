@@ -32,13 +32,6 @@ void *malloc(size_t size)
 #if defined(BAREMETAL)
     return bios_malloc(size, getpid());
 #else
-    int res = do_trap0(BIOS_MALLOC, size, getpid(), 0);
-
-    if (res == 0) {
-        errno = res;
-        return NULL;
-    }
-
-    return (void *)res;
+    return (void *)syscall(BIOS_MALLOC, size, getpid(), 0);
 #endif
 }

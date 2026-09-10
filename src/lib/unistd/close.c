@@ -30,16 +30,6 @@ int close(int fd) {
 #if defined(BAREMETAL)
     return bios_close(fd);
 #else
-    int res = do_trap0(BIOS_CLOSE, fd, 0, 0);
-
-    if (res != 0) {
-        errno = res;
-        res = -1;
-    }
-    else {
-        res = 0;
-    }
-
-    return res;
+    return syscall(BIOS_CLOSE, fd, 0, 0);
 #endif
 }

@@ -23,13 +23,14 @@ SOFTWARE.
 */
 
 #include <stdio.h>
+#include <unistd.h>
 #include <bios.h>
 
 int putchar(int c) {
 #if defined(BAREMETAL)
     return bios_write(0, (const char *)&c, 1);
 #else
-    do_trap0(BIOS_PUTCHAR, 0, c, 0);
+    syscall(BIOS_PUTCHAR, 0, c, 0);
 #endif
 
     return c;

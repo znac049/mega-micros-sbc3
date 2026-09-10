@@ -32,10 +32,9 @@ char *getcwd(char *buf, size_t size) {
 #if defined(BAREMETAL)
     return (char *)bios_getcwd(buf, size);
 #else
-    int res = do_trap0(BIOS_GETCWD, (uint32_t)buf, size, 0);
+    int res = syscall(BIOS_GETCWD, (uint32_t)buf, size, 0);
 
     if (res == 0) {
-        errno = res;
         return NULL;
     }
 

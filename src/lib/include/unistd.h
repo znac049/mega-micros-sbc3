@@ -34,3 +34,4 @@ pid_t getpid(void);
 int isatty(int fd);
 ssize_t read(int fd, void *buf, size_t count);
 ssize_t write(int fd, void *buf, size_t count);
+int syscall(int number, int p1, int p2, int p3);

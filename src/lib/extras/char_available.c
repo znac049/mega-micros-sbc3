@@ -24,11 +24,12 @@ SOFTWARE.
 
 #include <machine.h>
 #include <extras.h>
+#include <unistd.h>
 
 int char_available(void) {
 #if defined(BAREMETAL)
     return NO;
 #else
-    return do_trap0(BIOS_CHAR_AVAILABLE, 0, 0, 0);
+    return syscall(BIOS_CHAR_AVAILABLE, 0, 0, 0);
 #endif
 }

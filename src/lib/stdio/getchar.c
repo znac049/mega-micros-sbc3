@@ -22,12 +22,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <unistd.h>
 #include <machine.h>
 
 int getchar(void) {
 #if defined(BAREMETAL)
     return -1;
 #else
-    return do_trap0(BIOS_GETCHAR, 0, 0, 0);
+    return syscall(BIOS_GETCHAR, 0, 0, 0);
 #endif
 }

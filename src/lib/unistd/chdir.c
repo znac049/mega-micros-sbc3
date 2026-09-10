@@ -39,16 +39,6 @@ int chdir(const char *path) {
 #if defined(BAREMETAL)
     return bios_chdir(real_path);
 #else
-    int res = do_trap0(BIOS_CHDIR, (uint32_t)real_path, 0, 0);
-
-    if (res != 0) {
-        errno = res;
-        res = NOT_OK;
-    }
-    else {
-        res = OK;
-    }
-
-    return res;
+    return syscall(BIOS_CHDIR, (uint32_t)real_path, 0, 0);
 #endif
 }

@@ -24,8 +24,17 @@ SOFTWARE.
 
 #include <unistd.h>
 #include <stddef.h>
+#include <errno.h>
+#include <bios.h>
 
 int syscall(int number, int p1, int p2, int p3) {
     // This is a nop() when running on baremetal
-    return OK;
+    int err_num;
+    int res = do_trap0(number, p1, p2, p3, &err_num);
+
+    if (err_num) {
+        errno = err_num;
+    }
+
+    return res;
 }
