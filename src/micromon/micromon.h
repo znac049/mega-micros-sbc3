@@ -129,6 +129,10 @@ void handle_probe_command(int argc);
 void handle_rtc_command(int argc, char *argv[]);
 
 
+// serial_cmd.c
+void handle_ser_command(int argc, char *argv[]);
+
+
 // setup.c
 void setup(void);
 
@@ -138,5 +142,3 @@ unsigned int trap0_handler(int call_num, int arg1, int arg2, int arg3);
 unsigned int trap14_handler(int call_num, int arg1, int arg2);
 
 
-// usb_cmd.c
-void handle_usb_command(int argc, char *argv[]);

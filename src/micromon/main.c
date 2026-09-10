@@ -51,8 +51,8 @@ static command_t commands[] = {
     {"probe",       3, handle_probe_command},
     {"pwd",         0, handle_pwd_command},
     {"rtc",         3, handle_rtc_command},
-    {"usb1",        0, handle_usb_command},
-    {"usb2",        0, handle_usb_command},
+    {"ser1",        0, handle_ser_command},
+    {"ser2",        0, handle_ser_command},
 };
 
 #define NUM_COMMANDS (sizeof(commands)/sizeof(command_t))
