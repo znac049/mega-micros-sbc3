@@ -45,21 +45,20 @@ ibdone:
 	movem.l	d0-d1,-(sp)
 	bsr	    main
 
-	ifd BAREMETAL
+;  	bra     done
 
- 	bra     done
-
-exit::
- 	move.l  4(sp),d0		; grab exit code
+; exit::
+;  	move.l  4(sp),d0		; grab exit code
 done:
 	move.l  d0,-(sp)
 	bsr		post_main
 	move.l  (sp)+,d0
+	bsr		exit			; passes control back to the monitor
 
-; ...and pass control to the monitor
-	rts
+; ; ...and pass control to the monitor
+; 	rts
 	
-	endif
+
 
 	ifnd BAREMETAL
 
