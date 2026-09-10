@@ -22,6 +22,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <unistd.h>
 
 #include "mmu.h"
 
@@ -143,5 +144,6 @@ main(void)
     getchar();
 
     m68030_mmu_disable();
+    exit(42);
     return 0;
 }
