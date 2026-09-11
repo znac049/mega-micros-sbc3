@@ -12,7 +12,6 @@ LIBOBJECTS=\
 			_misc.o \
 			misc.o \
 			pit.o \
-			pre_main.o \
 			safeio.o \
 			sh1107.o \
 			_traps.o \
