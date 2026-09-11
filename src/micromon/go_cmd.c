@@ -58,7 +58,9 @@ static int do_the_business(int argc, char *argv[]) {
         return return_code;
     }
     else {
-        // If we arrive here, it's because something has gone wrong
+        // If we arrive here, it's because either:
+        //   1. something has gone wrong
+        //   2. the user code has called exit() (most likely)
         kprintf("\n---\nUser code exited with code %d\n", go_res-1);
 
         return go_res - 1;
