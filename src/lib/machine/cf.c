@@ -44,10 +44,10 @@ int cf_read(uint8_t drive_num, uint32_t sector, uint8_t *buffer) {
 
     // printf("cf_read(%d, %d,...)\n", drive_num, sector);
 
-    *cf_reg_lba3 = 0xe0 | ((drive_num & 1)<<4) | (uint8_t) ((sector >> 24) & 0x0f);
-    *cf_reg_lba2 = (uint8_t) (sector >> 16);
-    *cf_reg_lba1 = (uint8_t) (sector >> 8);
     *cf_reg_lba0 = (uint8_t) sector;
+    *cf_reg_lba1 = (uint8_t) (sector >> 8);
+    *cf_reg_lba2 = (uint8_t) (sector >> 16);
+    *cf_reg_lba3 = 0xe0 | ((drive_num & 1)<<4) | (uint8_t) ((sector >> 24) & 0x0f);
 
     *cf_reg_sector_count = 1;
     *cf_reg_command = CF_CMD_READ_SECTORS;

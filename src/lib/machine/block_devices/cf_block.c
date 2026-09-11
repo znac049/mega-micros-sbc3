@@ -77,8 +77,9 @@ static int cf_dev_read_block(uint32_t block_num, uint8_t *buff, uint8_t subdev) 
     // kprintf("block %d -> sector %d\n", block_num, sector);
 
     for (int i=0; i<SECTORS_PER_BLOCK; i++) {
-        if (cf_read(subdev, sector, buff) == NOT_OK) {
-            kprintf("Blargle!\n");
+        int res = cf_read(subdev, sector, buff);
+        if (res != OK) {
+            kprintf("Blargle - %d!\n", res);
             return NOT_OK;
         }
 
