@@ -73,8 +73,8 @@ static int cf_dev_finish(void) {
 static int cf_dev_read_block(uint32_t block_num, uint8_t *buff, uint8_t subdev) {
     uint32_t sector = block_num * SECTORS_PER_BLOCK;
 
-    kprintf("CF_dev_read_block() block # = %d, subdev=%d\n", block_num, subdev);
-    kprintf("block %d -> sector %d\n", block_num, sector);
+    // kprintf("CF_dev_read_block() block # = %d, subdev=%d\n", block_num, subdev);
+    // kprintf("block %d -> sector %d\n", block_num, sector);
 
     for (int i=0; i<SECTORS_PER_BLOCK; i++) {
         if (cf_read(subdev, sector, buff) == NOT_OK) {
