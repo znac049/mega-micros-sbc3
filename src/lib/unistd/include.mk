@@ -4,6 +4,7 @@ LIBOBJECTS=chdir.o \
 			getdents.o \
 			getpid.o \
 			isatty.o \
+			lseek.o \
 			mktime.o \
 			read.o \
 			syscall.o \

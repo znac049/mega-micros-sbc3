@@ -22,17 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+#include <unistd.h>
+#include <stddef.h>
+#include <fcntl.h>
+#include <errno.h>
 
-#include <ctype.h>
-
-int chdir(const char *path);
-int close(int fd);
-void exit(int);
-char *getcwd(char *buf, size_t size);
-pid_t getpid(void);
-int isatty(int fd);
-off_t lseek(int fd, off_t offset, int whence);
-ssize_t read(int fd, void *buf, size_t count);
-ssize_t write(int fd, void *buf, size_t count);
-int syscall(int number, int p1, int p2, int p3);
+off_t lseek(int fd, off_t offset, int whence) {
+    return NOT_OK;
+}
