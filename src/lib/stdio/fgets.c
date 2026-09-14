@@ -24,14 +24,16 @@ SOFTWARE.
 
 #include <stdio.h>
 #include <stddef.h>
+#include <unistd.h>
 
 char *fgets(char *s, int size, FILE *stream) {
     int ch;
     int i = 0;
+    int is_terminal = isatty(stream->fd);
 
     while (i+1 < size) {
         ch = fgetc(stream);
-        if (ch == -1) {
+        if (ch == EOF) {
             if (i == 0) {
                 return NULL;
             }
@@ -45,12 +47,14 @@ char *fgets(char *s, int size, FILE *stream) {
             case '\r': case '\n':
                 s[i++] = '\n';
                 s[i] = EOS;
-                fputc('\n', stream);
+                if (is_terminal) {
+                    fputc('\n', stream);
+                }
 
                 return s;
 
             case BS:
-                if (i) {
+                if (is_terminal && i) {
                     fputc(BS, stream);
                     fputc(' ', stream);
                     fputc(BS, stream);
@@ -59,7 +63,9 @@ char *fgets(char *s, int size, FILE *stream) {
                 break;
 
             default:
-                fputc(ch, stream);
+                if (is_terminal) {
+                    fputc(ch, stream);
+                }
                 s[i++] = ch;
                 break;
         }

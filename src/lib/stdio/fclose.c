@@ -33,7 +33,7 @@ int fclose(FILE *stream) {
     if (stream != NULL && stream->is_open) {
         fflush(stream);
         res = close(stream->fd);
-        stream->is_open = 0;
+        stream->is_open = NO;
     }
 
     return res;

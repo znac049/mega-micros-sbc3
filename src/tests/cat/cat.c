@@ -26,9 +26,28 @@ void cat_file(char *name) {
     close(fd);
 }
 
+void cat_stream(char *name) {
+    FILE *file = fopen(name, "r");
+    char c;
+
+    if (file == NULL) {
+        printf("fopen() failed.\n");
+        exit(1);
+    }
+
+    printf("\n\n****** %s ******\n", name);
+
+    while ((c = fgetc(file)) != EOF) {
+        putchar(c);
+    }
+
+    printf("\n*** EOF ***.\n");
+    fclose(file);
+}
+
 int main(void) {
-    cat_file("motd");
-    cat_file("passwd");
+    cat_stream("motd");
+    cat_stream("passwd");
 
     exit(0);
     return OK;

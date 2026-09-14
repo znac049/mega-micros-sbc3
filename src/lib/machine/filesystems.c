@@ -341,7 +341,7 @@ int bios_open(const char *pathname, int flags) {
         case VFS_TYPE_FS:
             // kprintf("bios_open: opening file on a filesystem\n");
             if (file->mp->fs_driver->api.fs.open(file, filename, flags, &cwd) == NOT_OK) {
-                kprintf("bios_open(): failed to open '$s' in '%s'\n", filename, dir_path);
+                kprintf("bios_open(): failed to open '%s' in '%s'\n", filename, dir_path);
             }
 
             break;

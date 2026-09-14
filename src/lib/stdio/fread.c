@@ -28,11 +28,26 @@ SOFTWARE.
 #include <unistd.h>
 
 size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream) {
+    int num;
+    int total = 0;
+    int target = size * nmemb;
+
     if ((stream != NULL) && (stream->is_open == 0)) {
         errno = EBADF;
 
-        return -1;
+        return 0;
     }
 
-    return read(stream->fd, ptr, size*nmemb);
+    while (total != target) {
+        int remaining = target - total;
+
+        num = read(stream->fd, ptr, remaining);
+        if (num == NOT_OK) {
+            return total / size;
+        }
+
+        total += num;
+    }
+
+    return nmemb;
 }

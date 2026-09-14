@@ -30,5 +30,5 @@ SOFTWARE.
 int fflush(FILE *stream) {
     errno = EBADF;
 
-    return -1;
+    return OK;
 }

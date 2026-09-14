@@ -44,9 +44,9 @@ int ext2_open(vfile_t *file, const char *name, int flags, vfile_t *cwd) {
 
     // Creating/writing is not currently coded, so reject any flags
     // that indicate creating/writing is required
-    if (flags & (O_RDWR | O_WRONLY | O_CREAT | O_TRUNC | O_APPEND)) {
+    if (flags & (O_WRONLY | O_CREAT | O_TRUNC | O_APPEND)) {
         // Not currently supported
-        kprintf("ext2_do_open: '%s' - writing not supported yet!", name);
+        kprintf("ext2_do_open: '%s', %04x - writing not supported yet!", name, flags);
 
         return NOT_OK;
     }
@@ -119,7 +119,7 @@ int ext2_open(vfile_t *file, const char *name, int flags, vfile_t *cwd) {
     file->mode = inode.i_mode;
     file->file_type = file_type;
 
-    kprintf("ext2_open: '%s' opened ok. mode=%04x, size=%d\n", name, file->mode, file->size);
+    // kprintf("ext2_open: '%s' opened ok. mode=%04x, size=%d\n", name, file->mode, file->size);
 
     return OK;
 }
