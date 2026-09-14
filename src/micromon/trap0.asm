@@ -83,6 +83,7 @@ trap0_call_table::
         dc.l    bios_malloc
         dc.l    bios_free
         dc.l    bios_getdents
+        dc.l    bios_test
 t0ct_end     
 
         end

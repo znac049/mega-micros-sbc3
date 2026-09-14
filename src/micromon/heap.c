@@ -54,9 +54,12 @@ static void dump_heap_item(heap_chunk_t *chunk) {
 }
 
 static void dump_heap(void) {
-    kprintf("\nHeap free list:\n");
+    kprintf("\nHeap:\n");
     kprintf("  End of BSS is 0x%08x\n", get_heap_start());
-    kprintf("FREE:\n");
+    kprintf("  free_heap = 0x%08x\n", free_heap);
+    kprintf("  allocated_chunks = 0x%08x\n", allocated_chunks);
+
+    kprintf("\nFREE:\n");
 	for (heap_chunk_t *cur = free_heap; cur != NULL; cur = cur->next) {
         dump_heap_item(cur);
 	} 
@@ -66,7 +69,7 @@ static void dump_heap(void) {
 	for (heap_chunk_t *cur = allocated_chunks; cur != NULL; cur = cur->next) {
         dump_heap_item(cur);
 	} 
-    kprintf("\n");
+    kprintf("\nHeap dump complete.\n");
 }
 
 void _init_heap(void) {
@@ -197,18 +200,20 @@ void bios_free(void *ptr, pid_t pid)
 
 void clean_heap(pid_t pid) {
 	heap_chunk_t *cur;
- 	heap_chunk_t *prev = NULL;
 
-   for (cur=allocated_chunks; cur != NULL; prev=cur, cur=cur->next) {
+    kprintf("clean_heap: pid=%d\n", pid);
+
+    cur = allocated_chunks;
+    while (cur != NULL) {
+        heap_chunk_t *next = cur->next;
+
         if (cur->owner == pid) {
-            if (cur == allocated_chunks) {
-                allocated_chunks = cur->next;
-            }
-            else {
-                prev->next = cur->next;
-            }
-
-            free(cur);
+            void *p = cur + sizeof(heap_chunk_t);
+            bios_free(p, pid);
         }
+
+        cur = next;
     }
+
+    dump_heap();
 }

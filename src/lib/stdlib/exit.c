@@ -29,7 +29,7 @@ SOFTWARE.
 #if !defined(BAREMETAL)
 
 void exit(int code) {
-    syscall(BIOS_EXIT, code, 0, 0);
+    syscall(BIOS_EXIT, code, getpid(), 0);
 }
 
 #endif
