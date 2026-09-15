@@ -63,7 +63,8 @@ bool_t is_oled_present(void);
 
 
 // bios_calls.c
-int bios_exit(int exit_code);
+int bios_exit(int exit_code, pid_t pid);
+int bios_test(int p1, int p2, int p3);
 
 
 // cat_cmd.c

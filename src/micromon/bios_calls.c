@@ -33,14 +33,10 @@ SOFTWARE.
 #include "micromon.h"
 
 int bios_exit(int exit_code, pid_t pid) {
-    // Release any memory we'd allocated...
-    kprintf("bios_exit: exit code is %d\n", exit_code);
-    kprintf("bios_exit: freeing memory used by process %d\n", pid);
-    clean_heap(2);
-    kprintf("bios_exit: done.\n");
-
     // Pass control back to the monitor via the 'go' command handler
     longjmp(go_env, exit_code);         // everyone loves a goto, right!
+
+    (void)pid++;
 }
 
 int bios_test(int p1, int p2, int p3) {
