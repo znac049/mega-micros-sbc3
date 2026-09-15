@@ -122,8 +122,8 @@ uint32_t ext2_get_next_block_num(ext2_block_follower_t *bf) {
     uint32_t block_num = 0;
     uint32_t indexes_per_block = BLOCK_DEVICE_BLOCK_SIZE / sizeof(uint32_t);
 
-    // kprintf("ext2_get_next_block_num: inode=%d, di=%d, si=%d, db=%d,tr=%d\n",
-    //         bf->inode_num, bf->direct_offset, bf->single_offset, bf->double_offset, bf->triple_offset);
+    kprintf("ext2_get_next_block_num: inode=%d, di=%d, si=%d, db=%d,tr=%d\n",
+            bf->inode_num, bf->direct_offset, bf->single_offset, bf->double_offset, bf->triple_offset);
 
     // dump_ext2_inode(&bf->inode, bf->inode_num);
 

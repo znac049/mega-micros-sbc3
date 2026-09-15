@@ -39,8 +39,10 @@ SOFTWARE.
 #define BIOS_MALLOC         13
 #define BIOS_FREE           14
 #define BIOS_GETDENTS       15
+#define BIOS_TEST           16
+#define BIOS_SEEK           17
 
-#define NUM_BIOS_CALLS	    16
+#define NUM_BIOS_CALLS	    18
 
 
 
@@ -54,4 +56,5 @@ int do_trap0(uint32_t syscall_num, uint32_t arg1, uint32_t arg2, uint32_t arg3, 
 int bios_open(const char *pathname, int flags);
 int bios_close(int fd);
 int bios_read(int fd, char *buff, size_t num_bytes);
+off_t bios_seek(int fd, off_t offset, int whence);
 size_t bios_write(int fd, const char *buff, size_t num_bytes);

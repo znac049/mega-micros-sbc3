@@ -26,7 +26,12 @@ SOFTWARE.
 #include <stddef.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <bios.h>
 
 off_t lseek(int fd, off_t offset, int whence) {
-    return NOT_OK;
+#if defined(BAREMETAL)
+    return bios_seek(fd, offset, whence);
+#else
+    return syscall(BIOS_SEEK, fd, offset, whence);
+#endif
 }

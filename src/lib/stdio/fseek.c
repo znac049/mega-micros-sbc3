@@ -22,22 +22,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+#include <stdio.h>
+#include <stddef.h>
+#include <errno.h>
+#include <unistd.h>
 
-#include <ctype.h>
+int fseek(FILE *file, long offset, int whence) {
+    if ((file != NULL) && (file->is_open == 0)) {
+        errno = EBADF;
 
-#define SEEK_SET 1
-#define SEEK_CUR 2
-#define SEEK_END 3
+        return 0;
+    }
 
-
-int chdir(const char *path);
-int close(int fd);
-void exit(int);
-char *getcwd(char *buf, size_t size);
-pid_t getpid(void);
-int isatty(int fd);
-off_t lseek(int fd, off_t offset, int whence);
-ssize_t read(int fd, void *buf, size_t count);
-ssize_t write(int fd, void *buf, size_t count);
-int syscall(int number, int p1, int p2, int p3);
+    return lseek(file->fd, (off_t)offset, whence);
+}

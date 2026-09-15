@@ -26,6 +26,7 @@ SOFTWARE.
 
 #include <stdarg.h>
 #include <ctype.h>
+#include <unistd.h>
 
 // Stream object
 typedef struct file {
@@ -49,6 +50,7 @@ extern FILE *fopen(const char *pathname, const char *mode);
 int fprintf(FILE *stream, const char *fmt, ...);
 int fputc(int c, FILE *stream);
 int fputs(const char *s, FILE *stream);
+int fseek(FILE *file, long offset, int whence);
 size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
 size_t fwrite(void *ptr, size_t size, size_t nmemb, FILE *stream);
 int getchar(void);

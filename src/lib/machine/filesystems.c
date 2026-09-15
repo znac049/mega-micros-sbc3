@@ -30,6 +30,7 @@ SOFTWARE.
 #include <filesystems.h>
 #include <bios.h>
 #include <extras.h>
+#include <errno.h>
 
 #if defined(BAREMETAL)
 
@@ -531,6 +532,47 @@ ssize_t bios_getdents(int fd, void *dirp, size_t count) {
     kprintf("bios_getdents: can read a max of %d dents into buffer of size %d\n", max_dents, count);
 
     return NOT_OK;
+}
+
+off_t bios_seek(int fd, off_t offset, int whence) {
+    vfile_t *file;
+    off_t where;
+
+    if ((fd < 0) || (fd >= MAX_FILES)) {
+        errno = EBADF;
+        return NOT_OK;
+    }
+
+    file = &vfs_files[fd];
+    where = file->position;
+
+    kprintf("bios_seek: file pos=%d, size=%d. offset=%d, whence=%d\n", 
+            file->position, file->size, offset, whence);
+
+    switch (file->mp->fs_driver->type) {
+    case VFS_TYPE_CHAR:
+        kprintf("bios_seek: can't seek on a char device!\n");
+        errno = ESPIPE;
+        return NOT_OK;
+
+    case VFS_TYPE_FS:
+        // kprintf("bios_open: opening file on a filesystem\n");
+        if ((where = file->mp->fs_driver->api.fs.seek(file, offset, whence)) == NOT_OK) {
+            kprintf("bios_seek(): failed to seek to offset %d (%d)\n", offset, whence);
+        }
+
+        kprintf("bios_seek: fs level seek returned %d\n", where);
+
+        break;
+
+    default:
+        kprintf("bios_seek: Bad fs type\n");
+        return NOT_OK;
+    }
+
+    kprintf("bios_seek: returning %d\n", where);
+
+    return where;
 }
 
 #endif // BAREMETAL

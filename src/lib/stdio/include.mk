@@ -7,6 +7,7 @@ LIBOBJECTS=fclose.o \
 			fputc.o \
 			fputs.o \
 			fread.o \
+			fseek.o \
 			fwrite.o \
 			getchar.o \
 			gets.o \

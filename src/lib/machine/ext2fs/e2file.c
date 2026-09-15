@@ -28,6 +28,8 @@ SOFTWARE.
 #include <ext2.h>
 #include <string.h>
 #include <extras.h>
+#include <unistd.h>
+#include <errno.h>
 
 #if defined(BAREMETAL)
 
@@ -143,15 +145,14 @@ int ext2_read(vfile_t *file, char *buff, size_t count) {
 
     block_num = ext2_get_next_block_num(&filep->bf);
     if (block_num == 0) {
-        // kprintf("ext2_read: no more blocks to read -> EOF\n");
-        // file->ateof = YES;
-
-        return 0;
+        // kprintf("ext2_read: it's a hole\n");
+        memset(buff, 0, BLOCK_DEVICE_BLOCK_SIZE);
     }
-
-    if (ext2_read_block(file->mp, block_num, (uint8_t *)buff) == NOT_OK) {
-        kprintf("ext2_read: failed to read block %d\n", block_num);
-        return NOT_OK;
+    else {
+        if (ext2_read_block(file->mp, block_num, (uint8_t *)buff) == NOT_OK) {
+            kprintf("ext2_read: failed to read block %d\n", block_num);
+            return NOT_OK;
+        }
     }
 
     return BLOCK_DEVICE_BLOCK_SIZE;
@@ -163,6 +164,103 @@ int ext2_write(vfile_t *file, const char *buff, size_t count) {
 
 int ext2_close(vfile_t *file) {
     return OK;
+}
+
+static int seek_to(vfile_t *file, off_t offset) {
+    uint32_t block = 0;
+    ext2_file_t *filep = &file->private.data.ext2_file_inf;
+    uint32_t block_num = offset / BLOCK_DEVICE_BLOCK_SIZE;
+
+    kprintf("seek_to: reset block follower\n");
+    kprintf("seek_to: file pos=%d, size=%d. abs offset=%d\n", 
+            file->position, file->size, offset);
+    kprintf("seek_to: data resides in relative block %d\n", block_num);
+
+    ext2_reset_block_follower(&filep->bf);
+    file->position = 0;
+
+    dump_ext2_inode(&filep->bf.inode, filep->bf.inode_num);
+
+    // block = ext2_get_next_block_num(&filep->bf);
+    // kprintf("seek_to: first block=%d\n", block);
+
+    for (uint32_t i=0; i<block_num; i++) {
+        block = ext2_get_next_block_num(&filep->bf);
+        file->position += BLOCK_DEVICE_BLOCK_SIZE;
+
+        kprintf("seek_to: next block=%d, pos=%d\n", block, file->position);
+    }
+
+    if (block == 0) {
+        kprintf("seek_to: got a hole.\n");
+        memset(file->buffer, 0, BLOCK_DEVICE_BLOCK_SIZE);
+    }
+    else {
+        if (ext2_read_block(file->mp, block, (uint8_t *)file->buffer) == NOT_OK) {
+            kprintf("seek_to: failed to read block %d\n", block_num);
+            return NOT_OK;
+        }
+    }
+
+    file->index = offset % BLOCK_DEVICE_BLOCK_SIZE;
+    file->count = BLOCK_DEVICE_BLOCK_SIZE;
+    file->position = offset;
+
+    if (file->position > file->size) {
+        kprintf("seek_to: PAST EOF\n");
+        
+        file->position = file->size;
+        file->index = file->size % BLOCK_DEVICE_BLOCK_SIZE;
+    }
+
+    kprintf("seek_to: final file pos=%d, size=%d, index=%d, offset=%d\n", file->position, file->size, file->index, offset);
+
+    return file->position;
+}
+
+int ext2_seek(vfile_t *file, off_t offset, int whence) {
+    off_t abs_offset = offset;
+
+    switch (whence) {
+        case SEEK_SET:
+            break;
+
+        case SEEK_CUR:
+        abs_offset = file->position + offset;
+            break;
+
+        case SEEK_END:
+            abs_offset = file->size + offset;
+            break;
+    }
+
+    kprintf("ext2_seek: abs_offset=%d\n", abs_offset);
+
+    if (abs_offset == file->position) {
+        kprintf("ext2_seek: we're already at the right place (%d):-)\n", file->position);
+    }
+    else {
+        // Check to see if it's in the current block
+        off_t start_off = file->position - file->index;
+        off_t end_off = start_off + BLOCK_DEVICE_BLOCK_SIZE;
+
+        if ((abs_offset >= start_off) && (abs_offset < end_off)) {
+            // Yes, it's in the current block, so...
+            off_t diff = abs_offset - file->position;
+
+            kprintf("ext2_seek: current block, delta=%d\n", diff);
+            file->position += diff;
+            file->index += diff;
+        }
+        else {
+            kprintf("ext2_seek: seek absolute %d...\n", abs_offset);
+            seek_to(file, abs_offset);
+        }
+    }
+
+    kprintf("ext2_seek: returning %d\n", file->position);
+    
+    return file->position;
 }
 
 #endif
