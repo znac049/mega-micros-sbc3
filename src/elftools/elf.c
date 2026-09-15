@@ -162,6 +162,8 @@ static void sanitize_elf_hdr(elf32_ehdr_t *hdr) {
     if ((is_little_endian() && hdr->e_ident[EI_DATA] == ELFDATA2MSB) || 
         (!is_little_endian() && hdr->e_ident[EI_DATA] == ELFDATA2LSB)) {
         endian_mismatch = YES;
+
+        printf("Endian mismatch!\n");
     }
 
     if (endian_mismatch) {
@@ -172,7 +174,7 @@ static void sanitize_elf_hdr(elf32_ehdr_t *hdr) {
         hdr->e_phoff = __builtin_bswap32(hdr->e_phoff);
         hdr->e_shoff = __builtin_bswap32(hdr->e_shoff);
         hdr->e_flags = __builtin_bswap32(hdr->e_flags);
-        hdr->e_ehsize = __builtin_bswap16(hdr->e_type);
+        hdr->e_ehsize = __builtin_bswap16(hdr->e_ehsize);
         hdr->e_phentsize = __builtin_bswap16(hdr->e_phentsize);
         hdr->e_phnum = __builtin_bswap16(hdr->e_phnum);
         hdr->e_shentsize = __builtin_bswap16(hdr->e_shentsize);
@@ -334,6 +336,8 @@ int load_elf(int fd) {
 
     // Read the Section that contains the names of the sections
     offs = hdr.e_shoff + (hdr.e_shentsize * hdr.e_shstrndx);
+    printf("\nsection names table at offset %d\n", offs);
+
     if (lseek(fd, offs, SEEK_SET) != offs) {
         printf("Failed to read the section names strtab\n");
         return NOT_OK;
