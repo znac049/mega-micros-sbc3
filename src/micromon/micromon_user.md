@@ -21,4 +21,30 @@ It is written predominantly in C with a minimal amount of assembly language.
 
 ## Monitor Commands
 
+### help
+
+### cat
+
+### cd
+
+### dir
+
+### disassemble
+
+### dump
+
+### eval
+
+### go
+
+### load
+
+### probe
+
+### pwd
+
+### rtc
+
+### ser1 | ser2
+
 ## Installing the monitor
