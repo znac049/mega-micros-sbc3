@@ -8,12 +8,14 @@ LIBOBJECTS=fclose.o \
 			fputs.o \
 			fread.o \
 			fseek.o \
+			ftell.o \
 			fwrite.o \
 			getchar.o \
 			gets.o \
 			printf.o \
 			putchar.o \
 			puts.o \
+			rewind.o \
 			snprintf.o \
 			sscanf.o \
 			vfprintf.o \
