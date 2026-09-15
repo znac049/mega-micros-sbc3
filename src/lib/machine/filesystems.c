@@ -546,7 +546,7 @@ off_t bios_seek(int fd, off_t offset, int whence) {
     file = &vfs_files[fd];
     where = file->position;
 
-    kprintf("bios_seek: file pos=%d, size=%d. offset=%d, whence=%d\n", 
+    kprintf("\nbios_seek: file pos=%d, size=%d. offset=%d, whence=%d\n", 
             file->position, file->size, offset, whence);
 
     switch (file->mp->fs_driver->type) {
