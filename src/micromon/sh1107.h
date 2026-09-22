@@ -22,25 +22,35 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <ctype.h>
-#include <machine.h>
-#include <extras.h>
+#pragma once
 
-int measure_cpu_clock(void) {
-    uint32_t pre_start = ticks() + 2;
-    uint32_t end_tick = pre_start + 100;
-    uint32_t count = 0;
+#define SH1107_ADDR   0x3C
 
-    while (pre_start != ticks()) {
-        ;
-    }
+#define SH1107_WIDTH    128
+#define SH1107_HEIGHT   128
+#define SH1107_PAGES    (SH1107_HEIGHT / 8)
 
-    while (ticks() <= end_tick) {
-        count++;
-    }
+/* 
+ * Some 128x128 SH1107 modules need a display-offset and/or a column-offset
+ * to line up correctly. The following values work for my generic baord
+ * but If your image is shifted or wrapped, try adjusting these two first.
+ */
+#define SH1107_DISPLAY_OFFSET   0x60
+#define SH1107_COLUMN_OFFSET    0x60
 
-    // printf("Clock speed is %dMHz\n", count / 1760);
+struct font {
+    const uint8_t width;
+    const uint8_t height;
+    const uint16_t *font_chars;
+    const uint8_t *char_widths;
+};
 
-    return count / 1780;
-}
+typedef struct font font_t;
 
+
+int sh1107_init(void);
+void sh1107_clear(void);
+void sh1107_set_pixel(int x, int y, int color);
+int sh1107_pch(int x, int y, char c, font_t *font);
+void sh1107_pstr(int x, int y, char *str, font_t *font);
+void sh1107_display(void);

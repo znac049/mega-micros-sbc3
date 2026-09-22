@@ -22,13 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <stdio.h>
 #include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <machine.h>
-#include <extras.h>
+#include <ctype.h>
 
+#include "i2c.h"
+#include "ds1307.h"
 
 static uint8_t bcd_to_dec(uint8_t bcd) {
     return (uint8_t)(((bcd >> 4) * 10) + (bcd & 0x0f));

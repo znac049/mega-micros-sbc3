@@ -22,25 +22,25 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <ctype.h>
-#include <machine.h>
-#include <extras.h>
+#pragma once
 
-int measure_cpu_clock(void) {
-    uint32_t pre_start = ticks() + 2;
-    uint32_t end_tick = pre_start + 100;
-    uint32_t count = 0;
+#define DS1307_ADDR   0x68
 
-    while (pre_start != ticks()) {
-        ;
-    }
+struct ds1307_time {
+    uint8_t seconds;   /* 0-59 */
+    uint8_t minutes;   /* 0-59 */
+    uint8_t hours;     /* 0-23 (24-hour mode assumed) */
+    uint8_t day;       /* 1-7, day of week (chip-defined numbering) */
+    uint8_t date;      /* 1-31 */
+    uint8_t month;     /* 1-12 */
+    uint8_t year;      /* 0-99, add 2000 */
+};
 
-    while (ticks() <= end_tick) {
-        count++;
-    }
+typedef struct ds1307_time ds1307_time_t;
 
-    // printf("Clock speed is %dMHz\n", count / 1760);
-
-    return count / 1780;
-}
-
+int ds1307_read(int addr, uint8_t *buf, size_t num_bytes);
+int ds1307_write(int addr, uint8_t *buf, size_t num_bytes);
+int ds1307_read_time(ds1307_time_t *t);
+int ds1307_write_time(ds1307_time_t *t);
+int ds1307_read_nvram(int addr, uint8_t *buf, size_t num_bytes);
+int ds1307_write_nvram(int addr, uint8_t *buf, size_t num_bytes);

@@ -25,10 +25,10 @@ SOFTWARE.
 
 #include <stddef.h>
 #include <ctype.h>
-#include <machine.h>
 
-#include <machine.h>
-#include <fonts.h>
+#include "i2c.h"
+#include "sh1107.h"
+#include "fonts.h"
 
 static uint8_t framebuffer[SH1107_PAGES][SH1107_WIDTH];
 

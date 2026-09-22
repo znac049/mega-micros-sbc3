@@ -22,12 +22,18 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <stdio.h>
+// #include <stdio.h>
+// #include <stddef.h>
+// #include <stdlib.h>
+// #include <string.h>
+// #include <machine.h>
+// #include <extras.h>
+
+#include <ctype.h>
 #include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <machine.h>
-#include <extras.h>
+
+#include "pit.h"
+#include "i2c.h"
 
 #define PCDDR      (*(pit_pcddr))
 #define PCDR       (*(pit_pcdr))

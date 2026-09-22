@@ -22,25 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <ctype.h>
-#include <machine.h>
-#include <extras.h>
+#pragma once
 
-int measure_cpu_clock(void) {
-    uint32_t pre_start = ticks() + 2;
-    uint32_t end_tick = pre_start + 100;
-    uint32_t count = 0;
-
-    while (pre_start != ticks()) {
-        ;
-    }
-
-    while (ticks() <= end_tick) {
-        count++;
-    }
-
-    // printf("Clock speed is %dMHz\n", count / 1760);
-
-    return count / 1780;
-}
-
+void i2c_init(void);
+void i2c_start(void);
+void i2c_stop(void);
+int i2c_speed(int kbs);
+uint8_t i2c_read_byte(int nack);
+int i2c_write_byte(uint8_t byte);
+int i2c_probe(uint8_t addr7);

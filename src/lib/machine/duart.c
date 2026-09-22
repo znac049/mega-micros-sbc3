@@ -26,6 +26,7 @@ SOFTWARE.
 #include <stddef.h>
 #include <string.h>
 #include <machine.h>
+#include <extras.h>
 
 #if defined(BAREMETAL)
 

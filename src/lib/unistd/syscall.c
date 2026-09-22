@@ -27,8 +27,21 @@ SOFTWARE.
 #include <errno.h>
 #include <bios.h>
 
+#if defined(BAREMETAL)
+extern uint32_t trap0_call_table[];
+#endif
+
 int syscall(int number, int p1, int p2, int p3) {
-    // This is a nop() when running on baremetal
+#if defined(BAREMETAL)
+    int (*fn)(int number, int p1, int p2, int p3);
+    
+    if ((number <0) || (number >= NUM_BIOS_CALLS)) {
+        return NOT_OK;
+    }
+
+    fn = (int (*)(int,  int,  int,  int))trap0_call_table[number];
+    return fn(number, p1, p2, p3);
+#else
     int err_num;
     int res = do_trap0(number, p1, p2, p3, &err_num);
 
@@ -37,4 +50,5 @@ int syscall(int number, int p1, int p2, int p3) {
     }
 
     return res;
+#endif
 }

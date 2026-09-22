@@ -71,13 +71,13 @@ trap0_call_table::
         dc.l    bios_getchar
         dc.l    bios_char_available
         dc.l    bios_exit
-        dc.l    ticks
+        dc.l    bios_ticks
         dc.l    bios_open
         dc.l    bios_close
         dc.l    bios_creat
         dc.l    bios_read
         dc.l    bios_write
-        dc.l    reset_ticks
+        dc.l    bios_reset_ticks
         dc.l    bios_chdir
         dc.l    bios_getcwd
         dc.l    bios_malloc

@@ -27,6 +27,11 @@ SOFTWARE.
 #include <setjmp.h>
 
 #include "expr.h"
+#include "acrtc.h"
+#include "pit.h"
+#include "i2c.h"
+#include "sh1107.h"
+#include "ds1307.h"
 
 #define MAX_LINE 512
 #define MAX_ARGS 32
@@ -55,13 +60,6 @@ extern char program_name[PATH_MAX];
 
 
 
-// detect.c
-bool_t is_pit_present(void);
-bool_t is_duart_present(void);
-bool_t is_rtc_present(void);
-bool_t is_oled_present(void);
-
-
 // bios_calls.c
 int bios_exit(int exit_code, pid_t pid);
 int bios_test(int p1, int p2, int p3);
@@ -69,6 +67,14 @@ int bios_test(int p1, int p2, int p3);
 
 // cat_cmd.c
 void handle_cat_command(int argc, char *argv[]);
+
+// detect.c
+bool_t is_pit_present(void);
+bool_t is_duart_present(void);
+bool_t is_rtc_present(void);
+bool_t is_oled_present(void);
+bool_t is_acrtc_present(void);
+
 
 // dir_cmd.c
 void handle_cd_command(int argc, char *argv[]);
