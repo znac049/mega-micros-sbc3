@@ -22,41 +22,30 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <machine.h>
+#pragma once
 
-#include "micromon.h"
+#define acrtc_base          0xaa0000
+#define ramdac_base         0xa90000
 
-bool_t is_pit_present(void) {
-    int ivr = peek(pit_pivr);
+#define acrtc_status        ((volatile uint16_t*) acrtc_base)
+#define acrtc_address       ((volatile uint16_t*) acrtc_base)
+#define acrtc_data          ((volatile uint16_t*) (acrtc_base + 2))
 
-    return (ivr == -1)?NO:YES;
-}
+// ACRTC Register addresses
+#define ACRTC_REG_CCR       0x02         // Command Control Register
 
-bool_t is_duart_present(void) {
-    int ivr = peek(duart_ivr);
 
-    return (ivr == -1)?NO:YES;
-}
+// ACRTC Status Register bits
+#define ACRTC_SR_CER        0x80    // Command Error (cleared by ABT)
+#define ACRTC_SR_ARD        0x40    // Area Detect (cleared by RPR or ABT)
+#define ACRTC_SR_CED        0x20    // Command End: able to accept a command
+#define ACRTC_SR_LPD        0x10    // Light Pen Strobe Detect
+#define ACRTC_SR_RFF        0x08    // Read FIFO Full
+#define ACRTC_SR_RFR        0x04    // Read FIFO Ready (has data)
+#define ACRTC_SR_WFR        0x02    // Write FIFO Ready (not full)
+#define ACRTC_SR_WFE        0x01    // Write FIFO Empty
 
-bool_t is_rtc_present(void) {
-    return i2c_probe(DS1307_ADDR)?YES:NO;
-}
 
-bool_t is_oled_present(void) {
-    return i2c_probe(SH1107_ADDR)?YES:NO;
-}
-
-bool_t is_acrtc_present(void) {
-    uint16_t status;
-
-    *acrtc_address = ACRTC_REG_CCR;    // Command register
-    *acrtc_data = ACRTC_CCR_ABT;        // Abort command
-
-    status = *acrtc_status & 0xff;
-    if ((status & 0x23) == 0x23) {
-        return YES;
-    }
-
-    return NO;
-}
+// ACRTC Commands
+#define ACRTC_CCR_ABT       0x8000  // Abort (1 = abort, FIFOs cleared)
 
