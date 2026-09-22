@@ -1,8 +1,10 @@
 LIBOBJECTS=char_available.o \
 			dump_mem.o \
 			midstr.o \
+			reset_ticks.o \
 			split_str.o \
-			strpad.o
+			strpad.o \
+			ticks.o
 
 LIBINCLUDES=$(DIR)/include
 

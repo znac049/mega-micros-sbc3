@@ -22,14 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+#include <extras.h>
+#include <unistd.h>
+#include <bios.h>
 
-#include <ctype.h>
-
-int char_available(void);
-void dump_mem(uint8_t *buf, size_t count, uint8_t print_zeroes);
-char *midstr(char *dest, size_t max_len, const char *s, int from, int to);
-uint32_t reset_ticks(void);
-int split_str(const char *s, char sep, char *bits[], int max_bits);
-int strpad(char *str, int width, char pad_ch);
-uint32_t ticks(void);
+uint32_t ticks(void) {
+    return syscall(BIOS_TICKS, 0, 0, 0);
+}
