@@ -379,6 +379,18 @@ get_heap_start::
 
 ; default "do nothing" exception handler
 _not_handled::
+        movem.l d0-d7/a0-a6,-(sp)               ; Save general registers
+        move.l  usp,a0
+        move.l  a0,-(sp)                        ; Save usp
+
+        move.l  sp,-(sp)                        ; Pass sp into C function
+        jsr     catch_exception
+        addq.l  #4,sp
+
+        move.l  (sp)+,a0                        ; Restore registers
+        move.l  a0,usp
+        movem.l (sp)+,d0-d7/a0-a6
+
         rte
 
 ; BUS ERROR handler - set a flag

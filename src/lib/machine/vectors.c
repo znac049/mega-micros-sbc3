@@ -28,7 +28,7 @@ SOFTWARE.
 unsigned int get_isr_handler(int vector_number) {
     unsigned int *vector_base;
 
-    if (vector_number > 255) {
+    if ((vector_number > 255) || (vector_number < 0)) {
         return 0xffffffff;
     }
 
@@ -41,7 +41,7 @@ unsigned int set_isr_handler(int vector_number, unsigned int isr) {
     unsigned int *vector_base;
     unsigned int old_isr;
 
-    if (vector_number > 255) {
+    if ((vector_number > 255) || (vector_number < 0)) {
         return 0xffffffff;
     }
 
