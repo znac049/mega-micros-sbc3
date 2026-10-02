@@ -1,0 +1,64 @@
+/* 
+MIT License
+
+Copyright (c) 2026 Bob Green
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+#include <ctype.h>
+#include <stdio.h>
+#include <stddef.h>
+#include <setjmp.h>
+
+#if defined(BAREMETAL)
+# include <duart.h>
+# define printf kprintf
+#endif
+
+void dump_jump(jmp_buf env) {
+    printf("jmp_buff @0x%08x\n", &env[0]);
+    printf("  magic=%08x\n", env[0].magic);
+
+    printf("                 d1: $%08x", env[0].d1);
+    printf("  d2: $%08x", env[0].d2);
+    printf("  d3: $%08x\n", env[0].d3);
+
+    printf("  d4: $%08x", env[0].d4);
+    printf("  d5: $%08x", env[0].d5);
+    printf("  d6: $%08x", env[0].d6);
+    printf("  d7: $%08x\n", env[0].d7);
+
+    printf("                 a1: $%08x", env[0].a1);
+    printf("  a2: $%08x", env[0].a2);
+    printf("  a3: $%08x\n", env[0].a3);
+
+    printf("  a4: $%08x", env[0].a4);
+    printf("  a5: $%08x", env[0].a5);
+    printf("  a6: $%08x\n", env[0].a6);
+
+    printf("  sp: $%08x", env[0].sp);
+    printf("  sr: $%04x\n", env[0].sr);
+
+    printf("  ra: $%08x\n", env[0].ra);
+    uint32_t *sp = (uint32_t *)env[0].sp;
+    printf("return address from saved stack is $%08x\n", *sp);
+
+    printf("\n");
+}
