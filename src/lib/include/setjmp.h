@@ -25,24 +25,23 @@ SOFTWARE.
 #pragma once
 
 typedef struct {
-    uint32_t d0;        // 0
-    uint32_t d1;        // 4
-    uint32_t d2;        // 8
-    uint32_t d3;        // 12
-    uint32_t d4;        // 16
-    uint32_t d5;        // 20
-    uint32_t d6;        // 24
-    uint32_t d7;        // 28
-    uint32_t a0;        // 32
-    uint32_t a1;        // 36
-    uint32_t a2;        // 40
-    uint32_t a3;        // 44
-    uint32_t a4;        // 48
-    uint32_t a5;        // 52
-    uint32_t a6;        // 56
-    uint32_t sp;        // 60
-    uint32_t ra;        // 64
-    uint16_t sr;        // 68
+    uint32_t d1;        // 0
+    uint32_t d2;        // 4
+    uint32_t d3;        // 8
+    uint32_t d4;        // 12
+    uint32_t d5;        // 16
+    uint32_t d6;        // 20
+    uint32_t d7;        // 24
+    uint32_t a1;        // 28
+    uint32_t a2;        // 32
+    uint32_t a3;        // 36
+    uint32_t a4;        // 40
+    uint32_t a5;        // 44
+    uint32_t a6;        // 48
+    uint32_t sp;        // 52
+    uint16_t sr;        // 56
+    uint32_t magic;     // 58
+    uint32_t ra;        // 62
 } jmp_buf[1];
  
 int  setjmp(jmp_buf env);
