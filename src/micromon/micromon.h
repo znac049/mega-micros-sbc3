@@ -59,6 +59,9 @@ extern uint32_t _bss_start, _bss_end;
 extern char program_name[PATH_MAX];
 
 
+extern uint32_t ram_end;
+
+
 
 // bios_calls.c
 int bios_exit(int exit_code, pid_t pid);
@@ -111,6 +114,7 @@ void handle_go_command(int argc, char *argv[]);
 void bios_free(void *ptr, pid_t pid);
 void *bios_malloc(size_t size, pid_t pid);
 void clean_heap(pid_t pid);
+void init_heap(void);
 // void _heap_print_free(void);
 
 

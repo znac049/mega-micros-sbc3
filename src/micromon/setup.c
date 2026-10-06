@@ -35,7 +35,7 @@ SOFTWARE.
 
 static int major = 0;
 static int minor = 5;
-static int MAGIC_BUILD_NUMBER = 2;
+static int MAGIC_BUILD_NUMBER = 50;
 
 
 uint32_t ram_end;
@@ -47,6 +47,8 @@ bool_t acrtc3_present;
 bool_t rtc_present;
 bool_t oled_present;
 bool_t experimental;
+
+static uint8_t jumpers;
 
 char program_name[PATH_MAX];
 
@@ -115,48 +117,14 @@ static void pr_jumpers(uint8_t jumpers) {
 
 }
 
-
-void setup(void) {
-    uint8_t jumpers;
-    int is_xr;
+static void pr_banner(void) {
     char tmp_str[64];
-
-    ram_end = get_ram_end();
-    pit_present = is_pit_present();
-    duart_present = is_duart_present();
-    cf_present = YES;
-    hex_display_present = NO;
-    acrtc3_present = NO;
-    rtc_present = is_rtc_present();
-    oled_present = is_oled_present();
-
-    strcpy(program_name, DEFAULT_PROGRAM_NAME);
-
-    if (pit_present == YES) {
-        *pit_tivr = PIT_VECTOR_NUMBER;
-        _claim_pit();
-
-        // Set PIT ports A and B as outputs so we can drive the
-        // LEDs (if present).
-        *pit_paddr = 0xff;
-        *pit_pbddr = 0xff;
-    }
-
-    jumpers = (~(*duart_ip)) & 0x3f;
-    
-    is_xr = (jumpers & 0x04)?YES:NO;
-    experimental = (jumpers & 0x10)?YES:NO;
-
-    // constants used by the expression evaluator
-    init_constants();
-
-    setup_duart(is_xr);
-
-    set_isr_handler(32, (unsigned int)trap0_handler);
-    set_isr_handler(46, (unsigned int)trap14_handler);
 
     printk("\n\n\nMega-Micros SBC-3 Computer System\n");
     printk("MicroMon System ROM V%d.%d_%03d starting.\n", major, minor, MAGIC_BUILD_NUMBER);
+ 
+ 
+    /* Hardware info */
     printk("\nHardware:\n\n");
 
     // RAM
@@ -188,7 +156,8 @@ void setup(void) {
 
     // ACRTC3
     if (acrtc3_present) {
-        pr_info("ACRTC3 detected", 0xaa0000, 0xaaffff, YES);
+        pr_info("63484 ACRTC3 detected", 0xaa0000, 0xaa0002, YES);
+        pr_info("Video RAMDAC detected", 0xa90000, 0xa9ffff, YES);
     }
 
     if (rtc_present) {
@@ -206,7 +175,8 @@ void setup(void) {
     // Jumpers
     pr_jumpers(jumpers);
 
-    // print Data about the code sections
+
+    /* Firmware info */
     printk("\nFirmware:\n");
     pr_section("init",    &_pretext_start, &_postinit_end);
     pr_section("code",    &_code_start,    &_code_end);
@@ -236,16 +206,83 @@ void setup(void) {
         sh1107_pstr(0, 0, "SBC-3\n\nser1@230400\nser2@230400", NULL);
         sh1107_display();
     }
+}
 
-    // Setup the heap so malloc can be used
-    _init_heap();
-    // _heap_print_free();
+/*
+ * Probe to see what optional hardware is present
+ */
+static inline void probe_hardware(void) {
+    pit_present = is_pit_present();
+    duart_present = is_duart_present();
+    cf_present = YES;
+    hex_display_present = NO;
+    acrtc3_present = is_acrtc_present();
+    rtc_present = is_rtc_present();
+    oled_present = is_oled_present();
+}
 
-    // Activate any block devices
+
+void setup(void) {
+    int is_xr;
+
+    ram_end = get_ram_end();
+
+    /*
+     * Now we know how much memory we have, we can
+     * safely initialise the heap
+     */
+    init_heap();
+
+    probe_hardware();
+
+    strcpy(program_name, DEFAULT_PROGRAM_NAME);
+
+    /*
+     * The PI/T will always be present on the SBC-3
+     */
+    if (pit_present == YES) {
+        *pit_tivr = PIT_VECTOR_NUMBER;
+        _claim_pit();
+
+        // Set PIT ports A and B as outputs so we can drive the
+        // LEDs (if present).
+        *pit_paddr = 0xff;
+        *pit_pbddr = 0xff;
+    }
+
+
+    /* Take a look at the jumper settings */
+    jumpers = (~(*duart_ip)) & 0x3f;
+    
+    /* Jumper to select XR version of the 68681 duart */
+    is_xr = (jumpers & 0x04)?YES:NO;
+
+    /* Jumper to enable experimental features */
+    experimental = (jumpers & 0x10)?YES:NO;
+
+    /* 
+     * Now we've read the XR jumper, we can setup the duart.
+     * From this point on, we can print stuff
+     */
+    setup_duart(is_xr);
+
+    /* constants used by the expression evaluator */
+    init_constants();
+
+    /* Handlers for system calls via Trap #0/#14 */
+    set_isr_handler(32, (unsigned int)trap0_handler);
+    set_isr_handler(46, (unsigned int)trap14_handler);
+
+    /* 
+     * Tell the world about the hardware and firmware
+     */
+    pr_banner();
+
+    /* Activate any block devices */
     printk("\nActivating block devices\n");
     bd_init();
     
-    // Prepare filesystems for use
+    /* Prepare filesystems for use */
     if (experimental) {
         printk("Attempting mounts\n");
         vfs_init();
