@@ -33,10 +33,11 @@ SOFTWARE.
 #include "micromon.h"
 
 int bios_exit(int exit_code, pid_t pid) {
+    // Free up any malloc'd items currently on the heap
+    clean_heap(pid);
+
     // Pass control back to the monitor via the 'go' command handler
     longjmp(go_env, exit_code);         // everyone loves a goto, right!
-
-    (void)pid++;
 }
 
 int bios_test(int p1, int p2, int p3) {
