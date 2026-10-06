@@ -44,15 +44,15 @@ static int do_the_business(int argc, char *argv[]) {
     go_res = setjmp(go_env);
     if (go_res == 0) {
         int return_code;
-    
+
         // First call - invoke the user program
         kprintf("Launching code at 0x%08x\n", go_address);
         return_code = fn(argc, (const char **)argv);
         if (return_code) {
-            kprintf("\n---\nUser code exited with %d\n", return_code);
+            kprintf("\n---\nSHOULDN'T HAPPEN: User code exited with %d\n", return_code);
         }
         else {
-            kprintf("\n---\nExited.\n");
+            kprintf("\n---\nSHOULDN'T HAPPEN: Exited.\n");
         }
 
         return return_code;
