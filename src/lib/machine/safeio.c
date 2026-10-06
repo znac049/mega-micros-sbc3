@@ -25,31 +25,36 @@ SOFTWARE.
 #include <ctype.h>
 #include <machine.h>
 
-static int result;
-
-static ISR bus_error(void) {
-    result = -1;
-}
+extern volatile uint8_t bus_error_flag;
 
 int peek(volatile uint8_t *addr) {
-    unsigned int old_handler = set_isr_handler(VEC_BUS_ERROR, (unsigned int)bus_error);
     uint8_t data;
     
-    result = 0;
+    bus_error_flag = 0;
     data = *addr;
 
-    set_isr_handler(VEC_BUS_ERROR, old_handler);
-    
-    return (result == -1)?result:(int)data;
+    return bus_error_flag?-1:(int)data;
 }
 
 int poke(volatile uint8_t *addr, uint8_t val) {
-    unsigned int old_handler = set_isr_handler(VEC_BUS_ERROR, (unsigned int)bus_error);
-
-    result = val;
+    bus_error_flag = 0;
     *addr = val;
 
-    set_isr_handler(VEC_BUS_ERROR, old_handler);
+    return bus_error_flag?-1:val;
+}
+
+int peekw(volatile uint16_t *addr) {
+    uint16_t data;
     
-    return result;
+    bus_error_flag = 0;
+    data = *addr;
+
+    return bus_error_flag?-1:(int)data;
+}
+
+int pokew(volatile uint16_t *addr, uint16_t val) {
+    bus_error_flag = 0;
+    *addr = val;
+
+    return bus_error_flag?-1:val;
 }
