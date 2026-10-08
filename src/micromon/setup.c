@@ -35,7 +35,7 @@ SOFTWARE.
 
 static int major = 0;
 static int minor = 5;
-static int MAGIC_BUILD_NUMBER = 50;
+static int MAGIC_BUILD_NUMBER = 51;
 
 
 uint32_t ram_end;
@@ -130,7 +130,8 @@ static void pr_banner(void) {
     // RAM
     snprintf(tmp_str, sizeof(tmp_str), "%dMB RAM detected", (ram_end+1)/(1024*1024));
     pr_info(tmp_str, 0, ram_end, NO);
-    test_ram(0x00000400, ram_end);
+    // test_ram(0x00000400, ram_end);
+    printk("\n");
 
     // Duart
     snprintf(tmp_str, sizeof(tmp_str), "%s duart running at %sMHz", 
@@ -225,7 +226,7 @@ static inline void probe_hardware(void) {
 void setup(void) {
     int is_xr;
 
-    ram_end = get_ram_end();
+    ram_end = 0x7fffff; //get_ram_end();
 
     /*
      * Now we know how much memory we have, we can

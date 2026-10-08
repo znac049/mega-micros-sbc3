@@ -15,6 +15,7 @@ first: inc_build rom
 
 scp: first romdisk
 	cat $(MONITORIMAGE) inbetween.bin $(ROMDISK) >$(ROMIMAGE)
+	python3 patch_sum.py $(ROMIMAGE) `grep romsum micromon.map | awk '{print $1;}'`
 	scp $(ROMIMAGE) $(REMOTE_USER):$(REMOTE_DIR)
 
 romdisk: first
@@ -25,5 +26,6 @@ inc_build:
 
 -include $(MEGA_MICROS_DIR)/src/stdenv.mk
 
+ROM_LDSCRIPT:=./micromon.ld
 FLAGS:=$(FLAGS) -Wno-array-bounds
 TO_CLEAN += $(ROMDISK) $(ROMIMAGE) $(MONITORIMAGE)
