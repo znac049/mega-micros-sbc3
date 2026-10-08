@@ -22,6 +22,7 @@ It is written predominantly in C with a minimal amount of assembly language.
 ## Monitor Commands
 
 ### help
+Simply prints a brief summary of each command the monitor accepts
 
 ### cat
 
@@ -48,3 +49,7 @@ It is written predominantly in C with a minimal amount of assembly language.
 ### ser1 | ser2
 
 ## Installing the monitor
+
+### Booting
+#### Boot errors
+How boot errors are displayed depends on how early in the initialisation code they occur. If an error occurs before the duart has been initialise, LEDs will be used to indicate what has occurred. If the system has initialised the duart, it will display an appropriate error message on the console serial port.
