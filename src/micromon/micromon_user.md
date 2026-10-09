@@ -52,7 +52,7 @@ Commands are:
 
 ### dump
 
-### eval
+### eval <expression>
 Evaluate an integer expression. Numbers can be entered in hexadecimal (prefix with '$' or '0x') or decimal. Operators accepted are:
 ```
 +
@@ -69,7 +69,7 @@ The following built-in constants are built in:
 ```
 ACRTC_BASE
 DUART_BASE
-CF_BASE"
+CF_BASE
 PIT_BASE
 ROM_BASE
 RAM_BASE
@@ -81,6 +81,7 @@ __Example__
 -> 12582939 (0x00c0001b)
 /#
 ```
+
 
 ### go
 
