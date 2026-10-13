@@ -42,18 +42,39 @@ Commands are:
 /#
 ```
 
-### cat
+### byteedit, wordedit, longedit
+Edit data in memory.
+__Aliases__: **be**, **we**, **le**
 
-### cd
+```
+be [ = <expr> [, <expr> ...]]
+be <address> [ [ = ] <expr> [, <expr> ...]]
+@[b|w|l]<address> [ [ = ] <expr> [, <expr> ...]]
+```
 
-### dir
+### cat - Display the contents of a file
+#### Synopsis
+```
+cat <filename>
+``` 
+#### Details
+The file specified by **_<filename>_** is displayed on the console. If **_<filename>_** does not contain a path part, it will be read from the current directory.
 
-### disassemble
+### cd - Change directory
 
-### dump
+### dir - List the contents of a directory
 
-### eval <expression>
-Evaluate an integer expression. Numbers can be entered in hexadecimal (prefix with '$' or '0x') or decimal. Operators accepted are:
+### disassemble - disassemble machine code
+
+### dump - dump contents of memory
+
+### eval - Evaluate an expression
+#### Synopsis
+```
+eval <expression> [, <expression> ... ]
+```
+#### Details
+Evaluate one or more integer expressions. Numbers can be entered in hexadecimal (prefix with '$' or '0x') or decimal. Operators accepted are:
 ```
 +
 -
@@ -65,11 +86,13 @@ Evaluate an integer expression. Numbers can be entered in hexadecimal (prefix wi
 ```
 The result is printed in both decimal and hexadecimal.
 
-The following built-in constants are built in:
+The following constants can be used:
 ```
 ACRTC_BASE
+DAC_BASE
 DUART_BASE
 CF_BASE
+HEX_DISPLAY_BASE
 PIT_BASE
 ROM_BASE
 RAM_BASE
@@ -82,10 +105,29 @@ __Example__
 /#
 ```
 
+To minimise typing, an alias exists, ```=``` which can be used instead:
+```
+/# =7*6
+-> 42 (0x0000002a)
+/~
+```
+Note that there is no need for a space between the ```=``` and the expression.
 
-### go
+### go - run a user program
+#### Synopsis
+```
+go [ <address> ]
+```
+#### Details
+Transfers control to a user program. If **_<address>_** is omitted, the load address from the last **_load_** command is used.
 
-### load
+### load - load a program from the console port.
+#### Synopsis
+```
+load
+```
+#### Details
+The monitor loads a program, in Motorola S-Record format, from the console port. A countdown is displayed and if no data has been received when it hits zero, the load is aborted. If a start address record is present, it will be remembered and used by the **_go_** command, if no other address is specified.
 
 ### probe
 
