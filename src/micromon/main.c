@@ -36,30 +36,44 @@ SOFTWARE.
 #include "expr.h"
 
 
-void print_help(int argc, char *argv[]);
+void print_help(void);
 
 static command_t commands[] = {
-    {"help",        2, print_help},
-    {"cat",         0, handle_cat_command},
-    {"cd",          0, handle_cd_command},
-    {"dir",         0, handle_dir_command},
-    {"disassemble", 3, handle_disasm_command},
-    {"dump",        2, handle_dump_command},
-    {"eval",        2, handle_eval_command},
-    {"go",          0, handle_go_command},
-    {"load",        2, handle_load_command},
-    {"probe",       3, handle_probe_command},
-    {"pwd",         0, handle_pwd_command},
-    {"rtc",         3, handle_rtc_command},
-    {"ser1",        0, handle_ser_command},
-    {"ser2",        0, handle_ser_command},
+    {"help",        2, COMMAND, {print_help}},
+    {"cat",         0, COMMAND, {handle_cat_command}},
+    {"cd",          0, COMMAND, {handle_cd_command}},
+    {"dir",         0, COMMAND, {handle_dir_command}},
+    {"disassemble", 3, COMMAND, {handle_disasm_command}},
+    {"dump",        2, COMMAND, {handle_dump_command}},
+    {"eval",        2, COMMAND, {handle_eval_command}},
+    {"go",          0, COMMAND, {handle_go_command}},
+    {"load",        2, COMMAND, {handle_load_command}},
+    {"probe",       3, COMMAND, {handle_probe_command}},
+    {"pwd",         0, COMMAND, {handle_pwd_command}},
+    {"rtc",         3, COMMAND, {handle_rtc_command}},
+    {"ser1",        0, COMMAND, {handle_ser_command}},
+    {"ser2",        0, COMMAND, {handle_ser_command}},
+    {"byteedit",    3, COMMAND, {handle_editb_command}},
+    {"wordedit",    3, COMMAND, {handle_editw_command}},
+    {"longedit",    3, COMMAND, {handle_editl_command}},
+
+    {"eb"           2, ALIAS,   {.cmd = "byteedit"}},
+    {"ew"           2, ALIAS,   {.cmd = "wordedit"}},
+    {"el"           2, ALIAS,   {.cmd = "longedit"}},
+
+    {"=",           1, PREFIX,  {.cmd = "eval"}},
+    {"@",           1, PREFIX,  {.cmd = "byteedit"}},
 };
 
 #define NUM_COMMANDS (sizeof(commands)/sizeof(command_t))
 
-bool_t is_command(const char *cmd, const char *target, int min_target_len) {
+bool_t is_command(const char *cmd, const char *target, int min_target_len, cmd_type_t type) {
     int cmd_len = strlen(cmd);
     int target_len = strlen(target);
+
+    if (type == PREFIX) {
+        cmd_len = min_target_len;
+    }
 
     if (min_target_len == 0) {
         min_target_len = target_len;
@@ -88,10 +102,7 @@ bool_t is_blank(const char *str) {
     return YES;
 }
 
-void print_help(int argc, char *argv[]) {
-    argc--;
-    argv++;
-
+void print_help(void) {
     kprintf("Commands are:\n");
     kprintf("  cat <filename>\n");
     kprintf("  cd <path>\n");
@@ -107,28 +118,41 @@ void print_help(int argc, char *argv[]) {
     kprintf("  quit\n\n");
 }
 
-void handle_command(int argc, char *argv[]) {
-    register const char *cmd = argv[0];
-
-    argc += 0;
-
-    if (is_blank(cmd) == YES) {
-        return;
-    }
-
+command_t *find_command(char *cmdline) {
     for (unsigned int i=0; i<NUM_COMMANDS; i++) {
-        if (is_command(cmd, commands[i].command, commands[i].min_required) == YES) {
-            // call the handler
-            commands[i].handler(argc, argv);
-            return;
+        if (is_command(cmdline, commands[i].command, commands[i].min_required, commands[i].type) == YES) {
+            return &commands[i];
         }
     }
 
-    kprintf("'%s': Unrecognised command.\n", argv[0]);
+    return NULL;
+}
+
+void handle_command(int argc, char *argv[], char *cmdline) {
+    register const char *cmdname = argv[0];
+    command_t *cmd;
+
+    if (is_blank(cmdname) == YES) {
+        return;
+    }
+
+    cmd = find_command(cmdline);
+    while ((cmd != NULL) && (cmd->type != COMMAND)) {
+        cmd = find_command(cmd->cmd);
+    }
+
+    /* We've found the command */
+    if (cmd == NULL) {
+        kprintf("'%s': Unrecognised command.\n", cmdname);
+    }
+    else {
+        cmd->handler(cmdline, argc, argv);
+    }
 }
 
 void main(void) {
-    char cmd_line[MAX_LINE];
+    char cmdline[MAX_LINE];
+    char dup_cmd[MAX_LINE];
     char cwd[PATH_MAX];
 
     setup();
@@ -140,12 +164,15 @@ void main(void) {
 
         kprintf("%s# ", cwd);
 
-        if (kgets(cmd_line) != NULL) {
+        if (kgets(cmdline) != NULL) {
             char *argv[MAX_ARGS];
-            int argc = split_str(cmd_line, ' ', argv, MAX_ARGS);
+            int argc;
+            
+            strncpy(dup_cmd, cmdline, sizeof(dup_cmd));
+            argc = split_str(dup_cmd, ' ', argv, MAX_ARGS);
 
             if (argc) {
-                handle_command(argc, argv);
+                handle_command(argc, argv, cmdline);
             }
         }
     }

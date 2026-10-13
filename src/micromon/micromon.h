@@ -40,10 +40,17 @@ SOFTWARE.
 
 #define DEFAULT_PROGRAM_NAME "s.rec"
 
+enum cmd_type {ANY=0, COMMAND=1, ALIAS, PREFIX};
+typedef enum cmd_type cmd_type_t;
+
 struct command {
     const char *command;
     int min_required;
-    void (*handler)();
+    cmd_type_t type;
+    union {
+        void (*handler)();
+        char *cmd;
+    };
 };
 
 typedef struct command command_t;
@@ -97,12 +104,18 @@ void dump(uint8_t *buf, size_t count, uint8_t print_zeroes, const char *heading,
 void handle_dump_command(int argc, char *argv[]);
 
 
+// edit_cmd.c
+void handle_editb_command(int argc, char *argv[], char *cmdline);
+void handle_editw_command(int argc, char *argv[], char *cmdline);
+void handle_editl_command(int argc, char *argv[], char *cmdline);
+
+
 // elf.c
 int load_elf(int fd);
 
 
 // eval_cmd.c
-void handle_eval_command(int argc, char *argv[]);
+void handle_eval_command(int argc, char *argv[], char *cmdline);
 
 
 // go_cmd.c
@@ -128,7 +141,7 @@ void handle_load_command(int argc, char *argv[]);
 
 
 // main.c
-bool_t is_command(const char *cmd, const char *target, int min_target_len);
+bool_t is_command(const char *cmd, const char *target, int min_target_len, cmd_type_t type);
 
 
 // memory.c
