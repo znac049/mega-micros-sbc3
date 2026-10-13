@@ -1,8 +1,11 @@
 LIBOBJECTS=char_available.o \
 			dump_mem.o \
+			ltrim.o \
 			midstr.o \
 			reset_ticks.o \
+			rtrim.o \
 			split_str.o \
+			strblank.o \
 			strpad.o \
 			ticks.o
 

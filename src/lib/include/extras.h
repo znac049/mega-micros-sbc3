@@ -28,8 +28,11 @@ SOFTWARE.
 
 int char_available(void);
 void dump_mem(uint8_t *buf, size_t count, uint8_t print_zeroes);
+char *ltrim(char *s);
 char *midstr(char *dest, size_t max_len, const char *s, int from, int to);
 uint32_t reset_ticks(void);
+char *rtrim(char *s);
 int split_str(const char *s, char sep, char *bits[], int max_bits);
+int strblank(const char *s);
 int strpad(char *str, int width, char pad_ch);
 uint32_t ticks(void);
