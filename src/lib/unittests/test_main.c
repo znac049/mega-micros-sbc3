@@ -51,7 +51,7 @@ void test_main(void) {
     SUITE("extras.h");
     do {
         char *bits[8];
-        char str[16];
+        char str[256];
 
         TEST(split_str("one two three   four ", ' ', bits, 8) == 4);
         TEST(strcmp(bits[0], "one") == 0);
@@ -64,6 +64,11 @@ void test_main(void) {
         TEST(midstr(str, sizeof(str), "Hello, world", 7, 900) != NULL);
         printf("str='%s'\n", str);
         TEST(strcmp(str, "world") == 0);
+
+        strcpy(str, "    hello, Bob    ");
+        TEST(strcmp(ltrim(str), "hello, Bob    ") == 0);
+        TEST(strcmp(rtrim(str), "    hello, Bob") == 0);
+        TEST(strcmp(ltrim(rtrim(str)), "hello, Bob") == 0);
     } while (0);
 
     SUITE("stdlib");
