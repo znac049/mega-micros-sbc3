@@ -51,7 +51,7 @@ int split_str(const char *s, char sep, char *bits[], int max_bits) {
         next_sep = strchr(s, sep);
     }
 
-    bits[bit_num++] = (char *)s;
+    bits[bit_num++] = ltrim(rtrim((char *)s));
 
     return bit_num;
 }
