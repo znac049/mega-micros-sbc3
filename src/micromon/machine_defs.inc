@@ -146,3 +146,4 @@ duart_opr_reset::       equ		DUART_BASE+30
 ROM_BASE                equ     $00C00000
 ROM_SIZE                equ     $00400000
 
+HEX_DISPLAY_BASE::      equ     $AB0000
