@@ -39,30 +39,30 @@ SOFTWARE.
 void print_help(void);
 
 static command_t commands[] = {
-    {"help",        2, COMMAND, {print_help}},
-    {"cat",         0, COMMAND, {handle_cat_command}},
-    {"cd",          0, COMMAND, {handle_cd_command}},
-    {"dir",         0, COMMAND, {handle_dir_command}},
-    {"disassemble", 3, COMMAND, {handle_disasm_command}},
-    {"dump",        2, COMMAND, {handle_dump_command}},
-    {"eval",        2, COMMAND, {handle_eval_command}},
-    {"go",          0, COMMAND, {handle_go_command}},
-    {"load",        2, COMMAND, {handle_load_command}},
-    {"probe",       3, COMMAND, {handle_probe_command}},
-    {"pwd",         0, COMMAND, {handle_pwd_command}},
-    {"rtc",         3, COMMAND, {handle_rtc_command}},
-    {"ser1",        0, COMMAND, {handle_ser_command}},
-    {"ser2",        0, COMMAND, {handle_ser_command}},
-    {"byteedit",    3, COMMAND, {handle_editb_command}},
-    {"wordedit",    3, COMMAND, {handle_editw_command}},
-    {"longedit",    3, COMMAND, {handle_editl_command}},
+    {"help",        2, COMMAND, {print_help},               NONE},
+    {"cat",         0, COMMAND, {handle_cat_command},       VEC},
+    {"cd",          0, COMMAND, {handle_cd_command},        VEC},
+    {"dir",         0, COMMAND, {handle_dir_command},       VEC},
+    {"disassemble", 3, COMMAND, {handle_disasm_command},    VEC},
+    {"dump",        2, COMMAND, {handle_dump_command},      VEC},
+    {"eval",        2, COMMAND, {handle_eval_command},      STR},
+    {"go",          0, COMMAND, {handle_go_command},        VEC},
+    {"load",        2, COMMAND, {handle_load_command},      VEC},
+    {"probe",       3, COMMAND, {handle_probe_command},     VEC},
+    {"pwd",         0, COMMAND, {handle_pwd_command},       VEC},
+    {"rtc",         3, COMMAND, {handle_rtc_command},       VEC},
+    {"ser1",        0, COMMAND, {handle_ser_command},       VEC},
+    {"ser2",        0, COMMAND, {handle_ser_command},       VEC},
+    {"byteset",     3, COMMAND, {handle_setbyte_command},   STR},
+    {"wordset",     3, COMMAND, {handle_setword_command},   STR},
+    {"longset",     3, COMMAND, {handle_setlong_command},   STR},
 
-    {"eb"           2, ALIAS,   {.cmd = "byteedit"}},
-    {"ew"           2, ALIAS,   {.cmd = "wordedit"}},
-    {"el"           2, ALIAS,   {.cmd = "longedit"}},
+    {"bs",          2, ALIAS,   {.cmd = "byteset"},         STR},
+    {"ws",          2, ALIAS,   {.cmd = "wordset"},         STR},
+    {"ls",          2, ALIAS,   {.cmd = "longset"},         STR},
 
-    {"=",           1, PREFIX,  {.cmd = "eval"}},
-    {"@",           1, PREFIX,  {.cmd = "byteedit"}},
+    {"=",           1, PREFIX,  {.cmd = "eval"},            STR},
+    {"@",           1, PREFIX,  {.cmd = "byteedit"},        STR},
 };
 
 #define NUM_COMMANDS (sizeof(commands)/sizeof(command_t))
@@ -92,18 +92,9 @@ bool_t is_command(const char *cmd, const char *target, int min_target_len, cmd_t
     return YES;
 }
 
-bool_t is_blank(const char *str) {
-    while (*str) {
-        if (!isblank(*str++)) {
-            return NO;
-        }
-    }
-
-    return YES;
-}
-
 void print_help(void) {
     kprintf("Commands are:\n");
+    kprintf("  byteedit [<address>] [[=] <expr> [, <expr> ...]]\n");
     kprintf("  cat <filename>\n");
     kprintf("  cd <path>\n");
     kprintf("  dir [ <path> ]\n");
@@ -112,13 +103,17 @@ void print_help(void) {
     kprintf("  eval <expression>\n");
     kprintf("  go <address>]\n");
     kprintf("  load\n");
+    kprintf("  longedit [<address>] [[=] <expr> [, <expr> ...]]\n");
     kprintf("  probe\n");
     kprintf("  rtc (erase) | (time [hh:mm[:ss]]) | (date [yyyy:mm:dd])\n");
     kprintf("  ser1|2 baud <baudrate>\n");
+    kprintf("  wordedit [<address>] [[=] <expr> [, <expr> ...]]\n");
     kprintf("  quit\n\n");
 }
 
 command_t *find_command(char *cmdline) {
+    kprintf("find_command: looking up '%s'\n", cmdline);
+
     for (unsigned int i=0; i<NUM_COMMANDS; i++) {
         if (is_command(cmdline, commands[i].command, commands[i].min_required, commands[i].type) == YES) {
             return &commands[i];
@@ -128,31 +123,70 @@ command_t *find_command(char *cmdline) {
     return NULL;
 }
 
-void handle_command(int argc, char *argv[], char *cmdline) {
-    register const char *cmdname = argv[0];
+void handle_command(char *cmdline) {
     command_t *cmd;
+    char cmdstr[MAX_LINE];
+    char *cp;
 
-    if (is_blank(cmdname) == YES) {
+    strcpy(cmdstr, cmdline);
+    cp =strchr(cmdstr, ' ');
+    if (cp != NULL) {
+        *cp = EOS;
+    }
+
+    if (strblank(cmdstr) == YES) {
         return;
     }
 
-    cmd = find_command(cmdline);
+    cmd = find_command(cmdstr);
+    /* 
+     * We've found the command, but it might be an alias
+     * or a prefix (or NULL)
+     */
     while ((cmd != NULL) && (cmd->type != COMMAND)) {
+        kprintf("handle_command: found %s '%s'\n",
+            (cmd->type == ALIAS)?"alias":"prefix", cmd->command);
         cmd = find_command(cmd->cmd);
     }
 
-    /* We've found the command */
     if (cmd == NULL) {
-        kprintf("'%s': Unrecognised command.\n", cmdname);
+        kprintf("'%s': Unrecognised command.\n", cmdstr);
+        return;
     }
-    else {
-        cmd->handler(cmdline, argc, argv);
+
+    kprintf("handle_command: calling handler for'%s'\n", cmd->command);
+
+    switch (cmd->args) {
+        case NONE:
+            cmd->handler();
+            break;
+
+        case STR:
+            cmd->handler(cmdline);
+            break;
+        
+        case VEC:
+            {
+                char *argv[MAX_ARGS];
+                int argc = split_str(cmdline, ' ', argv, MAX_ARGS);
+
+                cmd->handler(argc, argv);
+            }
+            break;
+
+        case BOTH:
+            {
+                char *argv[MAX_ARGS];
+                int argc = split_str(cmdline, ' ', argv, MAX_ARGS);
+
+                cmd->handler(argc, argv, cmdline);
+            }
+            break;
     }
 }
 
 void main(void) {
     char cmdline[MAX_LINE];
-    char dup_cmd[MAX_LINE];
     char cwd[PATH_MAX];
 
     setup();
@@ -165,15 +199,7 @@ void main(void) {
         kprintf("%s# ", cwd);
 
         if (kgets(cmdline) != NULL) {
-            char *argv[MAX_ARGS];
-            int argc;
-            
-            strncpy(dup_cmd, cmdline, sizeof(dup_cmd));
-            argc = split_str(dup_cmd, ' ', argv, MAX_ARGS);
-
-            if (argc) {
-                handle_command(argc, argv, cmdline);
-            }
+            handle_command(cmdline);
         }
     }
 }
