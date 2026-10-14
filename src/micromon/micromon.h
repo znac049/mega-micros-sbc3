@@ -43,6 +43,9 @@ SOFTWARE.
 enum cmd_type {ANY=0, COMMAND=1, ALIAS, PREFIX};
 typedef enum cmd_type cmd_type_t;
 
+enum arg_type {NONE, BOTH, STR, VEC};
+typedef enum arg_type arg_type_t;
+
 struct command {
     const char *command;
     int min_required;
@@ -51,6 +54,7 @@ struct command {
         void (*handler)();
         char *cmd;
     };
+    arg_type_t args;
 };
 
 typedef struct command command_t;
@@ -104,18 +108,12 @@ void dump(uint8_t *buf, size_t count, uint8_t print_zeroes, const char *heading,
 void handle_dump_command(int argc, char *argv[]);
 
 
-// edit_cmd.c
-void handle_editb_command(int argc, char *argv[], char *cmdline);
-void handle_editw_command(int argc, char *argv[], char *cmdline);
-void handle_editl_command(int argc, char *argv[], char *cmdline);
-
-
 // elf.c
 int load_elf(int fd);
 
 
 // eval_cmd.c
-void handle_eval_command(int argc, char *argv[], char *cmdline);
+void handle_eval_command(char *cmdline);
 
 
 // go_cmd.c
@@ -159,6 +157,12 @@ void handle_rtc_command(int argc, char *argv[]);
 
 // serial_cmd.c
 void handle_ser_command(int argc, char *argv[]);
+
+
+// set_cmd.c
+void handle_setbyte_command(char *cmdline);
+void handle_setword_command(char *cmdline);
+void handle_setlong_command(char *cmdline);
 
 
 // setup.c

@@ -27,33 +27,53 @@ SOFTWARE.
 #include <stdlib.h>
 #include <string.h>
 #include <machine.h>
+#include <extras.h>
 
 #include "micromon.h"
 #include "expr.h"
 
-void handle_eval_command(int argc, char *argv[]) {
+void handle_eval_command(char *cmdline) {
     char exp[MAX_LINE];
-    expr_error_t res;
-    long val;
-    int error_pos;
+    int argc;
+    char *argv[MAX_ARGS];
 
-    if (argc == 1) {
-        kprintf("usage: eval <expression>\n");
-        return;
-    }
+    kprintf("hadle_eval_cmd: cmd='%s'\n", cmdline);
 
     exp[0] = EOS;
 
-    for (int i=1; i<argc; i++) {
-        strcat(exp, argv[i]);
-        strcat(exp, " ");
-    }
-
-    res = expr_evaluate(exp, &val, &error_pos);
-    if (res != EXPR_OK) {
-        kprintf("Failed to parse expression '%s'\n%s\n\n", exp, expr_error_string(res));
+    if (cmdline[0] == '=') {
+        strcpy(exp, &cmdline[1]);
     }
     else {
-        kprintf("-> %d (0x%08x)\n", val, val);
+        char *s = cmdline;
+
+        while (!isspace(*s)) {
+            s++;
+        }
+
+        while (isspace(*s)) {
+            s++;
+        }
+
+        strcpy(exp, s);
+    }
+
+    kprintf("to eval: '%s'\n", exp);
+
+    argc = split_str(exp, ',', argv, MAX_ARGS);
+    for (int i=0; i<argc; i++) {
+        expr_error_t res;
+        long val;
+        int error_pos;
+
+        kprintf("to_eval: '%s'\n", argv[i]);
+
+        res = expr_evaluate(argv[i], &val, &error_pos);
+        if (res != EXPR_OK) {
+            kprintf("Failed to parse expression '%s'\n%s\n\n", argv[i], expr_error_string(res));
+        }
+        else {
+            kprintf("%s\n=%d (0x%08x)\n", val, val);
+        }
     }
 }
