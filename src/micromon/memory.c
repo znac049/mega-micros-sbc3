@@ -30,6 +30,11 @@ SOFTWARE.
 
 #define RAM_MAX ((1024*1024*8)-1)
 #define ONE_MEG (1024*1024)
+#define TWO_MEG (ONE_MEG*2)
+#define THREE_MEG (ONE_MEG*3)
+#define FOUR_MEG (ONE_MEG*4)
+#define FIVE_MEG (ONE_MEG*5)
+#define EIGHT_MEG (ONE_MEG*8)
 
 static inline uint16_t check_address(volatile uint16_t *addr) {
     uint16_t orig = addr[0];
@@ -57,18 +62,33 @@ static void spin(void) {
 }
 
 /*
- * This isn't as simple as ayttempting to access possible RAM locations and
+ * This isn't as simple as attempting to access possible RAM locations and
  * handling bes error to detect end of RAM as it looks like the CPLD generates
  * DTACK for the entire 8MB possible ram.
+ *
+ * But hey, let's simplify it for the SBC-3 board which only supports three
+ * memory configurations: 2MB, 4MB or 8MB and since the CPLD decodes the 
+ * whole address space, you just need top write to a few locations and see what
+ * you read back from it. If yopu get what you wrote, then it's 8MB, but lower
+ * amounts mirror what was written to lower addresses
  */
 uint32_t get_ram_end(void) {
-    for (uint32_t addr=(ONE_MEG-1); addr<=RAM_MAX; addr+=ONE_MEG) {
-        if (check_address((uint16_t *)addr) == 0) {
-            return addr;
-        }
+    volatile uint8_t *mem = (uint8_t *)0;
+
+    mem[ONE_MEG] = 1;
+    mem[THREE_MEG] = 3;
+    mem[FIVE_MEG] = 5;
+
+    mem[TWO_MEG] = 0xff;
+
+    if ((mem[ONE_MEG] == 1) && (mem[THREE_MEG] == 3) && (mem[FIVE_MEG] == 5)) {
+        return EIGHT_MEG-1;
+    }
+    else if ((mem[ONE_MEG] == 1) && (mem[THREE_MEG] == 3)) {
+        return FOUR_MEG-1;
     }
 
-    return 0x007fffff;
+    return TWO_MEG-1;
 }
 
 int test_ram(uint32_t start_addr, uint32_t end_addr) {
