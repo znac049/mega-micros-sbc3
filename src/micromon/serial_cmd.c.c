@@ -67,12 +67,12 @@ static void do_baud_cmd(int argc, char *argv[]) {
 void handle_ser_command(int argc, char *argv[]) {
     register const char *cmd = argv[1];
 
-    if ((argc == 1) || ((argc == 2) && is_command(cmd, "help", 2) == YES)) {
+    if ((argc == 1) || ((argc == 2) && is_command(cmd, "help", 2, ANY) == YES)) {
         kprintf("%s accepts the following sub-commands: \n", argv[0]);
         kprintf("  baud <baudrate>       set the baudrate\n");
         kprintf("\n");
     }
-    else if (is_command(cmd, "baud", 2) == YES) {
+    else if (is_command(cmd, "baud", 2, ANY) == YES) {
         do_baud_cmd(argc, argv);
     }
     else {

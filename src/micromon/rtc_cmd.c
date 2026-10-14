@@ -152,7 +152,7 @@ static void do_nvram_command(int argc, char *argv[]) {
 
         dump(nvram, 56, YES, "RTC nvram", NO);
     }
-    else if ((argc == 1) && is_command(argv[0], "erase", 2) == YES) {
+    else if ((argc == 1) && is_command(argv[0], "erase", 2, ANY) == YES) {
         uint8_t ram[56];
         int res;
 
@@ -178,20 +178,20 @@ static void do_nvram_command(int argc, char *argv[]) {
 void handle_rtc_command(int argc, char *argv[]) {
     register const char *cmd = argv[1];
 
-    if ((argc == 1) || ((argc == 2) && is_command(cmd, "help", 2) == YES)) {
+    if ((argc == 1) || ((argc == 2) && is_command(cmd, "help", 2, ANY) == YES)) {
         kprintf("rtc accepts the following sub-commands: \n");
         kprintf("  date [yyyy mm dd]     show/set the date in the rtc\n");
         kprintf("  nvram [erase]         show/erase the contents of the rtc's nvram\n");
         kprintf("  time [hh mm [ss]]     show/set the time in the rtc\n");
         kprintf("\n");
     }
-    else if (is_command(cmd, "time", 2) == YES) {
+    else if (is_command(cmd, "time", 2, ANY) == YES) {
         do_time_command(argc-2, &argv[2]);
     }
-    else if (is_command(cmd, "date", 2) == YES) {
+    else if (is_command(cmd, "date", 2, ANY) == YES) {
         do_date_command(argc-2, &argv[2]);
     }
-    else if (is_command(cmd, "nvram", 2) == YES) {
+    else if (is_command(cmd, "nvram", 2, ANY) == YES) {
         do_nvram_command(argc-2, &argv[2]);
     }
     else {
