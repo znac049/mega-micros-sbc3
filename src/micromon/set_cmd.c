@@ -75,7 +75,7 @@ static void do_set(char *cmdline, loc_size_t access_size) {
         int error_pos;
 
         *cp++ = EOS;
-        printk("do_set: address supplied is %s\n", cmdline);
+        // printk("do_set: address supplied is %s\n", cmdline);
 
         res = expr_evaluate(cmdline, &val, &error_pos);
         if (res != EXPR_OK) {
@@ -99,11 +99,15 @@ static void do_set(char *cmdline, loc_size_t access_size) {
         long val;
         int error_pos;
 
-        printk("do_set: expr='%s'\n", argv[i]);
+        if (i > 0) {
+            printk(", ");
+        }
+
+        // printk("do_set: expr='%s'\n", argv[i]);
 
         res = expr_evaluate(argv[i], &val, &error_pos);
         if (res != EXPR_OK) {
-            printk("Failed to parse address '%s'\n%s\n\n", argv[i], expr_error_string(res));
+            printk("\nFailed to parse address '%s'\n%s\n\n", argv[i], expr_error_string(res));
             return;
         }
 
@@ -114,7 +118,7 @@ static void do_set(char *cmdline, loc_size_t access_size) {
 
                     val &= 0xff;
                     *mem = (uint8_t)val;
-                    printk(" $%02x", val);
+                    printk("$%02x", val);
                     edit_address++;
                 }
                 break;
@@ -125,7 +129,7 @@ static void do_set(char *cmdline, loc_size_t access_size) {
 
                     val &= 0xffff;
                     *mem = (uint16_t)val;
-                    printk(" $%04x", val);
+                    printk("$%04x", val);
                     edit_address += 2;
                 }
                 break;
@@ -136,7 +140,7 @@ static void do_set(char *cmdline, loc_size_t access_size) {
 
                     *mem = (uint32_t)val;
                     edit_address += 4;
-                    printk(" $%08x", val);
+                    printk("$%08x", val);
                 }
                 break;
         }
