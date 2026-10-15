@@ -35,46 +35,113 @@ static ISR bus_error(void) {
     berr = YES;
 }
 
-static int get_byte(uint8_t *addr) {
-    uint8_t byte_val;
+static inline long long get_byte(uint8_t *addr) {
+    uint8_t val;
 
     berr = NO;
-    byte_val = *addr;
+    val = *addr;
 
-    return (berr==YES)?-1:byte_val;
+    return val;
 }
 
-void dump(uint8_t *buf, size_t count, uint8_t print_zeroes, const char *heading, bool_t absolute_addresses) {
+static inline long long get_word(uint16_t *addr) {
+    uint16_t val;
+
+    berr = NO;
+    val = *addr;
+
+    return val;
+}
+
+static inline long long get_long(uint32_t *addr) {
+    uint32_t val;
+
+    berr = NO;
+    val = *addr;
+
+    return val;
+}
+
+static long long fetch(void *addr, loc_size_t type) {
+    long long val = 0;
+
+    switch (type) {
+        case BYTE:
+            val = get_byte((uint8_t *)addr);
+            break;
+
+        case WORD:
+            val = get_word((uint16_t *)addr);
+            break;
+
+        case LONG:
+            val = get_long((uint32_t *)addr);
+            break;
+    }
+
+    return (berr==YES)?(long long)-1:val;
+}
+
+void dump(void *vbuf, loc_size_t size, size_t count, uint8_t print_zeroes, const char *heading, bool_t absolute_addresses) {
     int all_zeroes = NO;
     int printed_something = 0;
     unsigned int old_handler = set_isr_handler(VEC_BUS_ERROR, (unsigned int)bus_error);
-    int byte_val;
+    long long val;
+    int items_per_line;
+    char *val_fmt;
+    char *skip_str = "   ";
+    uint8_t *buf = (uint8_t *)vbuf;
 
+    switch (size) {
+        case BYTE:
+            items_per_line = 16;
+            val_fmt = " %02x";
+            break;
+
+        case WORD:
+            items_per_line = 8;
+            val_fmt = " %04x";
+            skip_str = "     ";
+            break;
+
+        case LONG:
+            items_per_line = 4;
+            val_fmt = " %08x";
+            skip_str = "         ";
+            break;
+
+        default:
+            size = BYTE;
+            items_per_line = 16;
+            val_fmt = " %02x";
+            break;
+    }
 
     if (heading != NULL) {
-        kprintf("%s:\n", heading);
+        printk("%s:\n", heading);
     }
     else {
-        kprintf("Memory at 0x%08x\n", buf);
+        printk("Memory at 0x%08x\n", buf);
     }
 
-    for (uint32_t i=0; i<count; i+=16) {
-        uint32_t needed = 16;
+    for (uint32_t i=0; i<count; i+=items_per_line) {
+        uint32_t needed = items_per_line;
         int skip = 0;
 
-        if ((i + 16) > count) {
+        if ((i + items_per_line) > count) {
             needed = count - i;
-            skip = 16 - needed;
+            skip = items_per_line - needed;
         }
 
         if (print_zeroes) {
             all_zeroes = NO;
         }
         else {
+            /* Check the line that we're about to print to see if it only contains 0s */
             all_zeroes = YES;
             for (uint32_t x=0; x<needed; x++) {
-                byte_val = get_byte(buf+i+x);
-                if (byte_val > 0) {
+                val = fetch(buf+i+x, size);
+                if (val > 0) {
                     all_zeroes = NO;
                     x = needed;
                 }
@@ -83,61 +150,61 @@ void dump(uint8_t *buf, size_t count, uint8_t print_zeroes, const char *heading,
 
         if (!all_zeroes || print_zeroes) {
             if (absolute_addresses == YES) {
-                kprintf("=%08x: ", buf+i);
+                printk("=%08x: ", buf+i);
             }
             else {
                 if (count <= 256) {
-                    kprintf("+%02x: ", i);
+                    printk("+%02x: ", i);
                 }
                 else if (count < 65536) {
-                    kprintf("+%04x: ", i);
+                    printk("+%04x: ", i);
                 }
                 else {
-                    kprintf("+%08x: ", i);
+                    printk("+%08x: ", i);
                 }
             }
 
             for (uint32_t x=0; x<needed; x++) {
-                byte_val = get_byte(buf+i+x);
+                val = fetch(buf+i+x, size);
 
-                if (byte_val == NOT_OK) {
+                if (val == NOT_OK) {
                     // Bus Error occurred
-                    kprintf("!! ");
+                    printk("!! ");
                 }
                 else {
-                    kprintf("%02x ", byte_val);
+                    printk(val_fmt, val);
                 }
             }
 
             for (int x=0; x<skip; x++) {
-                kprintf("   ");
+                printk(skip_str);
             }
 
-            kprintf("    ");
+            printk("    ");
             for (uint32_t x=0; x<needed; x++) {
-                byte_val = get_byte(buf+i+x);
+                val = fetch(buf+i+x, size);
 
-                if ((byte_val < ' ') || (byte_val > '_'))
-                    byte_val = '.';
+                if ((val < ' ') || (val > '_'))
+                    val = '.';
 
-                if (byte_val == NOT_OK) {
-                    kprintf(" ");
+                if (val == NOT_OK) {
+                    printk(" ");
                 }
                 else {
-                    kprintf("%c", byte_val);
+                    printk("%c", val);
                 }
             }
-            kprintf("\n");
+            printk("\n");
 
             printed_something = 1;
         }
     }
 
     if (!printed_something) {
-        kprintf("Data is all zeroes.\n");
+        printk("Data is all zeroes.\n");
     }
 
-    kprintf("\n");
+    printk("\n");
 
     set_isr_handler(VEC_BUS_ERROR, old_handler);
 }

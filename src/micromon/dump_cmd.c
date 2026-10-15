@@ -34,7 +34,7 @@ SOFTWARE.
 static long dump_address = 0;
 static size_t dump_window_size = 256;
 
-void handle_dump_command(int argc, char *argv[]) {
+static void do_dump_command(int argc, char *argv[], loc_size_t size) {
     long val;
     expr_error_t res;
     int error_pos;
@@ -45,7 +45,7 @@ void handle_dump_command(int argc, char *argv[]) {
             dump_address = val;
         }
         else {
-            kprintf("Couldn't evaluate expression: '%s'\n", argv[1]);
+            printk("Couldn't evaluate expression: '%s'\n", argv[1]);
             return;
         }
 
@@ -55,13 +55,25 @@ void handle_dump_command(int argc, char *argv[]) {
                 dump_window_size = (size_t)val;
             }
             else {
-                kprintf("Couldn't evaluate expression: '%s'\n", argv[2]);
+                printk("Couldn't evaluate expression: '%s'\n", argv[2]);
                 return;
             }
         }
     }
 
-    dump((uint8_t *)dump_address, dump_window_size, YES, NULL, YES);
+    dump((uint8_t *)dump_address, size, dump_window_size, YES, NULL, YES);
 
     dump_address += dump_window_size;
+}
+
+void handle_bytedump_command(int argc, char *argv[]) {
+    do_dump_command(argc, argv, BYTE);
+}
+
+void handle_worddump_command(int argc, char *argv[]) {
+    do_dump_command(argc, argv, WORD);
+}
+
+void handle_longdump_command(int argc, char *argv[]) {
+    do_dump_command(argc, argv, LONG);
 }

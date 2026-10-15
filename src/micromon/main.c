@@ -44,7 +44,6 @@ static command_t commands[] = {
     {"cd",          0, COMMAND, {handle_cd_command},        VEC},
     {"dir",         0, COMMAND, {handle_dir_command},       VEC},
     {"disassemble", 3, COMMAND, {handle_disasm_command},    VEC},
-    {"dump",        2, COMMAND, {handle_dump_command},      VEC},
     {"eval",        2, COMMAND, {handle_eval_command},      STR},
     {"go",          0, COMMAND, {handle_go_command},        VEC},
     {"load",        2, COMMAND, {handle_load_command},      VEC},
@@ -53,16 +52,25 @@ static command_t commands[] = {
     {"rtc",         3, COMMAND, {handle_rtc_command},       VEC},
     {"ser1",        0, COMMAND, {handle_ser_command},       VEC},
     {"ser2",        0, COMMAND, {handle_ser_command},       VEC},
-    {"byteset",     3, COMMAND, {handle_setbyte_command},   STR},
-    {"wordset",     3, COMMAND, {handle_setword_command},   STR},
-    {"longset",     3, COMMAND, {handle_setlong_command},   STR},
+    {"byteset",     6, COMMAND, {handle_setbyte_command},   STR},
+    {"wordset",     6, COMMAND, {handle_setword_command},   STR},
+    {"longset",     6, COMMAND, {handle_setlong_command},   STR},
+    {"bytedump",    6, COMMAND, {handle_bytedump_command},  VEC},
+    {"worddump",    6, COMMAND, {handle_worddump_command},  VEC},
+    {"longdump",    6, COMMAND, {handle_longdump_command},  VEC},
 
-    {"bs",          2, ALIAS,   {.cmd = "byteset"},         STR},
-    {"ws",          2, ALIAS,   {.cmd = "wordset"},         STR},
-    {"ls",          2, ALIAS,   {.cmd = "longset"},         STR},
+    {"sb",          2, ALIAS,   {.cmd = "byteset"},         STR},
+    {"sw",          2, ALIAS,   {.cmd = "wordset"},         STR},
+    {"sl",          2, ALIAS,   {.cmd = "longset"},         STR},
+
+    {"dump",        2, ALIAS,   {.cmd = "bytedump"},        VEC},
+    {"db",          2, ALIAS,   {.cmd = "bytedump"},        VEC},
+    {"dw",          2, ALIAS,   {.cmd = "worddump"},        VEC},
+    {"dl",          2, ALIAS,   {.cmd = "longdump"},        VEC},
 
     {"=",           1, PREFIX,  {.cmd = "eval"},            STR},
-    {"@",           1, PREFIX,  {.cmd = "byteedit"},        STR},
+    {"@",           1, PREFIX,  {.cmd = "byteset"},         STR},
+    {"?",           1, PREFIX,  {.cmd = "bytedump"},        VEC},
 };
 
 #define NUM_COMMANDS (sizeof(commands)/sizeof(command_t))
@@ -93,26 +101,26 @@ bool_t is_command(const char *cmd, const char *target, int min_target_len, cmd_t
 }
 
 void print_help(void) {
-    kprintf("Commands are:\n");
-    kprintf("  byteedit [<address>] [[=] <expr> [, <expr> ...]]\n");
-    kprintf("  cat <filename>\n");
-    kprintf("  cd <path>\n");
-    kprintf("  dir [ <path> ]\n");
-    kprintf("  disassemble <address>\n");
-    kprintf("  dump [<start_address> [<count>]]\n");
-    kprintf("  eval <expression>\n");
-    kprintf("  go <address>]\n");
-    kprintf("  load\n");
-    kprintf("  longedit [<address>] [[=] <expr> [, <expr> ...]]\n");
-    kprintf("  probe\n");
-    kprintf("  rtc (erase) | (time [hh:mm[:ss]]) | (date [yyyy:mm:dd])\n");
-    kprintf("  ser1|2 baud <baudrate>\n");
-    kprintf("  wordedit [<address>] [[=] <expr> [, <expr> ...]]\n");
-    kprintf("  quit\n\n");
+    printk("Commands are:\n");
+    printk("  byteedit [<address>] [[=] <expr> [, <expr> ...]]\n");
+    printk("  cat <filename>\n");
+    printk("  cd <path>\n");
+    printk("  dir [ <path> ]\n");
+    printk("  disassemble <address>\n");
+    printk("  dump [<start_address> [<count>]]\n");
+    printk("  eval <expression>\n");
+    printk("  go <address>]\n");
+    printk("  load\n");
+    printk("  longedit [<address>] [[=] <expr> [, <expr> ...]]\n");
+    printk("  probe\n");
+    printk("  rtc (erase) | (time [hh:mm[:ss]]) | (date [yyyy:mm:dd])\n");
+    printk("  ser1|2 baud <baudrate>\n");
+    printk("  wordedit [<address>] [[=] <expr> [, <expr> ...]]\n");
+    printk("  quit\n\n");
 }
 
 command_t *find_command(char *cmdline) {
-    kprintf("find_command: looking up '%s'\n", cmdline);
+    // printk("find_command: looking up '%s'\n", cmdline);
 
     for (unsigned int i=0; i<NUM_COMMANDS; i++) {
         if (is_command(cmdline, commands[i].command, commands[i].min_required, commands[i].type) == YES) {
@@ -144,17 +152,17 @@ void handle_command(char *cmdline) {
      * or a prefix (or NULL)
      */
     while ((cmd != NULL) && (cmd->type != COMMAND)) {
-        kprintf("handle_command: found %s '%s'\n",
-            (cmd->type == ALIAS)?"alias":"prefix", cmd->command);
+        // printk("handle_command: found %s '%s'\n",
+        //     (cmd->type == ALIAS)?"alias":"prefix", cmd->command);
         cmd = find_command(cmd->cmd);
     }
 
     if (cmd == NULL) {
-        kprintf("'%s': Unrecognised command.\n", cmdstr);
+        printk("'%s': Unrecognised command.\n", cmdstr);
         return;
     }
 
-    kprintf("handle_command: calling handler for'%s'\n", cmd->command);
+    // printk("handle_command: calling handler for'%s'\n", cmd->command);
 
     switch (cmd->args) {
         case NONE:
@@ -196,7 +204,7 @@ void main(void) {
             strcpy(cwd, "");
         }
 
-        kprintf("%s# ", cwd);
+        printk("%s# ", cwd);
 
         if (kgets(cmdline) != NULL) {
             handle_command(cmdline);
