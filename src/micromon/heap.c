@@ -64,7 +64,7 @@ static heap_info_t heap_info;
 uint32_t get_heap_start(void);
 
 static inline void dump_item(list_item_t *item) {
-    kprintf("item @0x%08x: ps=%6d, o=%3d, p=0x%08x, n=0x%08x\n", 
+    printk("item @0x%08x: ps=%6d, o=%3d, p=0x%08x, n=0x%08x\n", 
                 item, item->payload_size, item->owner, item->prev, item->next);
 
 }
@@ -72,24 +72,24 @@ static inline void dump_item(list_item_t *item) {
 void dump_heap(void) {
     uint32_t tot_size = 0;
 
-    kprintf("\nHeap:  free = 0x%08x, num=%d, alloc = 0x%08x, num=%d\n",
+    printk("\nHeap:  free = 0x%08x, num=%d, alloc = 0x%08x, num=%d\n",
         free_items, heap_info.num_free_items,
         allocated_items, heap_info.num_allocated_items);
-    // kprintf("  End of BSS is 0x%08x\n", get_heap_start());
+    // printk("  End of BSS is 0x%08x\n", get_heap_start());
 
-    kprintf("\nFREE:\n");
+    printk("\nFREE:\n");
 	for (list_item_t *cur = free_items; cur != NULL; cur = cur->next) {
         dump_item(cur);
         tot_size += cur->payload_size + sizeof(list_item_t);
 	} 
-    kprintf("\n");
+    printk("\n");
 
-    kprintf("ALLOCATED:\n");
+    printk("ALLOCATED:\n");
 	for (list_item_t *cur = allocated_items; cur != NULL; cur = cur->next) {
         dump_item(cur);
         tot_size += cur->payload_size + sizeof(list_item_t);
 	} 
-    kprintf("\nHeap dump complete. Total bytes in lists=%d (%06x)\n", tot_size, tot_size);
+    printk("\nHeap dump complete. Total bytes in lists=%d (%06x)\n", tot_size, tot_size);
 }
 
 void init_heap(void) {
@@ -105,7 +105,7 @@ void init_heap(void) {
     heap_info.num_free_items = 1;
     heap_info.num_allocated_items = 0;
 
-    // kprintf("init_heap: ");
+    // printk("init_heap: ");
     // dump_heap();
 }
 
@@ -285,7 +285,7 @@ static inline int free_item(list_item_t *item) {
 void bios_free(void *mem, pid_t pid) {
     list_item_t *item = (list_item_t *)(CP(mem) - sizeof(list_item_t));
 
-    // kprintf("bios_free(%08x, %d):\n", mem, pid);
+    // printk("bios_free(%08x, %d):\n", mem, pid);
 
     if (is_valid_item(item) == NO) {
         return;
@@ -301,7 +301,7 @@ void bios_free(void *mem, pid_t pid) {
 }
 
 void *bios_malloc(size_t nbytes, pid_t pid) {
-    // kprintf("\n\n\n\nmalloc(%d, %d):\n", nbytes, pid);
+    // printk("\n\n\n\nmalloc(%d, %d):\n", nbytes, pid);
 
     /* While debugging */
     if (nbytes == 0) {
@@ -323,7 +323,7 @@ void *bios_malloc(size_t nbytes, pid_t pid) {
          * as early as possible 
          */
         if (!is_valid_item(item)) {
-            kprintf("bios_malloc: invalid item\n");
+            printk("bios_malloc: invalid item\n");
             errno = ENOMEM;
             return NULL;
         }
@@ -372,14 +372,14 @@ void *bios_malloc(size_t nbytes, pid_t pid) {
 void clean_heap(pid_t pid) {
     list_item_t *next = NULL;
 
-    kprintf("clean_heap: pid=%d\n", pid);
+    printk("clean_heap: pid=%d\n", pid);
 
     for (list_item_t *item=allocated_items; item!=NULL; item=next) {
         next = item->next;
 
         if (item->owner == pid) {
             void *p = (void *)(CP(item) + sizeof(list_item_t));
-            kprintf("clean_heap: reclaiming 0x%08x\n", p);
+            printk("clean_heap: reclaiming 0x%08x\n", p);
             bios_free(p, pid);
         }
     }

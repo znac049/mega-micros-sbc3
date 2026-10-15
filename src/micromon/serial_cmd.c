@@ -38,7 +38,7 @@ static void do_baud_cmd(int argc, char *argv[]) {
     int error_pos;
 
     if (argc != 3) {
-        kprintf("usage: %s baud <baudrate>\n", argv[0]);
+        printk("usage: %s baud <baudrate>\n", argv[0]);
         return;
     }
 
@@ -50,16 +50,16 @@ static void do_baud_cmd(int argc, char *argv[]) {
             port = 1;
         }
 
-        kprintf("Setting baudrate on %s to %d...\n", argv[0], baud);
+        printk("Setting baudrate on %s to %d...\n", argv[0], baud);
         if (bios_set_baud(port, baud) == NOT_OK) {
-            kprintf("FAILED.\n");
+            printk("FAILED.\n");
         }
         else {
-            kprintf("Success.\n");
+            printk("Success.\n");
         }
     }
     else {
-        kprintf("Couldn't evaluate baud rate expression: '%s'\n", argv[2]);
+        printk("Couldn't evaluate baud rate expression: '%s'\n", argv[2]);
         return;
     }
 }
@@ -68,14 +68,14 @@ void handle_ser_command(int argc, char *argv[]) {
     register const char *cmd = argv[1];
 
     if ((argc == 1) || ((argc == 2) && is_command(cmd, "help", 2, ANY) == YES)) {
-        kprintf("%s accepts the following sub-commands: \n", argv[0]);
-        kprintf("  baud <baudrate>       set the baudrate\n");
-        kprintf("\n");
+        printk("%s accepts the following sub-commands: \n", argv[0]);
+        printk("  baud <baudrate>       set the baudrate\n");
+        printk("\n");
     }
     else if (is_command(cmd, "baud", 2, ANY) == YES) {
         do_baud_cmd(argc, argv);
     }
     else {
-        kprintf("'%s' is not a valid sub-command.\n", argv[1]);
+        printk("'%s' is not a valid sub-command.\n", argv[1]);
     }
 }

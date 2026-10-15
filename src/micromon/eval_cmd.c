@@ -37,8 +37,6 @@ void handle_eval_command(char *cmdline) {
     int argc;
     char *argv[MAX_ARGS];
 
-    kprintf("hadle_eval_cmd: cmd='%s'\n", cmdline);
-
     exp[0] = EOS;
 
     if (cmdline[0] == '=') {
@@ -58,22 +56,20 @@ void handle_eval_command(char *cmdline) {
         strcpy(exp, s);
     }
 
-    kprintf("to eval: '%s'\n", exp);
-
     argc = split_str(exp, ',', argv, MAX_ARGS);
     for (int i=0; i<argc; i++) {
         expr_error_t res;
         long val;
         int error_pos;
 
-        kprintf("to_eval: '%s'\n", argv[i]);
+        // printk("to_eval: '%s'\n", argv[i]);
 
         res = expr_evaluate(argv[i], &val, &error_pos);
         if (res != EXPR_OK) {
-            kprintf("Failed to parse expression '%s'\n%s\n\n", argv[i], expr_error_string(res));
+            printk("Failed to parse expression '%s'\n%s\n\n", argv[i], expr_error_string(res));
         }
         else {
-            kprintf("%s\n=%d (0x%08x)\n", val, val);
+            printk("%s\n=%d (0x%08x)\n", argv[i], val, val);
         }
     }
 }

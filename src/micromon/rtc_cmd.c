@@ -43,7 +43,7 @@ static long do_eval(char *exp) {
 
     res = expr_evaluate(exp, &val, &error_pos);
     if (res != EXPR_OK) {
-        kprintf("Failed to parse expression '%s'\n%s\n\n", exp, expr_error_string(res));
+        printk("Failed to parse expression '%s'\n%s\n\n", exp, expr_error_string(res));
         return -1;
     }
 
@@ -56,17 +56,17 @@ static void do_date_command(int argc, char *argv[]) {
 
     status = ds1307_read_time(&t);
     if (status < 0) {
-        kprintf("DS1307: no ACK from device -- check address/wiring/pull-ups\n");
+        printk("DS1307: no ACK from device -- check address/wiring/pull-ups\n");
     }
     else if (status == 1) {
-        kprintf("Warning: clock-halt (CH) bit is set -- oscillator is "
+        printk("Warning: clock-halt (CH) bit is set -- oscillator is "
             "stopped, time above will not advance until the clock "
             "is (re)started. Time is standing still!\n");
     }
     
     if (!argc) {
         // Display the date
-        kprintf("%s %02d-%02d-%04d\n", day_names[t.day], t.date, t.month, t.year + 2000);    
+        printk("%s %02d-%02d-%04d\n", day_names[t.day], t.date, t.month, t.year + 2000);    
     }
     else if ((argc >= 1) && (argc < 3)) {
         long year = do_eval(argv[0]);
@@ -87,10 +87,10 @@ static void do_date_command(int argc, char *argv[]) {
 
         status = ds1307_write_time(&t);
         if (status != OK) {
-            kprintf("Failed to set the date.\n");
+            printk("Failed to set the date.\n");
         }
         else {
-            kprintf("Date set.\n");
+            printk("Date set.\n");
         }
     }
 }
@@ -101,17 +101,17 @@ static void do_time_command(int argc, char *argv[]) {
 
         status = ds1307_read_time(&t);
         if (status < 0) {
-            kprintf("DS1307: no ACK from device -- check address/wiring/pull-ups\n");
+            printk("DS1307: no ACK from device -- check address/wiring/pull-ups\n");
         }
         else if (status == 1) {
-            kprintf("Warning: clock-halt (CH) bit is set -- oscillator is "
+            printk("Warning: clock-halt (CH) bit is set -- oscillator is "
                 "stopped, time above will not advance until the clock "
                 "is (re)started. Time is standing still!\n");
         }
     
     if (!argc) {
         // Display the time
-        kprintf("%02u:%02u:%02u\n", t.hours, t.minutes, t.seconds);
+        printk("%02u:%02u:%02u\n", t.hours, t.minutes, t.seconds);
     
     }
     else if ((argc >= 1) && (argc < 3)) {
@@ -133,10 +133,10 @@ static void do_time_command(int argc, char *argv[]) {
 
         status = ds1307_write_time(&t);
         if (status != OK) {
-            kprintf("Failed to set the time.\n");
+            printk("Failed to set the time.\n");
         }
         else {
-            kprintf("Time set.\n");
+            printk("Time set.\n");
         }
     }
 }
@@ -146,11 +146,11 @@ static void do_nvram_command(int argc, char *argv[]) {
         uint8_t nvram[56];
 
         if (ds1307_read_nvram(0, nvram, 56) != 56) {
-            kprintf("Failed to read RTC nvram!\n");
+            printk("Failed to read RTC nvram!\n");
             return;
         }
 
-        dump(nvram, 56, YES, "RTC nvram", NO);
+        dump(nvram, BYTE, 56, YES, "RTC nvram", NO);
     }
     else if ((argc == 1) && is_command(argv[0], "erase", 2, ANY) == YES) {
         uint8_t ram[56];
@@ -160,17 +160,17 @@ static void do_nvram_command(int argc, char *argv[]) {
         ram[0] = 0xb0;
         ram[1] = 0xba;
 
-        kprintf("Erasing rtc nvram...");
+        printk("Erasing rtc nvram...");
 
         res = ds1307_write_nvram(0, ram, 56);
 
-        kprintf("\n");
+        printk("\n");
 
         if (res != 56) {
-            kprintf("ERROR! Erase failed.\n");
+            printk("ERROR! Erase failed.\n");
         } 
         else {
-            kprintf("Success.\n");
+            printk("Success.\n");
         }
     }
 }
@@ -179,11 +179,11 @@ void handle_rtc_command(int argc, char *argv[]) {
     register const char *cmd = argv[1];
 
     if ((argc == 1) || ((argc == 2) && is_command(cmd, "help", 2, ANY) == YES)) {
-        kprintf("rtc accepts the following sub-commands: \n");
-        kprintf("  date [yyyy mm dd]     show/set the date in the rtc\n");
-        kprintf("  nvram [erase]         show/erase the contents of the rtc's nvram\n");
-        kprintf("  time [hh mm [ss]]     show/set the time in the rtc\n");
-        kprintf("\n");
+        printk("rtc accepts the following sub-commands: \n");
+        printk("  date [yyyy mm dd]     show/set the date in the rtc\n");
+        printk("  nvram [erase]         show/erase the contents of the rtc's nvram\n");
+        printk("  time [hh mm [ss]]     show/set the time in the rtc\n");
+        printk("\n");
     }
     else if (is_command(cmd, "time", 2, ANY) == YES) {
         do_time_command(argc-2, &argv[2]);
@@ -195,7 +195,7 @@ void handle_rtc_command(int argc, char *argv[]) {
         do_nvram_command(argc-2, &argv[2]);
     }
     else {
-        kprintf("'%s' is not a valid sub-command.\n", argv[1]);
+        printk("'%s' is not a valid sub-command.\n", argv[1]);
     }
 }
 
@@ -205,28 +205,28 @@ void handle_rtc_subcommand(int argc, char *argv[]) {
     int status;
  
     if ((argc < 1) || (argc > 2)) {
-        kprintf("usage: show rtc [nvram]\n");
+        printk("usage: show rtc [nvram]\n");
         return;
     }
 
     if ((argc > 1) && (is_command(argv[1], "help", 2) == YES)) {
-        kprintf("show rtc accepts the following arguments and sub-commands:\n");
-        kprintf("  <no arg>              read and print the time.\n");
-        kprintf("  nvram                 dump the contents of the nvram (56 bytes)\n");
+        printk("show rtc accepts the following arguments and sub-commands:\n");
+        printk("  <no arg>              read and print the time.\n");
+        printk("  nvram                 dump the contents of the nvram (56 bytes)\n");
     }
     else if (argc == 1) {
         // Display the date and time
         status = ds1307_read_time(&t);
         if (status < 0) {
-            kprintf("DS1307: no ACK from device -- check address/wiring/pull-ups\n");
+            printk("DS1307: no ACK from device -- check address/wiring/pull-ups\n");
         }
     
-        kprintf("DS1307 date and time: %s 20%02u-%02u-%02u %02u:%02u:%02u\n",
+        printk("DS1307 date and time: %s 20%02u-%02u-%02u %02u:%02u:%02u\n",
             day_names[t.day], t.year, t.month, t.date,
             t.hours, t.minutes, t.seconds);
     
         if (status == 1)
-            kprintf("Warning: clock-halt (CH) bit is set -- oscillator is "
+            printk("Warning: clock-halt (CH) bit is set -- oscillator is "
                 "stopped, time above is not advancing until the clock "
                 "is (re)started.\n");
     }

@@ -1552,8 +1552,8 @@ static int disasm_single_instruction(void) {
 
     print_hexbytes(start, disasm_context.pos, hex_bytes, sizeof(hex_bytes));
 
-    kprintf("%06x  %-24s%-8s%s\n", pc, hex_bytes, insn.mnem, insn.ops);
-    // kprintf("$%08x  %s %s%s\n", pc, hex_bytes, insn.mnem, insn.ops);
+    printk("%06x  %-24s%-8s%s\n", pc, hex_bytes, insn.mnem, insn.ops);
+    // printk("$%08x  %s %s%s\n", pc, hex_bytes, insn.mnem, insn.ops);
 
     return OK;
 }
@@ -1564,7 +1564,7 @@ void handle_disasm_command(int argc, char *argv[]) {
     int error_pos;
 
     if ((argc < 0) || (argc > 3)) {
-        kprintf("Bad args.\n");
+        printk("Bad args.\n");
         return;
     }
 
@@ -1579,13 +1579,13 @@ void handle_disasm_command(int argc, char *argv[]) {
                     num_instructions_to_list = (int) val;
                 }
                 else {
-                    kprintf("Couldn't evaluate expression: '%s'\n", argv[2]);
+                    printk("Couldn't evaluate expression: '%s'\n", argv[2]);
                     return;
                 }
             }
         }
         else {
-            kprintf("Couldn't evaluate expression: '%s'\n", argv[1]);
+            printk("Couldn't evaluate expression: '%s'\n", argv[1]);
             return;
         }
 

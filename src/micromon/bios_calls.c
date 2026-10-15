@@ -41,7 +41,7 @@ int bios_exit(int exit_code, pid_t pid) {
 }
 
 int bios_test(int p1, int p2, int p3) {
-    kprintf("bios_test: p1=%08x, p2=%08x, p3=%08x\n", p1, p2, p3);
+    printk("bios_test: p1=%08x, p2=%08x, p3=%08x\n", p1, p2, p3);
 
     return 42;
 }

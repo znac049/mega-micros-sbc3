@@ -31,5 +31,5 @@ SOFTWARE.
 #include "expr.h"
 
 void handle_probe_command(int argc) {
-    kprintf("argc=%d\n", argc);
+    printk("argc=%d\n", argc);
 }

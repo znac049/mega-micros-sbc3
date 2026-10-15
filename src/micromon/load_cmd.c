@@ -74,7 +74,7 @@ static int get_hex_bytes(int num_bytes, bool_t *error) {
         nibble = hexval(kgetchar());
 
         if (nibble == -1) {
-            kprintf("ERROR\n");
+            printk("ERROR\n");
             if (error != NULL) {
                 *error = YES;
             }
@@ -100,7 +100,7 @@ int compare_xsums(void) {
     int calc = ~calculated_xsum & 0xff;
     int rx_xsum = get_hex_bytes(2, NULL);
 
-    // kprintf("\nComparing checksums: %02x and %02x\n", calc, rx_xsum);
+    // printk("\nComparing checksums: %02x and %02x\n", calc, rx_xsum);
 
     return (calc == rx_xsum)?OK:NOT_OK;
 }
@@ -129,18 +129,18 @@ static int load_single_srec(void) {
     bool_t count_error = NO;
     bool_t address_error = NO;
 
-    // kprintf("Is '%c' (%d) the start of a valid S-Record?\n", isalnum(c)?c:'.', c);
+    // printk("Is '%c' (%d) the start of a valid S-Record?\n", isalnum(c)?c:'.', c);
 
     if (c == '\n') {
         // possibly a dangling newline from TeraTerm
         c = kgetchar();
-        // kprintf("Skipped newline, now we have '%c' (%d)\n", isalnum(c)?c:'.', c);
+        // printk("Skipped newline, now we have '%c' (%d)\n", isalnum(c)?c:'.', c);
     }
 
     if (c != 'S') {
         // Skip the line
 
-        // kprintf("Skipping garbage line\n");
+        // printk("Skipping garbage line\n");
         while (c != '\r') {
             c = kgetchar();
         }
@@ -151,7 +151,7 @@ static int load_single_srec(void) {
     calculated_xsum = 0;
     c = kgetchar();
 
-    // kprintf("S-Record type is '%c' (%d)\n", isalnum(c)?c:'.', c);
+    // printk("S-Record type is '%c' (%d)\n", isalnum(c)?c:'.', c);
 
     // We have a possible S-Record
     switch(c) {
@@ -161,14 +161,14 @@ static int load_single_srec(void) {
             address = (uint8_t *)get_hex_bytes(4, &address_error);
 
             if (count_error || address_error || address != 0 || count < 3) {
-                kprintf("\nProblem reading count/address part of record\n");
+                printk("\nProblem reading count/address part of record\n");
                 res = NOT_OK;
             }
             else {
                 char pname[PATH_MAX];
                 char *p = pname;
 
-                kprintf("Filename: ");
+                printk("Filename: ");
                 for (size_t i=0; i<count-3; i++) {
                     uint8_t b = (uint8_t)get_hex_bytes(2, NULL);
 
@@ -180,7 +180,7 @@ static int load_single_srec(void) {
                 *p = EOS;
 
                 if (compare_xsums() != OK) {
-                    kprintf(" (Bad checksum)");
+                    printk(" (Bad checksum)");
                 }
                 else {
                     strcpy(program_name, pname);
@@ -195,14 +195,14 @@ static int load_single_srec(void) {
             address = (uint8_t *)get_hex_bytes(4, &address_error);
 
             if (count_error || address_error || count < 3) {
-                kprintf("\nProblem reading count/address part of record\n");
+                printk("\nProblem reading count/address part of record\n");
                 res = NOT_OK;
             }
             else {
-                kprintf("\r%04x", address);
+                printk("\r%04x", address);
                 if (read_data(address, count-3) == OK) {
                     if (compare_xsums() != OK) {
-                        kprintf(" (failed checksum)");
+                        printk(" (failed checksum)");
                         res = -1;
                     }
                 }
@@ -218,14 +218,14 @@ static int load_single_srec(void) {
             address = (uint8_t *)get_hex_bytes(6, &address_error);
             
             if (count_error || address_error || count < 4) {
-                kprintf("\nProblem reading count/address part of record\n");
+                printk("\nProblem reading count/address part of record\n");
                 res = NOT_OK;
             }
             else {
-                kprintf("\r%06x", address);
+                printk("\r%06x", address);
                 if (read_data(address, count-4) == OK) {
                     if (compare_xsums() != OK) {
-                        kprintf(" (failed checksum)");
+                        printk(" (failed checksum)");
                         res = NOT_OK;
                     }
                 }
@@ -241,14 +241,14 @@ static int load_single_srec(void) {
             address = (uint8_t *)get_hex_bytes(8, &address_error);
             
             if (count_error || address_error || count < 5) {
-                kprintf("\nProblem reading count/address part of record\n");
+                printk("\nProblem reading count/address part of record\n");
                 res = NOT_OK;
             }
             else {
-                kprintf("\r%08x", address);
+                printk("\r%08x", address);
                 if (read_data(address, count-5) == OK) {
                     if (compare_xsums() != OK) {
-                        kprintf(" (failed checksum)");
+                        printk(" (failed checksum)");
                         res = NOT_OK;
                     }
                 }
@@ -264,13 +264,13 @@ static int load_single_srec(void) {
             address = (uint8_t *)get_hex_bytes(8, &address_error);
 
             if (count_error || address_error || count != 3) {
-                kprintf("\nProblem reading count/address part of record\n");
+                printk("\nProblem reading count/address part of record\n");
                 res = NOT_OK;
             }
             else {
-                kprintf("\nRecord count is: %d", address);
+                printk("\nRecord count is: %d", address);
                 if (compare_xsums() != OK) {
-                    kprintf(" (bad checksum)");
+                    printk(" (bad checksum)");
                     res = NOT_OK;
                 }
                 kputchar('\n');
@@ -283,7 +283,7 @@ static int load_single_srec(void) {
             address = (uint8_t *)get_hex_bytes(4, &address_error);
             
             if (count_error || address_error || count < 3) {
-                kprintf("\nProblem with count/address part of record\n");
+                printk("\nProblem with count/address part of record\n");
                 res = NOT_OK;
             }
             else {
@@ -291,7 +291,7 @@ static int load_single_srec(void) {
                     res = NOT_OK;
                 }
                 else {
-                    kprintf("\nGO address is 0x%04x\n", address);
+                    printk("\nGO address is 0x%04x\n", address);
                     go_address = (uint32_t) address;
                 }
             }
@@ -305,7 +305,7 @@ static int load_single_srec(void) {
             address = (uint8_t *)get_hex_bytes(6, &address_error);
             
             if (count_error || address_error || count < 4) {
-                kprintf("\nProblem with count/address part of record\n");
+                printk("\nProblem with count/address part of record\n");
                 res = NOT_OK;
             }
             else {
@@ -313,7 +313,7 @@ static int load_single_srec(void) {
                     res = NOT_OK;
                 }
                 else {
-                    kprintf("\nGO address is 0x%06x\n", address);
+                    printk("\nGO address is 0x%06x\n", address);
                     go_address = (uint32_t)address;
                 }
             }
@@ -327,7 +327,7 @@ static int load_single_srec(void) {
             address = (uint8_t *)get_hex_bytes(8, &address_error);
             
             if (count_error || address_error || count < 5) {
-                kprintf("\nProblem with count/address part of record\n");
+                printk("\nProblem with count/address part of record\n");
                 res = NOT_OK;
             }
             else {
@@ -335,7 +335,7 @@ static int load_single_srec(void) {
                     res = NOT_OK;
                 }
                 else {
-                    kprintf("\nGO address is 0x%08x\n", address);
+                    printk("\nGO address is 0x%08x\n", address);
                     go_address = (uint32_t)address;
                 }
             }
@@ -366,9 +366,9 @@ static int wait_for_char_available(uint32_t seconds) {
     uint32_t target = now + TICKS_PER_SECOND;
     uint32_t timed_out = now + (seconds*TICKS_PER_SECOND);
 
-    // kprintf("%d - %d - %d\n", now, target, timed_out);
+    // printk("%d - %d - %d\n", now, target, timed_out);
 
-    kprintf("%3d ", seconds);
+    printk("%3d ", seconds);
 
     while (!kchar_available()) {
         now = ticks();
@@ -382,7 +382,7 @@ static int wait_for_char_available(uint32_t seconds) {
             kputchar(BS);
             kputchar(BS);
             // kputchar(BELL);
-            kprintf("%3d ", --seconds);
+            printk("%3d ", --seconds);
 
             target += TICKS_PER_SECOND;
         }
@@ -397,19 +397,19 @@ void handle_load_command(int argc, char *argv[]) {
     argc++;
     argv[0][0] = EOS;
 
-    kprintf("Waiting for S-Records...");
+    printk("Waiting for S-Records...");
 
     // Wait for serial data to arrive within 60 seconds
     if (wait_for_char_available(60) != OK) {
-        kprintf("\nTimed out after 60 seconds\n");
+        printk("\nTimed out after 60 seconds\n");
         return;
     }
 
-    kprintf("Reading...\n");
+    printk("Reading...\n");
     status = load_single_srec();
     while (status != DONE) {
         status = load_single_srec();
     }
 
-    kprintf("Data loaded ok\n");
+    printk("Data loaded ok\n");
 }

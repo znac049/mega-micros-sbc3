@@ -31,20 +31,18 @@ SOFTWARE.
 
 #include "micromon.h"
 
-enum size {BYTE=1, WORD, LONG};
-
 static long edit_address = 0;
 
 static char *skip_first_word(char *s) {
     return s;
 }
 
-static void do_set(char *cmdline, enum size access_size) {
+static void do_set(char *cmdline, loc_size_t access_size) {
     char *argv[MAX_ARGS];
     int argc;
     char *cp;
     
-    kprintf("do_set: '%s'\n, cmdline");
+    printk("do_set: '%s'\n, cmdline");
 
     if (*cmdline == '@') {
         cmdline++;
@@ -77,11 +75,11 @@ static void do_set(char *cmdline, enum size access_size) {
         int error_pos;
 
         *cp++ = EOS;
-        kprintf("do_set: address supplied is %s\n", cmdline);
+        printk("do_set: address supplied is %s\n", cmdline);
 
         res = expr_evaluate(cmdline, &val, &error_pos);
         if (res != EXPR_OK) {
-            kprintf("Failed to parse address '%s'\n%s\n\n", cmdline, expr_error_string(res));
+            printk("Failed to parse address '%s'\n%s\n\n", cmdline, expr_error_string(res));
             return;
         }
 
@@ -93,7 +91,7 @@ static void do_set(char *cmdline, enum size access_size) {
     argc = split_str(cmdline, ',', argv, MAX_ARGS);
     
     if (argc > 0) {
-        kprintf("$%08x ->", edit_address);
+        printk("$%08x ->", edit_address);
     }
 
     for (int i=0; i<argc; i++) {
@@ -101,11 +99,11 @@ static void do_set(char *cmdline, enum size access_size) {
         long val;
         int error_pos;
 
-        kprintf("do_set: expr='%s'\n", argv[i]);
+        printk("do_set: expr='%s'\n", argv[i]);
 
         res = expr_evaluate(argv[i], &val, &error_pos);
         if (res != EXPR_OK) {
-            kprintf("Failed to parse address '%s'\n%s\n\n", argv[i], expr_error_string(res));
+            printk("Failed to parse address '%s'\n%s\n\n", argv[i], expr_error_string(res));
             return;
         }
 
@@ -116,7 +114,7 @@ static void do_set(char *cmdline, enum size access_size) {
 
                     val &= 0xff;
                     *mem = (uint8_t)val;
-                    kprintf(" $%02x", val);
+                    printk(" $%02x", val);
                     edit_address++;
                 }
                 break;
@@ -127,7 +125,7 @@ static void do_set(char *cmdline, enum size access_size) {
 
                     val &= 0xffff;
                     *mem = (uint16_t)val;
-                    kprintf(" $%04x", val);
+                    printk(" $%04x", val);
                     edit_address += 2;
                 }
                 break;
@@ -138,14 +136,14 @@ static void do_set(char *cmdline, enum size access_size) {
 
                     *mem = (uint32_t)val;
                     edit_address += 4;
-                    kprintf(" $%08x", val);
+                    printk(" $%08x", val);
                 }
                 break;
         }
     }
 
     if (argc > 0) {
-        kprintf("\n");
+        printk("\n");
     }
 }
 

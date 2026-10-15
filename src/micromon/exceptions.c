@@ -26,6 +26,8 @@ SOFTWARE.
 #include <ctype.h>
 #include <duart.h>
 
+#include "micromon.h"
+
 struct common_frame {
     uint16_t sr;
     uint32_t pc;
@@ -158,16 +160,16 @@ void catch_exception(exception_t *context) {
         name = "User-defined vector";
     }
  
-    kprintf("\n*** EXCEPTION: %s (vector %u", name, vec);
+    printk("\n*** EXCEPTION: %s (vector %u", name, vec);
     if (vec >= 25 && vec <= 31) {
-        kprintf(", level %u", vec - 24);
+        printk(", level %u", vec - 24);
     }
     else if (vec >= 32 && vec <= 47) {
-        kprintf(", #%u", vec - 32);
+        printk(", #%u", vec - 32);
     }
-    kprintf(") ***\n");
+    printk(") ***\n");
  
-    kprintf("PC=%08lx  SR=%04x (%s)  frame format $%X\n",
+    printk("PC=%08lx  SR=%04x (%s)  frame format $%X\n",
             (unsigned long)f->pc, f->sr,
             (f->sr & SR_SUPERVISOR) ? "supervisor" : "user", fmt);
  
@@ -175,7 +177,7 @@ void catch_exception(exception_t *context) {
     switch (fmt) {
         case 0x2:
         case 0x9:
-            kprintf("Instruction address: %08lx\n",
+            printk("Instruction address: %08lx\n",
                     (unsigned long)fr32(f, 0x08));
             break;
     
@@ -183,43 +185,43 @@ void catch_exception(exception_t *context) {
         case 0xB: {
             uint16_t ssw = fr16(f, 0x0A);
 
-            kprintf("SSW=%04x", ssw);
+            printk("SSW=%04x", ssw);
             if (ssw & SSW_DF) {
-                kprintf("  data %s fault at %08lx (FC=%u)",
+                printk("  data %s fault at %08lx (FC=%u)",
                         (ssw & SSW_RW) ? "read" : "write",
                         (unsigned long)fr32(f, 0x10), ssw & 7);
             }
             
             if (ssw & (SSW_FB | SSW_FC)) {
-                kprintf("  instruction fetch fault");
+                printk("  instruction fetch fault");
             }
 
-            kprintf("\n");
+            printk("\n");
             break;
         }
     }
  
     /* Register dump */
     for (i = 0; i < 8; i++) {
-        kprintf("D%d=%08lx%s", i, (unsigned long)context->dregs[i],
+        printk("D%d=%08lx%s", i, (unsigned long)context->dregs[i],
                 (i & 3) == 3 ? "\n" : "  ");
     }
 
     for (i = 0; i < 7; i++) {
-        kprintf("A%d=%08lx%s", i, (unsigned long)context->aregs[i],
+        printk("A%d=%08lx%s", i, (unsigned long)context->aregs[i],
                 (i & 3) == 3 ? "\n" : "  ");
     }
  
     if (size) {
-        kprintf("SSP=%08lx\n",
+        printk("SSP=%08lx\n",
                 (unsigned long)((uintptr_t)f + size));  /* SSP before exception */
     }
     else {
-        kprintf("SSP=????????\n");
+        printk("SSP=????????\n");
     }
  
-    kprintf("USP=%08lx\n", (unsigned long)context->usp);
-    kprintf("System halted.\n");
+    printk("USP=%08lx\n", (unsigned long)context->usp);
+    printk("System halted.\n");
  
     /*
      * Halt. Remove this loop for vectors you want to resume from

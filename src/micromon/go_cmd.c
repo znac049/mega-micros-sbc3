@@ -46,13 +46,13 @@ static int do_the_business(int argc, char *argv[]) {
         int return_code;
 
         // First call - invoke the user program
-        kprintf("Launching code at 0x%08x\n", go_address);
+        printk("Launching code at 0x%08x\n", go_address);
         return_code = fn(argc, (const char **)argv);
         if (return_code) {
-            kprintf("\n---\nSHOULDN'T HAPPEN: User code exited with %d\n", return_code);
+            printk("\n---\nSHOULDN'T HAPPEN: User code exited with %d\n", return_code);
         }
         else {
-            kprintf("\n---\nSHOULDN'T HAPPEN: Exited.\n");
+            printk("\n---\nSHOULDN'T HAPPEN: Exited.\n");
         }
 
         return return_code;
@@ -61,7 +61,7 @@ static int do_the_business(int argc, char *argv[]) {
         // If we arrive here, it's because either:
         //   1. something has gone wrong
         //   2. the user code has called exit() (most likely)
-        kprintf("\n---\nUser code exited with code %d\n", go_res-1);
+        printk("\n---\nUser code exited with code %d\n", go_res-1);
 
         return go_res - 1;
     }
@@ -73,9 +73,9 @@ void handle_go_command(int argc, char *argv[]) {
     int error_pos;
 
     argv[0] = program_name;
-    // kprintf("Args are:\n");
+    // printk("Args are:\n");
     // for (int i=0; i<argc; i++) {
-    //     kprintf("%d: '%s'\n", i, argv[i]);
+    //     printk("%d: '%s'\n", i, argv[i]);
     // }
 
     /* 
@@ -108,9 +108,9 @@ void handle_go_command(int argc, char *argv[]) {
         }
     }
 
-    // kprintf("Calling with ArgC=%d:\n", argc);
+    // printk("Calling with ArgC=%d:\n", argc);
     // for (int i=0; i<argc; i++) {
-    //     kprintf("%d: '%s'\n", i, argv[i]);
+    //     printk("%d: '%s'\n", i, argv[i]);
     // }
 
     do_the_business(argc, argv);
