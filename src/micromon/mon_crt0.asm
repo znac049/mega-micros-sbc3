@@ -90,6 +90,7 @@ sum_done:
         move.b  #$F0,d0
         move.b  d0,pit_pbdr_o(a5)       ; Light some LEDs
 
+        SET_ERR #1,#$2000                 ; Code to show XSum error
 .stop:        
         stop    #$2700
         bra     .stop
