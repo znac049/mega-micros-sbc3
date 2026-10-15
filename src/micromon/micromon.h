@@ -46,6 +46,10 @@ typedef enum cmd_type cmd_type_t;
 enum arg_type {NONE, BOTH, STR, VEC};
 typedef enum arg_type arg_type_t;
 
+enum loc_size {BYTE=1, WORD, LONG};
+typedef enum loc_size loc_size_t;
+
+
 struct command {
     const char *command;
     int min_required;
@@ -101,11 +105,13 @@ void handle_disasm_command(int argc, char *argv[]);
 
 
 // dump.c
-void dump(uint8_t *buf, size_t count, uint8_t print_zeroes, const char *heading, bool_t absolute_addresses);
+void dump(void *vbuf, loc_size_t size, size_t count, uint8_t print_zeroes, const char *heading, bool_t absolute_addresses);
 
 
 // dump_cmd.c
-void handle_dump_command(int argc, char *argv[]);
+void handle_bytedump_command(int argc, char *argv[]);
+void handle_worddump_command(int argc, char *argv[]);
+void handle_longdump_command(int argc, char *argv[]);
 
 
 // elf.c
