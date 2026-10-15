@@ -91,6 +91,7 @@ void dump(void *vbuf, loc_size_t size, size_t count, uint8_t print_zeroes, const
     char *val_fmt;
     char *skip_str = "   ";
     uint8_t *buf = (uint8_t *)vbuf;
+    int print_ascii = YES;
 
     switch (size) {
         case BYTE:
@@ -102,12 +103,14 @@ void dump(void *vbuf, loc_size_t size, size_t count, uint8_t print_zeroes, const
             items_per_line = 8;
             val_fmt = " %04x";
             skip_str = "     ";
+            print_ascii = NO;
             break;
 
         case LONG:
             items_per_line = 4;
             val_fmt = " %08x";
             skip_str = "         ";
+            print_ascii = NO;
             break;
 
         default:
@@ -180,20 +183,23 @@ void dump(void *vbuf, loc_size_t size, size_t count, uint8_t print_zeroes, const
                 printk(skip_str);
             }
 
-            printk("    ");
-            for (uint32_t x=0; x<needed; x++) {
-                val = fetch(buf+i+x, size);
+            if (print_ascii == YES) {
+                printk("    ");
+                for (uint32_t x=0; x<needed; x++) {
+                    val = fetch(buf+i+x, size);
 
-                if ((val < ' ') || (val > '_'))
-                    val = '.';
+                    if ((val < ' ') || (val > '_'))
+                        val = '.';
 
-                if (val == NOT_OK) {
-                    printk(" ");
-                }
-                else {
-                    printk("%c", val);
+                    if (val == NOT_OK) {
+                        printk(" ");
+                    }
+                    else {
+                        printk("%c", val);
+                    }
                 }
             }
+            
             printk("\n");
 
             printed_something = 1;
