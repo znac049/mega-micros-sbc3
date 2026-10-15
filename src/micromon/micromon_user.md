@@ -17,35 +17,21 @@ It is written predominantly in C with a minimal amount of assembly language.
   - Access to the onboard DS-1307 real time clock.
   - Compact Flash (ext2 filesystem)
   - ROM based disk (ext2 filesystem)
-- A C runtime library is included which provided a comprehensive (and getting more complete every day) set of many of the standard functions you'd expect to find on any linux or unix system.
 - ROM validity checked on reset.
 - Memory test.
+- Alongside the monitor a C runtime library is included which provided a comprehensive (and getting more complete every day) set of many of the standard functions you'd expect to find on any linux or unix system.
+
+## Startup
+### Startup errors
+How startup errors are displayed depends on how early in the initialisation code they occur. If an error occurs before the duart has been initialise, LEDs and the Hex Display card will be used to indicate what has occurred. If the system has initialised the duart, it will display an appropriate error message on the console serial port.
+
 
 ## Monitor Commands
 
-### help
-Simply prints a brief summary of each command the monitor accepts
-```
-/# help
-Commands are:
-  cat <filename>
-  cd <path>
-  dir [ <path> ]
-  disassemble <address>
-  dump [<start_address> [<count>]]
-  eval <expression>
-  go <address>]
-  load
-  probe
-  rtc (erase) | (time [hh:mm[:ss]]) | (date [yyyy:mm:dd])
-  ser1|2 baud <baudrate>
-  quit
+### help - print help message
+Simply prints a brief summary of each command the monitor accepts.
 
-/#
-```
-
-### byteset, wordset, longset
-Edit data in memory.
+### byteset, wordset, longset - edit data in memory
 __Aliases__: **bs**, **ws**, **ls**
 
 ```
@@ -54,7 +40,14 @@ bs <address> [ [ = ] <expr> [, <expr> ...]]
 @[b|w|l] [ <address> ] [ [ = ] <expr> [, <expr> ...]]
 ```
 
-### cat - Display the contents of a file
+### bytedump, worddump, longdump - dump contents of memory
+__Aliases__: **dump**, **bd**, **wd**, **ld**
+__Shortform__: **?**
+```
+wd [ <address> [ <number_of_items> ]]
+```
+
+### cat - display the contents of a file
 #### Synopsis
 ```
 cat <filename>
@@ -62,15 +55,23 @@ cat <filename>
 #### Details
 The file specified by **_<filename>_** is displayed on the console. If **_<filename>_** does not contain a path part, it will be read from the current directory.
 
-### cd - Change directory
+### cd - change directory
+#### Synopsis
+```
+```
 
-### dir - List the contents of a directory
+### dir - list the contents of a directory
+#### Synopsis
+```
+```
 
 ### disassemble - disassemble machine code
+#### Synopsis
+```
+```
 
-### dump - dump contents of memory
-
-### eval - Evaluate an expression
+### eval - evaluate expressions
+__Shortform__: **=**
 #### Synopsis
 ```
 eval <expression> [, <expression> ... ]
@@ -132,15 +133,30 @@ load
 The monitor loads a program, in Motorola S-Record format, from the console port. A countdown is displayed and if no data has been received when it hits zero, the load is aborted. If a start address record is present, it will be remembered and used by the **_go_** command, if no other address is specified.
 
 ### probe
+#### Synopsis
+```
+```
 
-### pwd
+### pwd - print current directory
+#### Synopsis
+```
+pwd
+```
 
-### rtc
+### rtc - configure/show clock settings
+#### Synopsis
+```
+```
 
 ### ser1 | ser2
+#### Synopsis
+```
+```
 
 ## Installing the monitor
 
-### Booting
-#### Boot errors
-How boot errors are displayed depends on how early in the initialisation code they occur. If an error occurs before the duart has been initialise, LEDs will be used to indicate what has occurred. If the system has initialised the duart, it will display an appropriate error message on the console serial port.
+## Monitor Error Codes
+The following error codes may be displayed on the Hex Display card, if present:
+| First Digit | Digits 3 and 4 | Meaning |
+|:------------|:--------:|:--------------|
+| 01 | 2000 | ROM Checksum failed. CPU stopped. |
