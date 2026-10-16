@@ -157,6 +157,32 @@ pwd
 
 ## Monitor Error Codes
 The following error codes may be displayed on the Hex Display card, if present:
-| First Digit | Digits 3 and 4 | Meaning |
-|:------------|:--------:|:--------------|
-| 01 | 2000 | ROM Checksum failed. CPU stopped. |
+
+**_Hex Digits_**
+| 1         | 2           | 3 | 4 | 5-8         |
+|-----------|-------------|---|---|-------------|
+| Level     |             |   |   |             |
+| 0=Success |             |   |   |             |
+| 1=Info    |             |   |   |             |
+| 2=Warning |             |   |   |             |
+| 3=Error   |             |   |   |             |
+|           | Subsystem   |   |   |             |
+|           | 1=System    |   |   |             |
+|           | 2=PI/T      |   |   |             |
+|           | 3=Duart     |   |   |             |
+|           | 4=CF        |   |   |             |
+|           | 5=I2C       |   |   |             |
+|           | 6=RAM       |   |   |             |
+|           |             |   |   | Status Code |
+
+**_Status Codes_**
+
+| Code         | Meaning  |
+|:-------------|:--------:|
+| `01 00 0000` | System reset                     |
+| `01 00 0001` | ROM Checksum OK                  |
+| `31 00 2000` | ROM Checksum failed. CPU stopped |
+| `36 00 2001` | RAM test of first meg failed.CPU stopped |
+| `11 00 2002` | Entering monitor                 |
+| `31 00 2003` | Monitor called exit(). CPU stopped |
+|              |                                  |
