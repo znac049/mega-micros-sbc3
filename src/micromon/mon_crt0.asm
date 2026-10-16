@@ -66,6 +66,8 @@ _start::
 ; Setup the stack and frame pointer
 	move.l  #_INITIAL_STACK,sp
 
+        HexDisp 1,0,0
+
 
 ; Initialise PIT ports A and B as outputs, so we can use the
 ; LEDs for boot diagnostics - change this once we have a hex
@@ -90,12 +92,13 @@ sum_done:
         move.b  #$F0,d0
         move.b  d0,pit_pbdr_o(a5)       ; Light some LEDs
 
-        SET_ERR #1,#$2000                 ; Code to show XSum error
-.stop:        
+        HexDisp $31,0,$2000             ; Code to show XSum error
+stop:        
         stop    #$2700
-        bra     .stop
+        bra     stop
 
 sum_ok:
+        HexDisp $01,0,0                 ; Xsum passed
 
 ; Now check the first 1meg of ran
         lea     ram_test_done(pc),a6    ; Still can't trust the stack
@@ -103,7 +106,9 @@ sum_ok:
 ram_test_done:
         beq     ram_ok
 
-
+; Ram test failed
+        HexDisp $36,0,$2001
+        bra     stop
 
 ram_ok:
 
@@ -145,6 +150,7 @@ ibdone:
 
 
 ; invoke main() 
+        HexDisp $11,0,$2002
         bsr	main
         bra     done
 
@@ -152,8 +158,8 @@ ibdone:
 exit::
     	move.l  4(sp),d0
 done:
-        move.b  running_in_rom,d0
-        bra     done                            ; Don't know what else to do!
+        HexDisp $31,0,$2003
+        bra     stop                           ; Don't know what else to do!
 
 
 get_heap_start::
