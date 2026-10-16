@@ -104,6 +104,7 @@ int vfs_shutdown(void);
 
 int bios_chdir(const char *path);
 int bios_getcwd(char*buff, size_t size);
+int bios_isatty(int fd);
 vfile_t *bios_locate(const char *path);
 int bios_creat(const char *pathname, mode_t mode);
 int bios_open(const char *pathname, int flags);

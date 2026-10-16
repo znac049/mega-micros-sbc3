@@ -575,4 +575,30 @@ off_t bios_seek(int fd, off_t offset, int whence) {
     return where;
 }
 
+int bios_isatty(int fd) {
+    vfile_t *file;
+    int res;
+
+    if ((fd < 0) || (fd >= MAX_FILES)) {
+        errno = EBADF;
+        return NOT_OK;
+    }
+
+    file = &vfs_files[fd];
+
+    if (file->mp->fs_driver->type != VFS_TYPE_CHAR) {
+        errno = ENOTTY;
+        return NO;
+    }
+
+    res = file->mp->fs_driver->api.chardev.isatty(fd);
+
+    if (res != YES) {
+        errno = ENOTTY;
+        return NO;
+    }
+
+    return YES;
+}
+
 #endif // BAREMETAL

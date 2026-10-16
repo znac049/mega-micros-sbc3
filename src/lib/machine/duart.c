@@ -493,6 +493,14 @@ static int handles_path(const char *pathname) {
     return NO;
 }
 
+static int duart_isatty(uint8_t port) {
+    if (port > 1) {
+        return NOT_OK;
+    }
+
+    
+    return YES;
+}
 int setup_vfs_duart_handler(vfs_fs_t *vfs) {
     if (vfs == NULL) {
         return NOT_OK;
@@ -506,6 +514,7 @@ int setup_vfs_duart_handler(vfs_fs_t *vfs) {
     vfs->api.chardev.getchar = bios_getchar;
     vfs->api.chardev.char_available = bios_char_available;
     vfs->api.chardev.flush = bios_flush;
+    vfs->api.chardev.isatty = duart_isatty;
 
     return OK;
 }

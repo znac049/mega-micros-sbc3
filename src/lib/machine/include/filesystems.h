@@ -88,6 +88,7 @@ union vfs {
         int (*getchar)(uint8_t minor);
         int (*char_available)(uint8_t minor);
         int (*flush)(uint8_t minor);
+        int (*isatty)(uint8_t minor);
     } chardev;
 
     struct {
