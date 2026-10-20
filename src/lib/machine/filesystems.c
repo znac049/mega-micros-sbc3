@@ -40,7 +40,7 @@ static vfs_fs_t filesystems[MAX_VIRTUAL_FILESYSTEMS];
 
 // Note files include directories
 static vfile_t vfs_files[MAX_FILES];
-static vmp_t mounts[MAX_MOUNTS];
+vmp_t mounts[MAX_MOUNTS];
 
 static vmp_t *find_free_vmp(void) {
     for (int i=0; i<MAX_MOUNTS; i++) {

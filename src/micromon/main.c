@@ -58,6 +58,7 @@ static command_t commands[] = {
     {"bytedump",    6, COMMAND, {handle_bytedump_command},  VEC},
     {"worddump",    6, COMMAND, {handle_worddump_command},  VEC},
     {"longdump",    6, COMMAND, {handle_longdump_command},  VEC},
+    {"showmount",   5, COMMAND, {handle_showmount_command}, VEC},
 
     {"sb",          2, ALIAS,   {.cmd = "byteset"},         STR},
     {"sw",          2, ALIAS,   {.cmd = "wordset"},         STR},
@@ -69,7 +70,7 @@ static command_t commands[] = {
     {"dl",          2, ALIAS,   {.cmd = "longdump"},        VEC},
 
     {"=",           1, PREFIX,  {.cmd = "eval"},            STR},
-    {"@",           1, PREFIX,  {.cmd = "byteset"},         STR},
+    {"!",           1, PREFIX,  {.cmd = "byteset"},         STR},
     {"?",           1, PREFIX,  {.cmd = "bytedump"},        VEC},
 };
 
