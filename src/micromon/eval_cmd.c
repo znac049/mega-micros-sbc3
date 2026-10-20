@@ -69,7 +69,7 @@ void handle_eval_command(char *cmdline) {
             printk("Failed to parse expression '%s'\n%s\n\n", argv[i], expr_error_string(res));
         }
         else {
-            printk("%s\n=%d (0x%08x)\n", argv[i], val, val);
+            printk("%s => %d (0x%08x)\n", argv[i], val, val);
         }
     }
 }
