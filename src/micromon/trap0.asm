@@ -85,6 +85,7 @@ trap0_call_table::
         dc.l    bios_getdents
         dc.l    bios_test
         dc.l    bios_seek
+        dc.l    bios_isatty
 t0ct_end     
 
         end
