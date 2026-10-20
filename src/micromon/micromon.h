@@ -175,6 +175,10 @@ void handle_setlong_command(char *cmdline);
 void setup(void);
 
 
+// showmount_cmd.c
+void handle_showmount_command(int argc, char *argv[]);
+
+
 // syscall.asm
 unsigned int trap0_handler(int call_num, int arg1, int arg2, int arg3);
 unsigned int trap14_handler(int call_num, int arg1, int arg2);
