@@ -35,7 +35,7 @@ SOFTWARE.
 
 static int major = 0;
 static int minor = 5;
-static int MAGIC_BUILD_NUMBER = 51;
+static int MAGIC_BUILD_NUMBER = 52;
 
 
 uint32_t ram_end;
@@ -226,7 +226,7 @@ static inline void probe_hardware(void) {
 void setup(void) {
     int is_xr;
 
-    ram_end = 0x7fffff; //get_ram_end();
+    ram_end = get_ram_end();
 
     /*
      * Now we know how much memory we have, we can
@@ -289,5 +289,5 @@ void setup(void) {
         vfs_init();
     }
 
-    kprintf("\n");
+    printk("\n");
 }
