@@ -1,0 +1,274 @@
+// sbc3_glue.v - glue logic for the Mega-Micros 68030 SBC3 (rev 1.0),
+// for the Altera EPM7128SLC84 (IC3).
+//
+// Written from the SBC-3B3 schematic (22/01/2025).  It is a replacement
+// for the original CPLD design, which isn't available, so treat it as a
+// starting point: the PARAMETERS section below collects every timing and
+// memory-map choice, and the notes in README.md list what to check.
+//
+// What it does
+//   * Address decoding (A31-A24 must be 0 unless FULL_DECODE = 0):
+//       $000000-$7FFFFF  RAM: two 32-bit banks of four byte-wide SRAMs
+//                        (bank select bit RAM_BANK_BIT; see below)
+//       $800000-$BFFFFF  I/O: 68000-style cycle on the backplane, ended
+//                        by /DTACK (or /VPA for a 6800-style cycle);
+//                        $AD0000-$ADFFFF also selects the on-board 68681
+//       $C00000-$FFFFFF  ROM: 27C322, 16-bit port on D16-D31
+//     Until the first access to ROM space after reset, reads from RAM
+//     space come from the ROM, so the reset vectors are fetched from it.
+//   * Dynamic bus sizing: DSACK0+DSACK1 for RAM (32-bit), DSACK1 for ROM
+//     and all I/O (16-bit, D16-D31).
+//   * Wait states for RAM and ROM, counted in CLK2 cycles.
+//   * Bus error on: no /DTACK within BERR_TIMEOUT clocks, CPU-space
+//     cycles other than interrupt acknowledge (so FPU instructions take
+//     the F-line trap, as there is no FPU), and unused address space.
+//   * Interrupts: /IRQ7-/IRQ1 priority-encoded onto /IPL2-/IPL0.
+//     Interrupt acknowledge cycles run on the backplane like I/O cycles;
+//     level 1 also asserts /B24 (PI/T PC7/TIACK) and level 2 /B25 (68681
+//     /IACK).  The 68030's /AVEC is not connected to the CPLD, so there
+//     are no autovectors: a level with no vectoring device bus-errors and
+//     the CPU takes the spurious interrupt exception.
+//   * 6800-style peripherals: E (CLK2 / E_DIV) and /VMA, used when a
+//     device answers an I/O cycle with /VPA instead of /DTACK.
+//   * /UDS and /LDS for the 16-bit backplane bus.
+//
+// Clock: CLK2 is assumed to be the 40 MHz CPU clock (one of the MC10H640
+// outputs, in phase with the 68030's CLK).  All registers use its rising
+// edge; the CPU's /AS is sampled there.  Strobes and acknowledges are
+// gated with /AS, so they all go away as soon as the CPU ends the cycle.
+
+module sbc3_glue #(
+    // ---------------------------------------------------------------
+    // PARAMETERS
+    // ---------------------------------------------------------------
+    // Extra CLK2 cycles before DSACK for RAM and ROM.  0 gives the
+    // 68030's minimum 3-clock cycle.  At 40 MHz: 55 ns SRAM needs 1,
+    // a 100 ns 27C322 needs 3.
+    parameter RAM_WAIT     = 1,
+    parameter ROM_WAIT     = 3,
+    // RAM bank size: 21 = 2 MB banks (512Kx8 AS6C4008, as drawn):
+    //   bank 0 $000000-$1FFFFF, bank 1 $200000-$3FFFFF, $400000-$7FFFFF
+    //   bus-errors.
+    // 22 = 4 MB banks (1Mx8 SRAMs): bank 0 $000000-$3FFFFF, bank 1
+    //   $400000-$7FFFFF.
+    parameter RAM_BANK_BIT = 21,
+    // 1: only $00xxxxxx is decoded; any other A31-A24 bus-errors.
+    // 0: A31-A24 are ignored, so the 16 MB map repeats (as in MAME).
+    parameter FULL_DECODE  = 1,
+    // Clocks to wait for /DTACK or /VPA before asserting /BERR (max 255).
+    parameter BERR_TIMEOUT = 255,
+    // Earliest clock (counted from the first clock edge of the cycle) at
+    // which /DTACK is believed.  Lets the previous cycle's /DTACK, pulled
+    // up by R1 (1K2), finish rising first.
+    parameter DTACK_MIN    = 2,
+    // E = CLK2 / E_DIV, low for 60% and high for 40% of the period, like
+    // the 68000's.  40 gives 1 MHz at 40 MHz (6800-family parts are 1-2
+    // MHz).  Must be at least 10.
+    parameter E_DIV        = 40
+) (
+    input  wire        clk2,       // 83  CLK2 (40 MHz)
+    input  wire        reset_n,    // 28  /RESET
+    input  wire        as1_n,      // 61  /AS1  (68030 /AS)
+    input  wire        rw3,        // 31  R/W3  (1 = read)
+    input  wire [1:0]  siz,        // 58 SIZ1, 57 SIZ0
+    input  wire [2:0]  fc,         // 65 FC2, 67 FC1, 68 FC0
+    input  wire [31:16] a_hi,      // A31-A16
+    input  wire [3:0]  a_lo,       // A3-A0
+    input  wire        sel_n,      // 1   /SEL  (jumper J6; spare, unused)
+    input  wire [7:1]  irq_n,      // /IRQ7-/IRQ1
+    input  wire        dtack_n,    // 34  /DTACK (backplane)
+    input  wire        vpa_n,      // 84  /VPA   (backplane)
+
+    output wire        ds1_n,      // 63  /DS1 -> J3 -> /DSACK1
+    output wire        ds0_n,      // 64  /DS0 -> J8 -> /DSACK0
+    output wire        be_n,       // 60  /BE  -> J2 -> /BERR (open drain)
+    output wire [2:0]  ipl_n,      // 17 /IPL2, 18 /IPL1, 16 /IPL0
+    output wire        uds_n,      // 56  /UDS (also /UDS2 to IC10)
+    output wire        lds_n,      // 55  /LDS
+    output reg         e,          // 52  E
+    output wire        vma_n,      // 54  /VMA
+    output wire        ram0_oe_n,  // 33
+    output wire [3:0]  ram0_we_n,  // 36 WE3, 35 WE2, 37 WE1, 40 WE0
+    output wire        ram1_oe_n,  // 29
+    output wire [3:0]  ram1_we_n,  // 25 WE3, 27 WE2, 24 WE1, 22 WE0
+    output wire        rom_ce_n,   // 20  /ROM_CE (27C322 /G)
+    output wire        duart_ce_n, // 30  /68681_CE
+    output wire        b24_n,      // 41  /B24: level 1 IACK (PI/T TIACK)
+    output wire        b25_n       // 39  /B25: level 2 IACK (68681 /IACK)
+);
+
+    // ---------------------------------------------------------------
+    // Address decode (inputs are stable while /AS is asserted)
+    // ---------------------------------------------------------------
+    wire        rd       = rw3;
+    wire        cpuspace = (fc == 3'b111);
+    wire        iack     = cpuspace && (a_hi[19:16] == 4'hF);
+    wire [2:0]  level    = a_lo[3:1];
+    wire        hi_ok    = !FULL_DECODE || (a_hi[31:24] == 8'h00);
+    wire [1:0]  region   = a_hi[23:22];      // 0,1 RAM  2 I/O  3 ROM
+
+    reg         overlay;                     // ROM at 0 after reset
+
+    wire ram_space = hi_ok && !cpuspace && !region[1];
+    wire ram_hole  = (RAM_BANK_BIT == 21) ? a_hi[22] : 1'b0;
+    wire ram_bank  = (RAM_BANK_BIT == 21) ? a_hi[21] : a_hi[22];
+
+    wire t_rom   = hi_ok && !cpuspace && ((region == 2'b11) ||
+                                          (overlay && !region[1] && rd));
+    wire t_ram   = ram_space && !ram_hole && !t_rom;
+    wire t_duart = hi_ok && !cpuspace && (region == 2'b10) &&
+                   (a_hi[21:16] == 6'h2D);          // $AD0000-$ADFFFF
+    wire t_bus   = (hi_ok && !cpuspace && (region == 2'b10)) || iack;
+    // Anything else - unused space, the RAM hole, CPU space other than
+    // IACK (coprocessor, breakpoint, MMU) - ends in a bus error.
+    wire t_none  = !t_rom && !t_ram && !t_bus;
+
+    // ---------------------------------------------------------------
+    // Byte lanes
+    // ---------------------------------------------------------------
+    // 32-bit port: lane 3 = D31-D24 (WE3) ... lane 0 = D7-D0 (WE0).
+    // The transfer starts at byte A1:A0 and is SIZ bytes long
+    // (SIZ 00 = 4), clipped at the end of the long word.
+    reg [3:0] lane;
+    always @* begin : lanes
+        integer i, start, len;
+        start = a_lo[1:0];
+        len   = (siz == 2'b00) ? 4 : siz;
+        for (i = 0; i < 4; i = i + 1)
+            lane[3 - i] = (i >= start) && (i < start + len);
+    end
+    // 16-bit port on D31-D16: /UDS = D31-D24 (even byte), /LDS = D23-D16.
+    wire uds_en = !a_lo[0];
+    wire lds_en =  a_lo[0] || (siz != 2'b01);
+
+    // ---------------------------------------------------------------
+    // Bus cycle sequencer
+    // ---------------------------------------------------------------
+    reg        active;       // /AS has been seen at a clock edge
+    reg  [7:0] cnt;          // clock edges since then (saturating)
+    reg        ack32, ack16; // terminate: 32-bit / 16-bit port
+    reg        berr;
+    reg        dtack_s, vpa_s;
+    reg        vma;
+
+    wire [7:0] n = active ? ((cnt == 8'hFF) ? cnt : cnt + 8'd1) : 8'd0;
+
+    // E clock: free-running divider.  ecnt 0 .. E_DIV-1; E is low for the
+    // first 60% of the count.
+    localparam E_LOW = (E_DIV * 6) / 10;
+    reg [5:0] ecnt;
+    always @(posedge clk2 or negedge reset_n)
+        if (!reset_n) begin
+            ecnt <= 6'd0;
+            e    <= 1'b0;
+        end else begin
+            ecnt <= (ecnt == E_DIV - 1) ? 6'd0 : ecnt + 6'd1;
+            e    <= (ecnt >= E_LOW - 1) && (ecnt != E_DIV - 1);
+        end
+    // With e registered, E is high while ecnt is E_LOW .. E_DIV-1,
+    // and falls on the edge where ecnt wraps to 0.
+
+    always @(posedge clk2 or negedge reset_n)
+        if (!reset_n) begin
+            overlay <= 1'b1;
+            active  <= 1'b0;
+            cnt     <= 8'd0;
+            ack32   <= 1'b0;
+            ack16   <= 1'b0;
+            berr    <= 1'b0;
+            dtack_s <= 1'b0;
+            vpa_s   <= 1'b0;
+            vma     <= 1'b0;
+        end else begin
+            dtack_s <= !dtack_n;
+            vpa_s   <= !vpa_n;
+
+            if (as1_n) begin
+                active <= 1'b0;
+                cnt    <= 8'd0;
+                ack32  <= 1'b0;
+                ack16  <= 1'b0;
+                berr   <= 1'b0;
+                vma    <= 1'b0;
+            end else begin
+                active <= 1'b1;
+                cnt    <= n;
+
+                // The first ROM-space access ends the reset overlay.
+                if (hi_ok && !cpuspace && region == 2'b11)
+                    overlay <= 1'b0;
+
+                if (t_none)
+                    berr <= 1'b1;
+                else if (t_ram)
+                    ack32 <= (n >= RAM_WAIT);
+                else if (t_rom)
+                    ack16 <= (n >= ROM_WAIT);
+                else begin
+                    // I/O or interrupt acknowledge, on the backplane.
+                    if (vma) begin
+                        // 6800-style cycle: end a read 2 clocks before E
+                        // falls; end a write as it falls, so the data is
+                        // still driven when the peripheral latches it.
+                        if (rd ? (ecnt == E_DIV - 3) : (ecnt == E_DIV - 1))
+                            ack16 <= 1'b1;
+                    end else if (dtack_s && n >= DTACK_MIN)
+                        ack16 <= 1'b1;
+                    else if (vpa_s && n >= DTACK_MIN && !iack) begin
+                        // Start VMA with the next E low phase.
+                        if (ecnt == E_DIV - 1)
+                            vma <= 1'b1;
+                    end
+
+                    if (n >= BERR_TIMEOUT && !ack16 && !vma)
+                        berr <= 1'b1;
+                    // /VPA on an IACK would mean an autovector, which this
+                    // board can't do (/AVEC isn't driven): bus error.
+                    if (iack && vpa_s && n >= DTACK_MIN)
+                        berr <= 1'b1;
+                end
+            end
+        end
+
+    // ---------------------------------------------------------------
+    // Outputs (all gated with /AS)
+    // ---------------------------------------------------------------
+    wire cyc = !as1_n && active;      // from the first clock edge
+
+    assign ds1_n = !(!as1_n && (ack16 || ack32));
+    assign ds0_n = !(!as1_n && ack32);
+    assign be_n  = (!as1_n && berr) ? 1'b0 : 1'bz;
+
+    wire ram0 = cyc && t_ram && !ram_bank;
+    wire ram1 = cyc && t_ram &&  ram_bank;
+    assign ram0_oe_n = !(ram0 && rd);
+    assign ram1_oe_n = !(ram1 && rd);
+    assign ram0_we_n = ~({4{ram0 && !rd}} & lane);
+    assign ram1_we_n = ~({4{ram1 && !rd}} & lane);
+    assign rom_ce_n  = !(cyc && t_rom && rd);
+
+    wire busy = cyc && t_bus;
+    assign duart_ce_n = !(busy && t_duart);
+    assign uds_n = !(busy && uds_en);
+    assign lds_n = !(busy && lds_en);
+    assign vma_n = !(vma && !as1_n);
+    assign b24_n = !(busy && iack && level == 3'd1);
+    assign b25_n = !(busy && iack && level == 3'd2);
+
+    // Interrupt priority encoder.
+    reg [2:0] ipl;
+    always @* begin
+        casez (irq_n)
+            7'b0??????: ipl = 3'd7;
+            7'b10?????: ipl = 3'd6;
+            7'b110????: ipl = 3'd5;
+            7'b1110???: ipl = 3'd4;
+            7'b11110??: ipl = 3'd3;
+            7'b111110?: ipl = 3'd2;
+            7'b1111110: ipl = 3'd1;
+            default:    ipl = 3'd0;
+        endcase
+    end
+    assign ipl_n = ~ipl;
+
+endmodule
