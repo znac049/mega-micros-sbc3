@@ -70,6 +70,11 @@ module sbc3_glue #(
     // after /CS, so 8 clocks (200 ns) also guards against another device
     // pulling /DTACK low early.
     parameter DUART_SETUP = 8,
+    // 1: end 68681 cycles with its /DTACK (through J1).  0: ignore /DTACK
+    // and end them after DUART_ACCESS clocks of /68681_CE (up to 15;
+    // 12 = 300 ns), for testing whether /DTACK is the problem.
+    parameter DUART_DTACK = 1,
+    parameter DUART_ACCESS = 12,
     // Clocks to wait for /DTACK or /VPA before asserting /BERR (max 255).
     parameter BERR_TIMEOUT = 255,
     // Earliest clock (counted from the first clock edge of the cycle) at
@@ -109,7 +114,10 @@ module sbc3_glue #(
     output wire        rom_ce_n,   // 20  /ROM_CE (27C322 /G)
     output wire        duart_ce_n, // 30  /68681_CE
     output wire        b24_n,      // 41  /B24: level 1 IACK (PI/T TIACK)
-    output wire        b25_n       // 39  /B25: level 2 IACK (68681 /IACK)
+    output wire        b25_n,      // 39  /B25: level 2 IACK (68681 /IACK)
+    // Debug (header H1; leave H1's jumper off): goes low and stays low
+    // after a 68681 access or interrupt acknowledge ends in a bus error.
+    output reg         dbg_n       // 4
 );
 
     // ---------------------------------------------------------------
@@ -189,6 +197,7 @@ module sbc3_glue #(
     always @(posedge clk2 or negedge reset_n)
         if (!reset_n) begin
             overlay <= 1'b1;
+            dbg_n   <= 1'b1;
             active  <= 1'b0;
             cnt     <= 8'd0;
             ack32   <= 1'b0;
@@ -198,7 +207,7 @@ module sbc3_glue #(
             vpa_s   <= 1'b0;
             vma     <= 1'b0;
             duart_rec <= 6'd0;
-            duart_set <= DUART_SETUP;
+            duart_set <= DUART_DTACK ? DUART_SETUP : DUART_ACCESS;
             duart_go  <= 1'b0;
         end else begin
             dtack_s <= !dtack_n;
@@ -211,7 +220,7 @@ module sbc3_glue #(
                 if (duart_set != 4'd0)
                     duart_set <= duart_set - 4'd1;
             end else begin
-                duart_set <= DUART_SETUP;
+                duart_set <= DUART_DTACK ? DUART_SETUP : DUART_ACCESS;
                 if (duart_rec != 6'd0)
                     duart_rec <= duart_rec - 6'd1;
             end
@@ -250,8 +259,9 @@ module sbc3_glue #(
                         // still driven when the peripheral latches it.
                         if (rd ? (ecnt == E_DIV - 3) : (ecnt == E_DIV - 1))
                             ack16 <= 1'b1;
-                    end else if (dtack_s && n >= DTACK_MIN &&
-                                 (!t_duart || (duart_go && duart_set == 4'd0)))
+                    end else if (t_duart ? (duart_go && duart_set == 4'd0 &&
+                                            (dtack_s || !DUART_DTACK))
+                                         : (dtack_s && n >= DTACK_MIN))
                         ack16 <= 1'b1;
                     else if (vpa_s && n >= DTACK_MIN && !iack) begin
                         // Start VMA with the next E low phase.
@@ -259,8 +269,11 @@ module sbc3_glue #(
                             vma <= 1'b1;
                     end
 
-                    if (n >= BERR_TIMEOUT && !ack16 && !vma)
+                    if (n >= BERR_TIMEOUT && !ack16 && !vma) begin
                         berr <= 1'b1;
+                        if (t_duart || iack)
+                            dbg_n <= 1'b0;
+                    end
                     // /VPA on an IACK would mean an autovector, which this
                     // board can't do (/AVEC isn't driven): bus error.
                     if (iack && vpa_s && n >= DTACK_MIN)
