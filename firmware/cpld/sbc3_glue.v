@@ -75,6 +75,14 @@ module sbc3_glue #(
     // 12 = 300 ns), for testing whether /DTACK is the problem.
     parameter DUART_DTACK = 1,
     parameter DUART_ACCESS = 12,
+    // What pin 4 (pads P4 / H1) shows, for debugging:
+    //   0: goes low and stays low after a 68681 access or interrupt
+    //      acknowledge ends in a bus error
+    //   1: low during each 68681 read (a copy of /68681_CE for reads)
+    //   2: low during each 68681 write
+    //   3: toggles at the end of each 68681 read: a steady 0 V or 5 V
+    //      means no reads; about 2.5 V on a meter means it's polling
+    parameter DEBUG_MODE = 0,
     // Clocks to wait for /DTACK or /VPA before asserting /BERR (max 255).
     parameter BERR_TIMEOUT = 255,
     // Earliest clock (counted from the first clock edge of the cycle) at
@@ -115,9 +123,8 @@ module sbc3_glue #(
     output wire        duart_ce_n, // 30  /68681_CE
     output wire        b24_n,      // 41  /B24: level 1 IACK (PI/T TIACK)
     output wire        b25_n,      // 39  /B25: level 2 IACK (68681 /IACK)
-    // Debug (header H1; leave H1's jumper off): goes low and stays low
-    // after a 68681 access or interrupt acknowledge ends in a bus error.
-    output reg         dbg_n       // 4
+    // Debug (pads P4 / H1): see DEBUG_MODE.
+    output wire        dbg_n       // 4
 );
 
     // ---------------------------------------------------------------
@@ -131,6 +138,7 @@ module sbc3_glue #(
     wire [1:0]  region   = a_hi[23:22];      // 0,1 RAM  2 I/O  3 ROM
 
     reg         overlay;                     // ROM at 0 after reset
+    reg         dbg_berr_n;
 
     wire ram_space = hi_ok && !cpuspace && !region[1];
     wire ram_hole  = (RAM_BANK_BIT == 21) ? a_hi[22] : 1'b0;
@@ -197,7 +205,7 @@ module sbc3_glue #(
     always @(posedge clk2 or negedge reset_n)
         if (!reset_n) begin
             overlay <= 1'b1;
-            dbg_n   <= 1'b1;
+            dbg_berr_n <= 1'b1;
             active  <= 1'b0;
             cnt     <= 8'd0;
             ack32   <= 1'b0;
@@ -272,7 +280,7 @@ module sbc3_glue #(
                     if (n >= BERR_TIMEOUT && !ack16 && !vma) begin
                         berr <= 1'b1;
                         if (t_duart || iack)
-                            dbg_n <= 1'b0;
+                            dbg_berr_n <= 1'b0;
                     end
                     // /VPA on an IACK would mean an autovector, which this
                     // board can't do (/AVEC isn't driven): bus error.
@@ -308,6 +316,23 @@ module sbc3_glue #(
     assign vma_n = !(vma && !as1_n);
     assign b24_n = !(busy && iack && level == 3'd1);
     assign b25_n = !(busy && iack && level == 3'd2);
+
+    // Debug pin.
+    wire rd_end = ack16 && t_duart && rd && !as1_n;
+    reg  rd_end_q, dbg_tog;
+    always @(posedge clk2 or negedge reset_n)
+        if (!reset_n) begin
+            rd_end_q <= 1'b0;
+            dbg_tog  <= 1'b0;
+        end else begin
+            rd_end_q <= rd_end;
+            if (rd_end && !rd_end_q)
+                dbg_tog <= !dbg_tog;
+        end
+    assign dbg_n = (DEBUG_MODE == 1) ? !(!duart_ce_n &&  rd) :
+                   (DEBUG_MODE == 2) ? !(!duart_ce_n && !rd) :
+                   (DEBUG_MODE == 3) ? dbg_tog :
+                                       dbg_berr_n;
 
     // Interrupt priority encoder.
     reg [2:0] ipl;
