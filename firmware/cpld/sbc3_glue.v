@@ -7,7 +7,7 @@
 // memory-map choice, and the notes in README.md list what to check.
 //
 // What it does
-//   * Address decoding (A31-A24 must be 0 unless FULL_DECODE = 0):
+//   * Address decoding (A31-A24 ignored unless FULL_DECODE = 1):
 //       RAM: two 32-bit banks of four byte-wide SRAMs (RAM_MB):
 //         2 MB banks:    bank 0 $000000-$1FFFFF, bank 1 $200000-$3FFFFF
 //         8 MB banks:    bank 0 $000000-$7FFFFF, bank 1 $10000000-$107FFFFF
@@ -46,19 +46,22 @@ module sbc3_glue #(
     // Extra CLK2 cycles before DSACK for RAM and ROM.  0 gives the
     // 68030's minimum 3-clock cycle.  At 40 MHz: 55 ns SRAM needs 1,
     // a 100 ns 27C322 needs 3.
-    parameter RAM_WAIT     = 2,
-    parameter ROM_WAIT     = 5,
+    parameter RAM_WAIT     = 1,
+    parameter ROM_WAIT     = 3,
     // RAM bank size in MB: 2 or 8.
     //   2: 512Kx8 SRAMs (AS6C4008, as drawn).  Bank 0 $000000-$1FFFFF,
     //      bank 1 $200000-$3FFFFF; $400000-$7FFFFF bus-errors.
     //   8: 2Mx8 SRAMs (AS6C16008).  Bank 0 $000000-$7FFFFF, bank 1
     //      $10000000-$107FFFFF; $10800000-$10FFFFFF bus-errors.
     parameter RAM_MB       = 2,
+    // Default 0, as on the original board: the V2.05 monitor keeps a tag
+    // in the top byte of some ROM pointers (e.g. its TRAP #14 table at
+    // $FEC0403A), which only work if A31-A24 are ignored.
     // 1: only $00xxxxxx (and $10xxxxxx for 8 MB bank 1) is decoded; any
     //    other A31-A24 bus-errors.
     // 0: A31-A24 are ignored, so the 16 MB map repeats (as in MAME),
     //    except at $10xxxxxx when that holds 8 MB bank 1.
-    parameter FULL_DECODE  = 1,
+    parameter FULL_DECODE  = 0,
     // Minimum CLK2 cycles between the end of one 68681 access (/68681_CE
     // negated) and the start of the next.  The 68681 needs three edges
     // of its X1 clock between consecutive writes to the same command
