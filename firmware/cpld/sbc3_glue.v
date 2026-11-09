@@ -109,7 +109,7 @@ module sbc3_glue #(
 
     output wire        ds1_n,      // 63  /DS1 -> J3 -> /DSACK1
     output wire        ds0_n,      // 64  /DS0 -> J8 -> /DSACK0
-    output wire        be_n,       // 60  /BE  -> J2 -> /BERR (open drain)
+    output wire        be_n,       // 60  /BE  -> J2 -> /BERR (see below)
     output wire [2:0]  ipl_n,      // 17 /IPL2, 18 /IPL1, 16 /IPL0
     output wire        uds_n,      // 56  /UDS (also /UDS2 to IC10)
     output wire        lds_n,      // 55  /LDS
@@ -297,7 +297,19 @@ module sbc3_glue #(
 
     assign ds1_n = !(!as1_n && (ack16 || ack32));
     assign ds0_n = !(!as1_n && ack32);
-    assign be_n  = (!as1_n && berr) ? 1'b0 : 1'bz;
+    // /BERR is shared with the backplane, so it's only driven while
+    // needed: low during the bus error, then actively high for one to two
+    // clocks after /AS negates, then released.  The only pull-up is 10K
+    // (RP2), which would take about half a microsecond to bring the line
+    // back up.  Meanwhile the 68030 would see /BERR still asserted on the
+    // first cycles of its bus error exception, take a double bus fault
+    // and halt.
+    reg berr_rel;
+    always @(posedge clk2 or negedge reset_n)
+        if (!reset_n) berr_rel <= 1'b0;
+        else          berr_rel <= berr && as1_n;
+    assign be_n = (!as1_n && berr)              ? 1'b0 :
+                  ((as1_n && berr) || berr_rel) ? 1'b1 : 1'bz;
 
     wire ram0 = cyc && t_ram && !ram_bank;
     wire ram1 = cyc && t_ram &&  ram_bank;
