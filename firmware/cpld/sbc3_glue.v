@@ -82,6 +82,11 @@ module sbc3_glue #(
     //   2: low during each 68681 write
     //   3: toggles at the end of each 68681 read: a steady 0 V or 5 V
     //      means no reads; about 2.5 V on a meter means it's polling
+    //   4: goes low and stays low after any bus error at all
+    //   5: goes low and stays low after any interrupt acknowledge
+    //   6: goes low and stays low after an I/O read outside the 68681,
+    //      CF, PI/T and Hex Display ($AD, $AE, $AF, $AB) is answered
+    //      with /DTACK, i.e. a board the monitor probes for "exists"
     parameter DEBUG_MODE = 0,
     // Clocks to wait for /DTACK or /VPA before asserting /BERR (max 255).
     parameter BERR_TIMEOUT = 255,
@@ -330,6 +335,22 @@ module sbc3_glue #(
     assign b25_n = !(busy && iack && level == 3'd2);
 
     // Debug pin.
+    reg dbg_any_berr_n, dbg_iack_n, dbg_probe_n;
+    always @(posedge clk2 or negedge reset_n)
+        if (!reset_n) begin
+            dbg_any_berr_n <= 1'b1;
+            dbg_iack_n     <= 1'b1;
+            dbg_probe_n    <= 1'b1;
+        end else begin
+            if (!as1_n && berr)
+                dbg_any_berr_n <= 1'b0;
+            if (cyc && iack)
+                dbg_iack_n <= 1'b0;
+            if (!as1_n && ack16 && rd && t_bus && !iack && !t_duart &&
+                a_hi[23:16] != 8'hAB && a_hi[23:16] != 8'hAE &&
+                a_hi[23:16] != 8'hAF)
+                dbg_probe_n <= 1'b0;
+        end
     wire rd_end = ack16 && t_duart && rd && !as1_n;
     reg  rd_end_q, dbg_tog;
     always @(posedge clk2 or negedge reset_n)
@@ -344,6 +365,9 @@ module sbc3_glue #(
     assign dbg_n = (DEBUG_MODE == 1) ? !(!duart_ce_n &&  rd) :
                    (DEBUG_MODE == 2) ? !(!duart_ce_n && !rd) :
                    (DEBUG_MODE == 3) ? dbg_tog :
+                   (DEBUG_MODE == 4) ? dbg_any_berr_n :
+                   (DEBUG_MODE == 5) ? dbg_iack_n :
+                   (DEBUG_MODE == 6) ? dbg_probe_n :
                                        dbg_berr_n;
 
     // Interrupt priority encoder.
