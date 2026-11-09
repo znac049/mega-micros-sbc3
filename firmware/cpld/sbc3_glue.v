@@ -62,7 +62,14 @@ module sbc3_glue #(
     // register; at 7.3728 MHz that's about 410 ns, so 20 clocks (500 ns)
     // at 40 MHz.  Without it, back-to-back CR writes (reset TX, enable TX
     // ...) are lost and the port never transmits.
+    // Counted down from this value, so any value up to 63 costs the same
+    // logic.
     parameter DUART_RECOVERY = 20,
+    // Minimum CLK2 cycles /68681_CE is asserted before the 68681's /DTACK
+    // is believed (up to 15).  The 68681 has read data valid up to 175 ns
+    // after /CS, so 8 clocks (200 ns) also guards against another device
+    // pulling /DTACK low early.
+    parameter DUART_SETUP = 8,
     // Clocks to wait for /DTACK or /VPA before asserting /BERR (max 255).
     parameter BERR_TIMEOUT = 255,
     // Earliest clock (counted from the first clock edge of the cycle) at
@@ -158,8 +165,9 @@ module sbc3_glue #(
     reg        berr;
     reg        dtack_s, vpa_s;
     reg        vma;
-    reg  [5:0] duart_gap;    // clocks since /68681_CE was last negated
-    reg  [1:0] duart_go;     // /68681_CE asserted (bit 0) and for 2 clocks (bit 1)
+    reg  [5:0] duart_rec;    // recovery left before /68681_CE may assert
+    reg  [3:0] duart_set;    // setup left before the 68681's /DTACK counts
+    reg        duart_go;     // /68681_CE asserted for this cycle
 
     wire [7:0] n = active ? ((cnt == 8'hFF) ? cnt : cnt + 8'd1) : 8'd0;
 
@@ -189,22 +197,28 @@ module sbc3_glue #(
             dtack_s <= 1'b0;
             vpa_s   <= 1'b0;
             vma     <= 1'b0;
-            duart_gap <= 6'h3F;
-            duart_go  <= 2'b00;
+            duart_rec <= 6'd0;
+            duart_set <= DUART_SETUP;
+            duart_go  <= 1'b0;
         end else begin
             dtack_s <= !dtack_n;
 
-            // 68681 access recovery.
-            if (!duart_ce_n)
-                duart_gap <= 6'd0;
-            else if (duart_gap != 6'h3F)
-                duart_gap <= duart_gap + 6'd1;
+            // 68681 recovery and setup, as down-counters: while /68681_CE
+            // is asserted, reload the recovery count and count down the
+            // setup; while it's negated, the reverse.
+            if (!duart_ce_n) begin
+                duart_rec <= DUART_RECOVERY;
+                if (duart_set != 4'd0)
+                    duart_set <= duart_set - 4'd1;
+            end else begin
+                duart_set <= DUART_SETUP;
+                if (duart_rec != 6'd0)
+                    duart_rec <= duart_rec - 6'd1;
+            end
             if (as1_n || !t_duart)
-                duart_go <= 2'b00;
-            else if (duart_go[0])
-                duart_go <= 2'b11;
-            else if (active && duart_gap >= DUART_RECOVERY)
-                duart_go <= 2'b01;
+                duart_go <= 1'b0;
+            else if (active && duart_rec == 6'd0)
+                duart_go <= 1'b1;
             vpa_s   <= !vpa_n;
 
             if (as1_n) begin
@@ -237,7 +251,7 @@ module sbc3_glue #(
                         if (rd ? (ecnt == E_DIV - 3) : (ecnt == E_DIV - 1))
                             ack16 <= 1'b1;
                     end else if (dtack_s && n >= DTACK_MIN &&
-                                 (!t_duart || duart_go[1]))
+                                 (!t_duart || (duart_go && duart_set == 4'd0)))
                         ack16 <= 1'b1;
                     else if (vpa_s && n >= DTACK_MIN && !iack) begin
                         // Start VMA with the next E low phase.
@@ -273,9 +287,11 @@ module sbc3_glue #(
     assign rom_ce_n  = !(cyc && t_rom && rd);
 
     wire busy = cyc && t_bus;
-    assign duart_ce_n = !(busy && t_duart && duart_go[0]);
-    assign uds_n = !(busy && uds_en);
-    assign lds_n = !(busy && lds_en);
+    assign duart_ce_n = !(busy && t_duart && duart_go);
+    // No backplane strobes for the on-board 68681: it doesn't use them,
+    // and a card that half-decodes the address mustn't see a cycle.
+    assign uds_n = !(busy && !t_duart && uds_en);
+    assign lds_n = !(busy && !t_duart && lds_en);
     assign vma_n = !(vma && !as1_n);
     assign b24_n = !(busy && iack && level == 3'd1);
     assign b25_n = !(busy && iack && level == 3'd2);
