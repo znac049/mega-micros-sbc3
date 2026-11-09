@@ -8,8 +8,9 @@
 //
 // What it does
 //   * Address decoding (A31-A24 must be 0 unless FULL_DECODE = 0):
-//       $000000-$7FFFFF  RAM: two 32-bit banks of four byte-wide SRAMs
-//                        (bank select bit RAM_BANK_BIT; see below)
+//       RAM: two 32-bit banks of four byte-wide SRAMs (RAM_MB):
+//         2 MB banks:    bank 0 $000000-$1FFFFF, bank 1 $200000-$3FFFFF
+//         8 MB banks:    bank 0 $000000-$7FFFFF, bank 1 $10000000-$107FFFFF
 //       $800000-$BFFFFF  I/O: 68000-style cycle on the backplane, ended
 //                        by /DTACK (or /VPA for a 6800-style cycle);
 //                        $AD0000-$ADFFFF also selects the on-board 68681,
@@ -46,15 +47,17 @@ module sbc3_glue #(
     // 68030's minimum 3-clock cycle.  At 40 MHz: 55 ns SRAM needs 1,
     // a 100 ns 27C322 needs 3.
     parameter RAM_WAIT     = 1,
-    parameter ROM_WAIT     = 3,
-    // RAM bank size: 21 = 2 MB banks (512Kx8 AS6C4008, as drawn):
-    //   bank 0 $000000-$1FFFFF, bank 1 $200000-$3FFFFF, $400000-$7FFFFF
-    //   bus-errors.
-    // 22 = 4 MB banks (1Mx8 SRAMs): bank 0 $000000-$3FFFFF, bank 1
-    //   $400000-$7FFFFF.
-    parameter RAM_BANK_BIT = 21,
-    // 1: only $00xxxxxx is decoded; any other A31-A24 bus-errors.
-    // 0: A31-A24 are ignored, so the 16 MB map repeats (as in MAME).
+    parameter ROM_WAIT     = 5,
+    // RAM bank size in MB: 2 or 8.
+    //   2: 512Kx8 SRAMs (AS6C4008, as drawn).  Bank 0 $000000-$1FFFFF,
+    //      bank 1 $200000-$3FFFFF; $400000-$7FFFFF bus-errors.
+    //   8: 2Mx8 SRAMs (AS6C16008).  Bank 0 $000000-$7FFFFF, bank 1
+    //      $10000000-$107FFFFF; $10800000-$10FFFFFF bus-errors.
+    parameter RAM_MB       = 2,
+    // 1: only $00xxxxxx (and $10xxxxxx for 8 MB bank 1) is decoded; any
+    //    other A31-A24 bus-errors.
+    // 0: A31-A24 are ignored, so the 16 MB map repeats (as in MAME),
+    //    except at $10xxxxxx when that holds 8 MB bank 1.
     parameter FULL_DECODE  = 1,
     // Minimum CLK2 cycles between the end of one 68681 access (/68681_CE
     // negated) and the start of the next.  The 68681 needs three edges
@@ -126,7 +129,7 @@ module sbc3_glue #(
     output wire [2:0]  ipl_n,      // 17 /IPL2, 18 /IPL1, 16 /IPL0
     output wire        uds_n,      // 56  /UDS (also /UDS2 to IC10)
     output wire        lds_n,      // 55  /LDS
-    output reg         e,          // 52  E
+    output wire        e,          // 52  E (held low unless USE_VPA = 1)
     output wire        vma_n,      // 54  /VMA
     output wire        ram0_oe_n,  // 33
     output wire [3:0]  ram0_we_n,  // 36 WE3, 35 WE2, 37 WE1, 40 WE0
@@ -147,19 +150,23 @@ module sbc3_glue #(
     wire        cpuspace = (fc == 3'b111);
     wire        iack     = cpuspace && (a_hi[19:16] == 4'hF);
     wire [2:0]  level    = a_lo[3:1];
-    wire        hi_ok    = !FULL_DECODE || (a_hi[31:24] == 8'h00);
+    localparam  BIG      = (RAM_MB == 8);
+    // $10xxxxxx: 8 MB bank 1 (A23 must be 0).
+    wire        hi_bank1 = BIG && (a_hi[31:24] == 8'h10);
+    wire        hi_ok    = FULL_DECODE ? (a_hi[31:24] == 8'h00) : !hi_bank1;
     wire [1:0]  region   = a_hi[23:22];      // 0,1 RAM  2 I/O  3 ROM
 
     reg         overlay;                     // ROM at 0 after reset
     reg         dbg_berr_n;
 
     wire ram_space = hi_ok && !cpuspace && !region[1];
-    wire ram_hole  = (RAM_BANK_BIT == 21) ? a_hi[22] : 1'b0;
-    wire ram_bank  = (RAM_BANK_BIT == 21) ? a_hi[21] : a_hi[22];
+    wire bank1_8mb = hi_bank1 && !cpuspace && !a_hi[23];
+    wire ram_hole  = BIG ? 1'b0 : a_hi[22];
+    wire ram_bank  = BIG ? bank1_8mb : a_hi[21];
 
     wire t_rom   = hi_ok && !cpuspace && ((region == 2'b11) ||
                                           (overlay && !region[1] && rd));
-    wire t_ram   = ram_space && !ram_hole && !t_rom;
+    wire t_ram   = ((ram_space && !ram_hole) || bank1_8mb) && !t_rom;
     wire t_duart = hi_ok && !cpuspace && (region == 2'b10) &&
                    (a_hi[21:16] == 6'h2D);          // $AD0000-$ADFFFF
     wire t_bus   = (hi_ok && !cpuspace && (region == 2'b10)) || iack;
@@ -189,7 +196,8 @@ module sbc3_glue #(
     // Bus cycle sequencer
     // ---------------------------------------------------------------
     reg        active;       // /AS has been seen at a clock edge
-    reg  [7:0] cnt;          // clock edges since then (saturating)
+    reg  [7:0] cnt;          // clock edges of this cycle so far (saturating):
+                             // 0 at the first edge with /AS asserted
     reg        ack32, ack16; // terminate: 32-bit / 16-bit port
     reg        berr;
     reg        dtack_s, vpa_s;
@@ -198,19 +206,27 @@ module sbc3_glue #(
     reg  [3:0] duart_set;    // setup left before the 68681's /DTACK counts
     reg        duart_go;     // /68681_CE asserted for this cycle
 
-    wire [7:0] n = active ? ((cnt == 8'hFF) ? cnt : cnt + 8'd1) : 8'd0;
+    // n: which clock edge of the cycle this is (0 = the first).  It's just
+    // cnt, which is cleared while /AS is negated; the name is kept for the
+    // conditions below.  (Comparing the register itself, not cnt + 1,
+    // keeps the logic small enough for the EPM7128S.)
+    wire [7:0] n = cnt;
 
     // E clock: free-running divider.  ecnt 0 .. E_DIV-1; E is low for the
     // first 60% of the count.
+    // Only built with USE_VPA = 1; otherwise E stays low and the divider
+    // costs nothing.
     localparam E_LOW = (E_DIV * 6) / 10;
     reg [5:0] ecnt;
+    reg       e_r;
+    assign e = USE_VPA ? e_r : 1'b0;
     always @(posedge clk2 or negedge reset_n)
         if (!reset_n) begin
             ecnt <= 6'd0;
-            e    <= 1'b0;
-        end else begin
+            e_r  <= 1'b0;
+        end else if (USE_VPA) begin
             ecnt <= (ecnt == E_DIV - 1) ? 6'd0 : ecnt + 6'd1;
-            e    <= (ecnt >= E_LOW - 1) && (ecnt != E_DIV - 1);
+            e_r  <= (ecnt >= E_LOW - 1) && (ecnt != E_DIV - 1);
         end
     // With e registered, E is high while ecnt is E_LOW .. E_DIV-1,
     // and falls on the edge where ecnt wraps to 0.
@@ -260,7 +276,8 @@ module sbc3_glue #(
                 vma    <= 1'b0;
             end else begin
                 active <= 1'b1;
-                cnt    <= n;
+                if (cnt != 8'hFF)
+                    cnt <= cnt + 8'd1;
 
                 // The first ROM-space access ends the reset overlay.
                 if (hi_ok && !cpuspace && region == 2'b11)
