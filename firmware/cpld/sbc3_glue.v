@@ -12,7 +12,8 @@
 //                        (bank select bit RAM_BANK_BIT; see below)
 //       $800000-$BFFFFF  I/O: 68000-style cycle on the backplane, ended
 //                        by /DTACK (or /VPA for a 6800-style cycle);
-//                        $AD0000-$ADFFFF also selects the on-board 68681
+//                        $AD0000-$ADFFFF also selects the on-board 68681,
+//                        with DUART_RECOVERY clocks between accesses
 //       $C00000-$FFFFFF  ROM: 27C322, 16-bit port on D16-D31
 //     Until the first access to ROM space after reset, reads from RAM
 //     space come from the ROM, so the reset vectors are fetched from it.
@@ -55,6 +56,13 @@ module sbc3_glue #(
     // 1: only $00xxxxxx is decoded; any other A31-A24 bus-errors.
     // 0: A31-A24 are ignored, so the 16 MB map repeats (as in MAME).
     parameter FULL_DECODE  = 1,
+    // Minimum CLK2 cycles between the end of one 68681 access (/68681_CE
+    // negated) and the start of the next.  The 68681 needs three edges
+    // of its X1 clock between consecutive writes to the same command
+    // register; at 7.3728 MHz that's about 410 ns, so 20 clocks (500 ns)
+    // at 40 MHz.  Without it, back-to-back CR writes (reset TX, enable TX
+    // ...) are lost and the port never transmits.
+    parameter DUART_RECOVERY = 20,
     // Clocks to wait for /DTACK or /VPA before asserting /BERR (max 255).
     parameter BERR_TIMEOUT = 255,
     // Earliest clock (counted from the first clock edge of the cycle) at
@@ -150,6 +158,8 @@ module sbc3_glue #(
     reg        berr;
     reg        dtack_s, vpa_s;
     reg        vma;
+    reg  [5:0] duart_gap;    // clocks since /68681_CE was last negated
+    reg  [1:0] duart_go;     // /68681_CE asserted (bit 0) and for 2 clocks (bit 1)
 
     wire [7:0] n = active ? ((cnt == 8'hFF) ? cnt : cnt + 8'd1) : 8'd0;
 
@@ -179,8 +189,22 @@ module sbc3_glue #(
             dtack_s <= 1'b0;
             vpa_s   <= 1'b0;
             vma     <= 1'b0;
+            duart_gap <= 6'h3F;
+            duart_go  <= 2'b00;
         end else begin
             dtack_s <= !dtack_n;
+
+            // 68681 access recovery.
+            if (!duart_ce_n)
+                duart_gap <= 6'd0;
+            else if (duart_gap != 6'h3F)
+                duart_gap <= duart_gap + 6'd1;
+            if (as1_n || !t_duart)
+                duart_go <= 2'b00;
+            else if (duart_go[0])
+                duart_go <= 2'b11;
+            else if (active && duart_gap >= DUART_RECOVERY)
+                duart_go <= 2'b01;
             vpa_s   <= !vpa_n;
 
             if (as1_n) begin
@@ -212,7 +236,8 @@ module sbc3_glue #(
                         // still driven when the peripheral latches it.
                         if (rd ? (ecnt == E_DIV - 3) : (ecnt == E_DIV - 1))
                             ack16 <= 1'b1;
-                    end else if (dtack_s && n >= DTACK_MIN)
+                    end else if (dtack_s && n >= DTACK_MIN &&
+                                 (!t_duart || duart_go[1]))
                         ack16 <= 1'b1;
                     else if (vpa_s && n >= DTACK_MIN && !iack) begin
                         // Start VMA with the next E low phase.
@@ -248,7 +273,7 @@ module sbc3_glue #(
     assign rom_ce_n  = !(cyc && t_rom && rd);
 
     wire busy = cyc && t_bus;
-    assign duart_ce_n = !(busy && t_duart);
+    assign duart_ce_n = !(busy && t_duart && duart_go[0]);
     assign uds_n = !(busy && uds_en);
     assign lds_n = !(busy && lds_en);
     assign vma_n = !(vma && !as1_n);
