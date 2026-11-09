@@ -97,7 +97,15 @@ module sbc3_glue #(
     // E = CLK2 / E_DIV, low for 60% and high for 40% of the period, like
     // the 68000's.  40 gives 1 MHz at 40 MHz (6800-family parts are 1-2
     // MHz).  Must be at least 10.
-    parameter E_DIV        = 40
+    parameter E_DIV        = 40,
+    // 1: a device answering an I/O cycle with /VPA gets a 6800-style
+    // E/VMA cycle.  0: /VPA is ignored.  /VPA has no pull-up on the SBC3
+    // (only /DTACK has one, R1), so with no backplane card driving it the
+    // CPLD input floats, usually low.  That made every I/O cycle look
+    // answered, so the monitor's probes for absent boards "found" them.
+    // Only set this to 1 with a 6800-style card fitted, or a pull-up
+    // (e.g. 4K7) added to /VPA.
+    parameter USE_VPA      = 0
 ) (
     input  wire        clk2,       // 83  CLK2 (40 MHz)
     input  wire        reset_n,    // 28  /RESET
@@ -241,7 +249,7 @@ module sbc3_glue #(
                 duart_go <= 1'b0;
             else if (active && duart_rec == 6'd0)
                 duart_go <= 1'b1;
-            vpa_s   <= !vpa_n;
+            vpa_s   <= USE_VPA ? !vpa_n : 1'b0;
 
             if (as1_n) begin
                 active <= 1'b0;
