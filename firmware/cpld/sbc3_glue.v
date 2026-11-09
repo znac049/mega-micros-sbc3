@@ -46,7 +46,7 @@ module sbc3_glue #(
     // Extra CLK2 cycles before DSACK for RAM and ROM.  0 gives the
     // 68030's minimum 3-clock cycle.  At 40 MHz: 55 ns SRAM needs 1,
     // a 100 ns 27C322 needs 3.
-    parameter RAM_WAIT     = 1,
+    parameter RAM_WAIT     = 2,
     parameter ROM_WAIT     = 5,
     // RAM bank size in MB: 2 or 8.
     //   2: 512Kx8 SRAMs (AS6C4008, as drawn).  Bank 0 $000000-$1FFFFF,
@@ -345,8 +345,20 @@ module sbc3_glue #(
     wire ram1 = cyc && t_ram &&  ram_bank;
     assign ram0_oe_n = !(ram0 && rd);
     assign ram1_oe_n = !(ram1 && rd);
-    assign ram0_we_n = ~({4{ram0 && !rd}} & lane);
-    assign ram1_we_n = ~({4{ram1 && !rd}} & lane);
+    // The write strobes end one clock after DSACK asserts, half a clock
+    // before /AS negates, instead of with /AS.  The 68030 only holds the
+    // address for a few ns after /AS negates, less than the CPLD's delay
+    // from /AS to /WE, so ending /WE with /AS let the address change
+    // while /WE was still low: writes also landed at the next cycle's
+    // address.  The pulse is (RAM_WAIT + 1) clocks long, 50 ns with
+    // RAM_WAIT = 1 at 40 MHz; 55 ns SRAMs need 45 ns.
+    reg ack32_q;
+    always @(posedge clk2 or negedge reset_n)
+        if (!reset_n) ack32_q <= 1'b0;
+        else          ack32_q <= ack32 && !as1_n;
+    wire ram_wr = !rd && !ack32_q;
+    assign ram0_we_n = ~({4{ram0 && ram_wr}} & lane);
+    assign ram1_we_n = ~({4{ram1 && ram_wr}} & lane);
     assign rom_ce_n  = !(cyc && t_rom && rd);
 
     wire busy = cyc && t_bus;
