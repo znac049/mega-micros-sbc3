@@ -52,13 +52,15 @@ static command_t commands[] = {
     {"rtc",         3, COMMAND, {handle_rtc_command},       VEC},
     {"ser1",        0, COMMAND, {handle_ser_command},       VEC},
     {"ser2",        0, COMMAND, {handle_ser_command},       VEC},
-    {"byteset",     6, COMMAND, {handle_setbyte_command},   STR},
-    {"wordset",     6, COMMAND, {handle_setword_command},   STR},
-    {"longset",     6, COMMAND, {handle_setlong_command},   STR},
+    {"byteset",     6, COMMAND, {handle_setbyte_cmd},   STR},
+    {"wordset",     6, COMMAND, {handle_setword_cmd},   STR},
+    {"longset",     6, COMMAND, {handle_setlong_cmd},   STR},
     {"bytedump",    6, COMMAND, {handle_bytedump_command},  VEC},
     {"worddump",    6, COMMAND, {handle_worddump_command},  VEC},
     {"longdump",    6, COMMAND, {handle_longdump_command},  VEC},
     {"showmount",   5, COMMAND, {handle_showmount_command}, VEC},
+    {"icache",      3, COMMAND, {handle_icache_cmd},    VEC},
+    {"dcache",      3, COMMAND, {handle_dcache_cmd},    VEC},
 
     {"sb",          2, ALIAS,   {.cmd = "byteset"},         STR},
     {"sw",          2, ALIAS,   {.cmd = "wordset"},         STR},
@@ -75,6 +77,26 @@ static command_t commands[] = {
 };
 
 #define NUM_COMMANDS (sizeof(commands)/sizeof(command_t))
+
+
+static char *aye[] = {"yes", "true", "on", "enable"};
+static char *nay[] = {"no", "false", "off", "disable"};
+
+int parse_truth(char *val) {
+    for (uint32_t i=0; i<(sizeof(aye)/sizeof(char *)); i++) {
+        if (strcasecmp(val, aye[i]) == 0) {
+            return YES;
+        }
+    }
+
+    for (uint32_t i=0; i<(sizeof(nay)/sizeof(char *)); i++) {
+        if (strcasecmp(val, nay[i]) == 0) {
+            return NO;
+        }
+    }
+
+    return NOT_OK;
+}
 
 bool_t is_command(const char *cmd, const char *target, int min_target_len, cmd_type_t type) {
     int cmd_len = strlen(cmd);
@@ -120,11 +142,11 @@ void print_help(void) {
     printk("  quit\n\n");
 }
 
-command_t *find_command(char *cmdline) {
-    // printk("find_command: looking up '%s'\n", cmdline);
+command_t *find_command(char *cmd) {
+    printk("find_command: looking up '%s'\n", cmd);
 
     for (unsigned int i=0; i<NUM_COMMANDS; i++) {
-        if (is_command(cmdline, commands[i].command, commands[i].min_required, commands[i].type) == YES) {
+        if (is_command(cmd, commands[i].command, commands[i].min_required, commands[i].type) == YES) {
             return &commands[i];
         }
     }
@@ -138,7 +160,7 @@ void handle_command(char *cmdline) {
     char *cp;
 
     strcpy(cmdstr, cmdline);
-    cp =strchr(cmdstr, ' ');
+    cp = strchr(cmdstr, ' ');
     if (cp != NULL) {
         *cp = EOS;
     }
@@ -171,6 +193,7 @@ void handle_command(char *cmdline) {
             break;
 
         case STR:
+            printk("Passing command line: '%s'\n", cmdline);
             cmd->handler(cmdline);
             break;
         
@@ -198,14 +221,17 @@ void main(void) {
     char cmdline[MAX_LINE];
     char cwd[PATH_MAX];
 
+    *((uint8_t *)0xab0000) = 0x42;
     setup();
+
+    printk("Ready.\n");
 
     while (1) {
         if (getcwd(cwd, PATH_MAX) == NULL) {
             strcpy(cwd, "");
         }
 
-        printk("%s# ", cwd);
+        printk("\r%s# ", cwd);
 
         if (kgets(cmdline) != NULL) {
             handle_command(cmdline);
