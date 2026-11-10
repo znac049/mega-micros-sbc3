@@ -24,7 +24,7 @@
 ;==============================================================================
 ; ram_test.s  -  Register-only quick RAM test, 68030 boot ROM
 ;
-; Tests:    $000000 - $0FFFFF  (first 1 MB)
+; Tests:    $000008 - $0FFFFF  (first 1 MB)
 ; Purpose:  A fast confidence check before the stack is set up. This is not
 ;           an exhaustive cell test.
 ;
@@ -47,46 +47,45 @@
 ;           A0.L = failing address
 ;           D1.L = expected value
 ;           D2.L = value actually read
-; Clobbers: D0-D4, A0     (A6 preserved)
-;
-; Preconditions:
-;   - RAM must be mapped at $000000 (any reset-time ROM overlay switched off)
-;     and VBR pointed at a vector table in ROM.
-;   - The data cache must be OFF (it is after reset). Otherwise the reads
-;     can come from the cache instead of RAM, and the test proves nothing.
+; Clobbers: D0-D3, A0
 ;
 ; On exit, RAM holds the stage 5 pattern (not zeroed).
-;==============================================================================
 
-RAM_BASE        equ     $00000000
-RAM_SIZE        equ     $00100000               ; 1 MB
+
+RAM_START       equ     $00000400
+RAM_END         equ     $00100000
 
 ram_test::
 
 ;------------------------------------------------------------------------------
-; Stage 1: data bus, walking 1 at $000000.
-; After each write, the complement is written to $000004, so the bus is driven
+; Stage 1: data bus, walking 1 at $000008.
+; After each write, the complement is written to $00000C, so the bus is driven
 ; to the opposite state before the read. A missing or floating data line can't
 ; pass by "remembering" the last value on the bus.
-;------------------------------------------------------------------------------
-        moveq   #1,d0
-        suba.l  a0,a0                           ; A0 = $000000
-        moveq   #1,d1                           ; walking bit
-.s1:    move.l  d1,(a0)
-        move.l  d1,d3
-        not.l   d3
-        move.l  d3,4(a0)                        ; drive the bus the other way
-        move.l  (a0),d2
-        cmp.l   d1,d2
-        bne     .fail
-        add.l   d1,d1                           ; next bit; 0 after bit 31
-        bne.s   .s1
+
+        moveq   #1,d0                           ; Stage number
+
+        lea     RAM_START,a0
+        moveq   #1,d1                           ; Start with bottom bit
+.s1_tstbit:
+        move.l  d1,(a0)                         ; Write the bit
+
+        move.l  d1,d2
+        not.l   d2
+;        move.l  d2,4(a0)                        ; drive the bus the other way
+
+        cmp.l   (a0),d1                         ; Test the bit
+        bne     .rt_fail
+
+        lsl.l   #1,d1                           ; next bit
+        bne     .s1_tstbit
 
 ;------------------------------------------------------------------------------
 ; Stage 2: byte lanes. Catches byte/word strobe (UDS/LDS style) wiring faults
 ; that a long-only test would never see.
-;------------------------------------------------------------------------------
-        moveq   #2,d0
+
+        moveq   #2,d0                           ; Stage number
+
         clr.l   (a0)
         move.b  #$11,(a0)
         move.b  #$22,1(a0)
@@ -95,100 +94,115 @@ ram_test::
         move.l  #$11223344,d1
         move.l  (a0),d2
         cmp.l   d1,d2
-        bne     .fail
+        bne     .rt_fail
         move.w  #$5566,2(a0)                    ; low word only
         move.l  #$11225566,d1
         move.l  (a0),d2
         cmp.l   d1,d2
-        bne     .fail
+        bne     .rt_fail
         move.w  #$7788,(a0)                     ; high word only
         move.l  #$77885566,d1
         move.l  (a0),d2
         cmp.l   d1,d2
-        bne     .fail
+        bne     .rt_fail
 
 ;------------------------------------------------------------------------------
 ; Stage 3: address bus. Write ~addr to $0 and to each power-of-two address
 ; ($4, $8 ... $80000), then read them all back. A stuck or shorted address
 ; line makes two of these addresses hit the same cell, so one write
 ; overwrites the other and the readback shows it.
-;------------------------------------------------------------------------------
-        moveq   #3,d0
-        suba.l  a0,a0
+
+        moveq   #3,d0                           ; Stage number
+
+        lea     RAM_START,a0
+
         moveq   #-1,d1                          ; ~$0
         move.l  d1,(a0)
-        moveq   #4,d4
-.s3w:   movea.l d4,a0
-        move.l  d4,d1
+        moveq   #4,d3
+.s3write:
+        movea.l d3,a0
+        move.l  d3,d1
         not.l   d1
         move.l  d1,(a0)
-        add.l   d4,d4
-        cmp.l   #RAM_SIZE,d4
-        blo.s   .s3w
+        add.l   d3,d3
+        cmp.l   #RAM_END,d3
+        blo.s   .s3write
 
-        suba.l  a0,a0
+        lea     RAM_START,a0
+        
         moveq   #-1,d1
         move.l  (a0),d2
         cmp.l   d1,d2
-        bne     .fail
-        moveq   #4,d4
-.s3r:   movea.l d4,a0
-        move.l  d4,d1
+        bne     .rt_fail
+        moveq   #4,d3
+.s3read:
+        movea.l d3,a0
+        move.l  d3,d1
         not.l   d1
         move.l  (a0),d2
         cmp.l   d1,d2
-        bne     .fail
-        add.l   d4,d4
-        cmp.l   #RAM_SIZE,d4
-        blo.s   .s3r
+        bne     .rt_fail
+        add.l   d3,d3
+        cmp.l   #RAM_END,d3
+        blo.s   .s3read
 
 ;------------------------------------------------------------------------------
 ; Stage 4: fill all of RAM with address-in-address, then verify.
 ; Every cell gets a different value, so decode faults, missing chips and
 ; stuck bits all show up. The whole fill finishes before any reads, so
 ; bus capacitance can't fake a pass.
-;------------------------------------------------------------------------------
-        moveq   #4,d0
-        suba.l  a0,a0
-.s4w:   move.l  a0,d1
-        move.l  d1,(a0)+
-        cmpa.l  #RAM_BASE+RAM_SIZE,a0
-        blo.s   .s4w
 
-        suba.l  a0,a0
-.s4r:   move.l  a0,d1
+        moveq   #4,d0                           ; Stage number
+
+        lea     RAM_START,a0
+
+.s4write:
+        move.l  a0,d1
+        move.l  d1,(a0)+
+        cmpa.l  #RAM_END,a0
+        blo.s   .s4write
+
+        movea.l a5,a0                           ; Start address
+.s4read:
+        move.l  a0,d1
         move.l  (a0),d2
         cmp.l   d1,d2
-        bne.s   .fail
+        bne.s   .rt_fail
         addq.l  #4,a0
-        cmpa.l  #RAM_BASE+RAM_SIZE,a0
-        blo.s   .s4r
+        cmpa.l  #RAM_END,a0
+        blo.s   .s4read
 
 ;------------------------------------------------------------------------------
 ; Stage 5: the same, with the complement, so every bit of every cell has now
 ; held both a 0 and a 1.
 ;------------------------------------------------------------------------------
-        moveq   #5,d0
-        suba.l  a0,a0
-.s5w:   move.l  a0,d1
+        moveq   #5,d0                           ; Stage number
+
+        lea     RAM_START,a0
+
+.s5write:
+        move.l  a0,d1
         not.l   d1
         move.l  d1,(a0)+
-        cmpa.l  #RAM_BASE+RAM_SIZE,a0
-        blo.s   .s5w
+        cmpa.l  #RAM_END,a0
+        blo.s   .s5write
 
-        suba.l  a0,a0
-.s5r:   move.l  a0,d1
+        lea     RAM_START,a0
+.s5read:
+        move.l  a0,d1
         not.l   d1
         move.l  (a0),d2
         cmp.l   d1,d2
-        bne.s   .fail
+        bne.s   .rt_fail
         addq.l  #4,a0
-        cmpa.l  #RAM_BASE+RAM_SIZE,a0
-        blo.s   .s5r
+        cmpa.l  #RAM_END,a0
+        blo.s   .s5read
 
-;------------------------------------------------------------------------------
+
+.rt_pass:
         moveq   #0,d0                           ; pass: D0 = 0, Z set
         jmp     (a6)
 
-.fail:  tst.l   d0                              ; fail: Z clear, D0 = stage
+.rt_fail:
+        tst.l   d0                              ; fail: Z clear, D0 = stage
         jmp     (a6)

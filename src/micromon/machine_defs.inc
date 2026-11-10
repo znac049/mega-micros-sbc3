@@ -160,3 +160,15 @@ HexDisp                 macro
                         endm
 
 
+Deelay                  macro
+                        inline
+                        move.w  #126,\1
+.outer:
+                        move.w  #$ffff,\2
+.inner:
+                        dbra    \2,.inner
+                        dbra    \1,.outer
+                        einline
+
+                        endm
+
