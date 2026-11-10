@@ -66,9 +66,6 @@ _start::
 ; Setup the stack and frame pointer
 	move.l  #_INITIAL_STACK,sp
 
-        HexDisp 1,0,0
-
-
 ; Initialise PIT ports A and B as outputs, so we can use the
 ; LEDs for boot diagnostics - change this once we have a hex
 ; display board
@@ -81,7 +78,6 @@ _start::
         move.b  d0,pit_padr(a5)
         move.b  d0,pit_pbdr(a5)
 
-
 ; Check the ROM checksum
         lea     sum_done(pc),a6          ; Can't trust the stack yet
         jmp     rom_checksum
@@ -92,13 +88,15 @@ sum_done:
         move.b  #$F0,d0
         move.b  d0,pit_pbdr_o(a5)       ; Light some LEDs
 
-        HexDisp $31,0,$2000             ; Code to show XSum error
+        move.l  #$31002000,HEX_DISPLAY_BASE
 stop:        
         stop    #$2700
         bra     stop
 
 sum_ok:
-        HexDisp $01,0,0                 ; Xsum passed
+        bra     ram_ok
+
+
 
 ; Now check the first 1meg of ran
         lea     ram_test_done(pc),a6    ; Still can't trust the stack
@@ -107,8 +105,23 @@ ram_test_done:
         beq     ram_ok
 
 ; Ram test failed
-        HexDisp $36,0,$2001
-        bra     stop
+        move.l  #$66666666,$ab0000
+        Deelay  d4,d5
+
+        move.l  d0,$ab0000              ; Failing stage
+        Deelay  d4,d5
+
+        move.l  a0,$ab0000              ; Failing address
+        Deelay  d4,d5
+
+        move.l  d1,$ab0000              ; Expected
+        Deelay  d4,d5
+
+        move.l  d2,$ab0000              ; Actual
+
+        Deelay  d4,d5
+
+;        bra     stop
 
 ram_ok:
 
@@ -150,7 +163,8 @@ ibdone:
 
 
 ; invoke main() 
-        HexDisp $11,0,$2002
+	move.l  #_INITIAL_STACK,sp
+        ;HexDisp $11,0,$2002
         bsr	main
         bra     done
 
@@ -170,6 +184,12 @@ get_heap_start::
         and.l	#$fffffffc,d0
         move.l	(sp)+,a0
         rts
+
+; Because of my hardware mod to the CF interface, it's possible for a sputrious IRQ4
+; to be generated, which we can just ignore. Once an OS boots, it becomes their problem.
+;
+_cf_int::
+        rte
 
 
 ; default "do nothing" exception handler
@@ -196,6 +216,18 @@ _bus_err_exception::
         move.b  #0,18(a0)
         movem.l (sp)+,a0
         rte
+
+
+; Cache control
+get_cacr::
+        movec   cacr,d0
+        rts
+
+
+set_cacr::
+;        move.l  4(sp),d0
+;        movec   d0,cacr
+        rts
 
 
         section .pretext,code
