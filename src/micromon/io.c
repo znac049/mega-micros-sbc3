@@ -23,8 +23,32 @@ SOFTWARE.
 */
 
 #include <machine.h>
+#include <stddef.h>
 
 #include "micromon.h"
+
+static uint8_t prev_chars[2];
+
+static inline int console_putstr(uint8_t port, const char *s) {
+	uint8_t ch = *s++;
+
+	if (port > 1) {
+		return NOT_OK;
+	}
+
+	while (ch) {
+		if ((ch == '\n') && (prev_chars[port] != '\r')) {
+			bios_putchar(port, '\r');
+		}
+
+		bios_putchar(port, ch);
+		prev_chars[port] = ch;
+
+		ch = *s++;
+	}
+
+	return OK;
+}
 
 int dbgf(const char *format, ...) {
 	int res;
@@ -35,7 +59,7 @@ int dbgf(const char *format, ...) {
 	res = vsnprintf(buffer, sizeof(buffer), format, args);
 	va_end(args);
 
-	bios_puts(1, buffer);
+	console_putstr(1, buffer);
 
 	return res;
 }
@@ -49,7 +73,7 @@ int printk(const char *format, ...) {
 	res = vsnprintf(buffer, sizeof(buffer), format, args);
 	va_end(args);
 
-	bios_puts(0, buffer);
+	console_putstr(0, buffer);
 
 	return res;
 }
