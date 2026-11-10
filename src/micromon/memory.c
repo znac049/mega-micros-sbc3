@@ -73,6 +73,7 @@ static void spin(void) {
  * amounts mirror what was written to lower addresses
  */
 uint32_t get_ram_end(void) {
+#if 0
     volatile uint8_t *mem = (uint8_t *)0;
 
     mem[ONE_MEG] = 1;
@@ -89,6 +90,9 @@ uint32_t get_ram_end(void) {
     }
 
     return TWO_MEG-1;
+#endif
+
+    return FOUR_MEG-1;
 }
 
 int test_ram(uint32_t start_addr, uint32_t end_addr) {

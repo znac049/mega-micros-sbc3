@@ -5,6 +5,7 @@ endif
 .PHONY: first inc_build romdisk scp
 
 BAREMETAL=true
+SRCDIRS=cmd devices
 
 ROMDISK=romdisk.bin
 ROMIMAGE=$(PROGRAM_BASENAME)_rom.bin
@@ -15,7 +16,7 @@ first: inc_build rom
 
 scp: first romdisk
 	cat $(MONITORIMAGE) inbetween.bin $(ROMDISK) >$(ROMIMAGE)
-	python3 patch_sum.py $(ROMIMAGE) `grep romsum micromon.map | awk '{print $1;}'`
+	python3 patch_sum.py $(ROMIMAGE) `grep romsum micromon.map | awk '{print $$1;}'`
 	scp $(ROMIMAGE) $(REMOTE_USER):$(REMOTE_DIR)
 	scp $(ROMIMAGE) bob@192.168.1.60:mame/roms/sbc3
 
@@ -26,16 +27,6 @@ inc_build:
 	./increment_build.sh
 
 -include $(MEGA_MICROS_DIR)/src/stdenv.mk
-
-#CSOURCES=$(shell find . -name '*.c')
-#CXXSOURCES=$(wildcard *.cpp)
-#CINCLUDES=$(wildcard *.h)
-#SSOURCES=$(wildcard *.S)
-#ASMSOURCES=$(wildcard *.asm)
-#SOURCES=$(CSOURCES) $(CXXSOURCES) $(SSOURCES) $(ASMSOURCES)
-
-# Assume each source files makes an object file
-#OBJECTS=$(addsuffix .o,$(basename $(SOURCES)))
 
 ROM_LDSCRIPT:=./micromon.ld
 FLAGS:=$(FLAGS) -Wno-array-bounds
