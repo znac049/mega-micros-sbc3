@@ -151,14 +151,14 @@ static void do_set(char *cmdline, loc_size_t access_size) {
     }
 }
 
-void handle_setbyte_command(char *cmdline) {
+void handle_setbyte_cmd(char *cmdline) {
     do_set(cmdline, BYTE);
 }
 
-void handle_setword_command(char *cmdline) {
+void handle_setword_cmd(char *cmdline) {
     do_set(cmdline, WORD);
 }
 
-void handle_setlong_command(char *cmdline) {
+void handle_setlong_cmd(char *cmdline) {
     do_set(cmdline, LONG);
 }
