@@ -56,7 +56,7 @@ vectors::
         dc.l    _not_handled        	;  25 - Level 1 interrupt autovector
         dc.l    _not_handled        	;  26 - Level 2 interrupt autovector
         dc.l    _not_handled        	;  27 - Level 3 interrupt autovector
-        dc.l    _not_handled        	;  28 - Level 4 interrupt autovector
+        dc.l    _cf_int         	;  28 - Level 4 interrupt autovector
         dc.l    _not_handled        	;  29 - Level 5 interrupt autovector
         dc.l    _not_handled        	;  30 - Level 6 interrupt autovector
         dc.l    _not_handled        	;  31 - Level 7 interrupt autovector
