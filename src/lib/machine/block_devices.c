@@ -49,7 +49,7 @@ int bd_init(void) {
     }
 
     create_rom_dev(find_free_device_slot());
-    create_cf_dev(find_free_device_slot());
+    //create_cf_dev(find_free_device_slot());
 
     // Initialise each block device in turn
     printf("Attempting to initialise all registered block devices\n");

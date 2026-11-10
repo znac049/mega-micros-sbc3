@@ -35,7 +35,7 @@ SOFTWARE.
 
 static int major = 0;
 static int minor = 5;
-static int MAGIC_BUILD_NUMBER = 52;
+static int MAGIC_BUILD_NUMBER = 54;
 
 
 uint32_t ram_end;
@@ -226,7 +226,7 @@ static inline void probe_hardware(void) {
 void setup(void) {
     int is_xr;
 
-    ram_end = get_ram_end();
+    ram_end = 0x3fffff; //get_ram_end();
 
     /*
      * Now we know how much memory we have, we can
@@ -282,11 +282,13 @@ void setup(void) {
     /* Activate any block devices */
     printk("\nActivating block devices\n");
     bd_init();
+
+    printk("Attempting mounts\n");
+    vfs_init();
     
     /* Prepare filesystems for use */
     if (experimental) {
-        printk("Attempting mounts\n");
-        vfs_init();
+        printk("Activating experimental features.\n");
     }
 
     printk("\n");
