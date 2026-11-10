@@ -78,9 +78,18 @@ extern uint32_t ram_end;
 
 
 
+// mon_crt0.asm
+uint32_t get_cacr(void);
+uint32_t set_cacr(uint32_t cacr);
+
 // bios_calls.c
 int bios_exit(int exit_code, pid_t pid);
 int bios_test(int p1, int p2, int p3);
+
+
+// cache_cmd.c
+void handle_dcache_cmd(int argc, char *argv[]);
+void handle_icache_cmd(int argc, char *argv[]);
 
 
 // cat_cmd.c
@@ -146,7 +155,7 @@ void handle_load_command(int argc, char *argv[]);
 
 // main.c
 bool_t is_command(const char *cmd, const char *target, int min_target_len, cmd_type_t type);
-
+int parse_truth(char *val);
 
 // memory.c
 uint32_t get_ram_end(void);
@@ -166,9 +175,9 @@ void handle_ser_command(int argc, char *argv[]);
 
 
 // set_cmd.c
-void handle_setbyte_command(char *cmdline);
-void handle_setword_command(char *cmdline);
-void handle_setlong_command(char *cmdline);
+void handle_setbyte_cmd(char *cmdline);
+void handle_setword_cmd(char *cmdline);
+void handle_setlong_cmd(char *cmdline);
 
 
 // setup.c
