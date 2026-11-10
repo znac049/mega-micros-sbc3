@@ -33,11 +33,12 @@ Simply prints a brief summary of each command the monitor accepts.
 
 ### byteset, wordset, longset - edit data in memory
 __Aliases__: **bs**, **ws**, **ls**
+__Shortform__: **!**
 
 ```
 bs [ = <expr> [, <expr> ...]]
 bs <address> [ [ = ] <expr> [, <expr> ...]]
-@[b|w|l] [ <address> ] [ [ = ] <expr> [, <expr> ...]]
+![b|w|l] [ <address> ] [ [ = ] <expr> [, <expr> ...]]
 ```
 
 ### bytedump, worddump, longdump - dump contents of memory
@@ -59,6 +60,13 @@ The file specified by **_<filename>_** is displayed on the console. If **_<filen
 #### Synopsis
 ```
 ```
+
+### dcache - control the data cache
+#### Synopsis
+```
+dcache [ <on> | <off> ]
+```
+#### Details
 
 ### dir - list the contents of a directory
 #### Synopsis
@@ -123,6 +131,13 @@ go [ <address> ]
 ```
 #### Details
 Transfers control to a user program. If **_<address>_** is omitted, the load address from the last **_load_** command is used.
+
+### icache - control the instruction cache
+#### Synopsis
+```
+icache [ <on> | <off> ]
+```
+#### Details
 
 ### load - load a program from the console port.
 #### Synopsis
