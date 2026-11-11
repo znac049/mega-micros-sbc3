@@ -33,14 +33,15 @@ extern uint32_t trap0_call_table[];
 
 int syscall(int number, int p1, int p2, int p3) {
 #if defined(BAREMETAL)
-    int (*fn)(int number, int p1, int p2, int p3);
-    
+    int (*fn)(int p1, int p2, int p3);
+
     if ((number <0) || (number >= NUM_BIOS_CALLS)) {
         return NOT_OK;
     }
 
-    fn = (int (*)(int,  int,  int,  int))trap0_call_table[number];
-    return fn(number, p1, p2, p3);
+    fn = (int (*)(int,  int,  int))trap0_call_table[number];
+    
+    return fn(p1, p2, p3);
 #else
     int err_num;
     int res = do_trap0(number, p1, p2, p3, &err_num);
