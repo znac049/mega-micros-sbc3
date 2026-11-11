@@ -27,11 +27,9 @@ SOFTWARE.
 #include <machine.h>
 #include <errno.h>
 #include <string.h>
-#include <ext2.h>
-#include <disk.h>
 #include <extras.h>
 
-#if defined(BAREMETAL)
+#include "micromon.h"
 
 static int ext2_read_superblock(vmp_t *mp, ext2_sb_t *sb) {
     // kprintf("attempt to read superblock\n");
@@ -306,5 +304,3 @@ int setup_vfs_ext2_handler(vfs_fs_t *vfs) {
 
     return OK;
 }
-
-#endif

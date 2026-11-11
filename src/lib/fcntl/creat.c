@@ -30,9 +30,5 @@ SOFTWARE.
 #include <machine.h>
 
 int creat(const char *pathname, mode_t mode) {
-#if defined(BAREMETAL)
-    return bios_creat(pathname, mode);
-#else
     return syscall(BIOS_CREAT, (uint32_t)pathname, mode, 0);
-#endif
 }

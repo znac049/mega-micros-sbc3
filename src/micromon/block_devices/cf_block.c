@@ -27,7 +27,7 @@ SOFTWARE.
 #include <string.h>
 #include <machine.h>
 
-#if defined(BAREMETAL)
+#include "micromon.h"
 
 #define SECTORS_PER_BLOCK (BLOCK_DEVICE_BLOCK_SIZE / CF_SECTOR_SIZE)
 
@@ -91,6 +91,10 @@ static int cf_dev_read_block(uint32_t block_num, uint8_t *buff, uint8_t subdev) 
 }
 
 static int cf_dev_write_block(uint32_t block_num, uint8_t *buff, uint8_t subdev) {
+    (void)block_num;
+    (void)buff[0];
+    (void)subdev;
+    
     return NOT_OK;
 }
 
@@ -114,5 +118,3 @@ int create_cf_dev(block_device_t *dev) {
 
     return OK;
 }
-
-#endif

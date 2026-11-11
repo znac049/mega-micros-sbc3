@@ -28,9 +28,8 @@ SOFTWARE.
 #include <errno.h>
 #include <extras.h>
 #include <machine.h>
-#include <ext2.h>
 
-#if defined(BAREMETAL)
+#include "micromon.h"
 
 void dump_dirent (ext2_dirent_t *ent) {
     kprintf("\nDirectory entry:\n");
@@ -153,5 +152,3 @@ void ext2_rewinddir(ext2_file_t *file) {
     ext2_reset_block_follower(&file->bf);
     file->offset = 0;
 }
-
-#endif

@@ -25,8 +25,14 @@ SOFTWARE.
 #pragma once
 
 #include <setjmp.h>
+#include <limits.h>
 
+#include "blockdev.h"
+#include "filesystems.h"
 #include "expr.h"
+#include "duart.h"
+#include "cf.h"
+#include "disk.h"
 #include "acrtc.h"
 #include "pit.h"
 #include "i2c.h"
@@ -87,6 +93,19 @@ int bios_exit(int exit_code, pid_t pid);
 int bios_test(int p1, int p2, int p3);
 
 
+// block_devices.c
+int bd_init(void);
+int bd_read(block_device_t *dev, uint32_t block_num, uint8_t *buff, uint8_t subdev);
+
+
+//block_devices/cf_block.c
+int create_cf_dev(block_device_t *dev);
+
+
+//block_devices/rom_block.c
+int create_rom_dev(block_device_t *dev);
+
+
 // cache_cmd.c
 void handle_dcache_cmd(int argc, char *argv[]);
 void handle_icache_cmd(int argc, char *argv[]);
@@ -94,6 +113,10 @@ void handle_icache_cmd(int argc, char *argv[]);
 
 // cat_cmd.c
 void handle_cat_command(int argc, char *argv[]);
+
+
+// cpu.c
+int measure_cpu_clock(void);
 
 // detect.c
 bool_t is_pit_present(void);
@@ -129,6 +152,22 @@ int load_elf(int fd);
 
 // eval_cmd.c
 void handle_eval_command(char *cmdline);
+
+// filesystems.c
+int vfs_init(void);
+int vfs_shutdown(void);
+
+int bios_chdir(const char *path);
+int bios_getcwd(char*buff, size_t size);
+int bios_isatty(int fd);
+vfile_t *bios_locate(const char *path);
+int bios_creat(const char *pathname, mode_t mode);
+int bios_open(const char *pathname, int flags);
+int bios_close(int fd);
+int bios_read(int fd, char *buff, size_t num_bytes);
+size_t bios_write(int fd, const char *buff, size_t num_bytes);
+int bios_opendir(const char *name);
+ssize_t bios_getdents(int fd, void *dirp, size_t count);
 
 
 // go_cmd.c
@@ -168,6 +207,13 @@ void handle_probe_command(int argc);
 
 // rtc_cmd.c
 void handle_rtc_command(int argc, char *argv[]);
+
+
+// safeio.c
+int peek(volatile uint8_t *addr);
+int poke(volatile uint8_t *addr, uint8_t val);
+int peekw(volatile uint16_t *addr);
+int pokew(volatile uint16_t *addr, uint16_t val);
 
 
 // serial_cmd.c

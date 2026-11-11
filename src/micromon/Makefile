@@ -5,7 +5,7 @@ endif
 .PHONY: first inc_build romdisk scp
 
 BAREMETAL=true
-SRCDIRS=cmd devices
+SRCDIRS=block_devices cmd devices ext2fs
 
 ROMDISK=romdisk.bin
 ROMIMAGE=$(PROGRAM_BASENAME)_rom.bin

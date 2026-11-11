@@ -24,10 +24,9 @@ SOFTWARE.
 
 #include <stddef.h>
 #include <ctype.h>
-#include <filesystems.h>
 #include <machine.h>
 
-#if defined(BAREMETAL)
+#include "micromon.h"
 
 block_device_t block_devices[MAX_BLOCK_DEVICES];
 
@@ -52,24 +51,24 @@ int bd_init(void) {
     //create_cf_dev(find_free_device_slot());
 
     // Initialise each block device in turn
-    printf("Attempting to initialise all registered block devices\n");
+    printk("Attempting to initialise all registered block devices\n");
     for (int i=0; i<MAX_BLOCK_DEVICES; i++) {
         block_device_t *bd = &block_devices[i];
 
         if (bd->active == YES) {
             if (bd->init(bd) == NOT_OK) {
-                kprintf("%s init failed!\n", bd->name);
+                printk("%s init failed!\n", bd->name);
 
                 bd->active = NO;
             }
             else {
                 if (bd->active == YES) {
-                    kprintf("block device %d (%s): ", i, bd->name);
+                    printk("block device %d (%s): ", i, bd->name);
                     
                     for (uint8_t i=0; i<bd->num_sub_devices; i++) {
-                        kprintf("%s%d, ", bd->name, i);
+                        printk("%s%d, ", bd->name, i);
                     }
-                    kprintf("\n");
+                    printk("\n");
                 }
                 else {}
             }
@@ -86,5 +85,3 @@ int bd_read(block_device_t *dev, uint32_t block_num, uint8_t *buff, uint8_t subd
 
     return NOT_OK;
 }
-
-#endif

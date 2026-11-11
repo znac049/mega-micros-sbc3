@@ -22,43 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <ctype.h>
-#include <stdio.h>
-#include <stddef.h>
-#include <setjmp.h>
+#pragma once
 
-#if defined(BAREMETAL)
-# include <duart.h>
-# define printf kprintf
-#endif
+struct thread {
+    uint32_t    sp;
+};
 
-void dump_jump(jmp_buf env) {
-    printf("jmp_buff @0x%08x\n", &env[0]);
-    printf("  magic=%08x\n", env[0].magic);
+typedef struct thread thread_t;
 
-    printf("                 d1: $%08x", env[0].d1);
-    printf("  d2: $%08x", env[0].d2);
-    printf("  d3: $%08x\n", env[0].d3);
-
-    printf("  d4: $%08x", env[0].d4);
-    printf("  d5: $%08x", env[0].d5);
-    printf("  d6: $%08x", env[0].d6);
-    printf("  d7: $%08x\n", env[0].d7);
-
-    printf("                 a1: $%08x", env[0].a1);
-    printf("  a2: $%08x", env[0].a2);
-    printf("  a3: $%08x\n", env[0].a3);
-
-    printf("  a4: $%08x", env[0].a4);
-    printf("  a5: $%08x", env[0].a5);
-    printf("  a6: $%08x\n", env[0].a6);
-
-    printf("  sp: $%08x", env[0].sp);
-    printf("  sr: $%04x\n", env[0].sr);
-
-    printf("  ra: $%08x\n", env[0].ra);
-    uint32_t *sp = (uint32_t *)env[0].sp;
-    printf("return address from saved stack is $%08x\n", *sp);
-
-    printf("\n");
-}
+#define MAX_THREADS 8

@@ -27,11 +27,9 @@ SOFTWARE.
 #include <unistd.h>
 #include <errno.h>
 #include <machine.h>
+#include <bios.h>
 
 char *getcwd(char *buf, size_t size) {
-#if defined(BAREMETAL)
-    return (char *)bios_getcwd(buf, size);
-#else
     int res = syscall(BIOS_GETCWD, (uint32_t)buf, size, 0);
 
     if (res == 0) {
@@ -39,5 +37,4 @@ char *getcwd(char *buf, size_t size) {
     }
 
     return buf;
-#endif
 }

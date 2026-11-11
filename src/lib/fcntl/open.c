@@ -27,7 +27,7 @@ SOFTWARE.
 #include <bios.h>
 #include <string.h>
 #include <unistd.h>
-#include <filesystems.h>
+#include <limits.h>
 
 int open(const char *pathname, int flags) {
     char real_path[PATH_MAX];
@@ -36,9 +36,5 @@ int open(const char *pathname, int flags) {
         return NOT_OK;
     }
 
-#if defined(BAREMETAL)
-    return bios_open(real_path, flags);
-#else
     return syscall(BIOS_OPEN, (uint32_t)real_path, flags, 0);
-#endif
 }

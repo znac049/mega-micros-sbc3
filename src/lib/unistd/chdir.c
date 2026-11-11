@@ -27,7 +27,8 @@ SOFTWARE.
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
-#include <machine.h>
+#include <limits.h>
+#include <bios.h>
 
 int chdir(const char *path) {
     char real_path[PATH_MAX];
@@ -36,9 +37,5 @@ int chdir(const char *path) {
         return NOT_OK;
     }
 
-#if defined(BAREMETAL)
-    return bios_chdir(real_path);
-#else
     return syscall(BIOS_CHDIR, (uint32_t)real_path, 0, 0);
-#endif
 }

@@ -165,7 +165,7 @@ ibdone:
 ; invoke main() 
 	move.l  #_INITIAL_STACK,sp
         ;HexDisp $11,0,$2002
-        bsr	main
+        bsr.l	main
         bra     done
 
 ; We're running in ROM, so exit should never get called.

@@ -30,9 +30,5 @@ SOFTWARE.
 #include <machine.h>
 
 ssize_t getdents(int fd, void *dirp, size_t count) {
-#if defined(BAREMETAL)
-    return bios_getdents(fd, dirp, count);
-#else
     return syscall(BIOS_GETDENTS, fd, (uint32_t)dirp, count);
-#endif
 }

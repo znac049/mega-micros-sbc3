@@ -25,11 +25,10 @@ SOFTWARE.
 #include <stddef.h>
 #include <ctype.h>
 #include <machine.h>
-#include <ext2.h>
 #include <string.h>
 #include <extras.h>
 
-#if defined(BAREMETAL)
+#include "micromon.h"
 
 static int names_match(const char *target, const uint8_t *possible, uint8_t plen) {
     int tlen = strlen(target);
@@ -115,5 +114,3 @@ uint32_t e2_search(vmp_t *mp, uint32_t dir_inode_num, const char *target_name, u
 
     return 0;
 }
-
-#endif

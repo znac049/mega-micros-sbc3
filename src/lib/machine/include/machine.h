@@ -25,14 +25,6 @@ SOFTWARE.
 #pragma once
 
 #include <ctype.h>
-#include <ext2.h>
-#include <filesystems.h>
-#include <duart.h>
-#include <cf.h>
-#include <vectors.h>
-#include <blockdev.h>
-#include <disk.h>
-#include <fs.h>
 #include <bios.h>
 
 typedef short lock_state_t;
@@ -80,59 +72,11 @@ extern uint8_t cpu_type;
 extern volatile uint8_t bus_error_flag;
 
 
-int detect_cpu_type(void);
-int measure_cpu_clock(void);
-
-// block_devices.c
-int bd_init(void);
-int bd_read(block_device_t *dev, uint32_t block_num, uint8_t *buff, uint8_t subdev);
-
-
-//block_devices/cf_block.c
-int create_cf_dev(block_device_t *dev);
-
-
-//block_devices/rom_block.c
-int create_rom_dev(block_device_t *dev);
-
-
-// filesystems.c
-#if defined(BAREMETAL)
-
-int vfs_init(void);
-int vfs_shutdown(void);
-
-int bios_chdir(const char *path);
-int bios_getcwd(char*buff, size_t size);
-int bios_isatty(int fd);
-vfile_t *bios_locate(const char *path);
-int bios_creat(const char *pathname, mode_t mode);
-int bios_open(const char *pathname, int flags);
-int bios_close(int fd);
-int bios_read(int fd, char *buff, size_t num_bytes);
-size_t bios_write(int fd, const char *buff, size_t num_bytes);
-int bios_opendir(const char *name);
-ssize_t bios_getdents(int fd, void *dirp, size_t count);
-
-#endif
-
-
-
-
-// leds.c
-void clear_led(int);
-void set_led(int);
-
-
-// safeio.c
-int peek(volatile uint8_t *addr);
-int poke(volatile uint8_t *addr, uint8_t val);
-int peekw(volatile uint16_t *addr);
-int pokew(volatile uint16_t *addr, uint16_t val);
-
-
-// sh1107.c
-
-
 // traps.asm
 long trap0(long syscall_num, long arg1, long arg2, long arg3);
+
+
+// vectors.c
+unsigned int get_isr_handler(int vector_number);
+unsigned int set_isr_handler(int vector_number, unsigned int isr);
+

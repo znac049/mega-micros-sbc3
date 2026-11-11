@@ -1,5 +1,4 @@
-LIBOBJECTS=dump_jump.o \
-			setjmp.o
+LIBOBJECTS=setjmp.o
 
 LIBINCLUDES=$(DIR)/include
 

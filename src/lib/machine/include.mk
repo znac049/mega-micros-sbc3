@@ -1,17 +1,5 @@
 LIBOBJECTS=\
-			block_devices.o \
-			_cf.o \
-			cf.o \
-			cpu.o \
-			disk.o \
-			duart.o \
-			filesystems.o \
-			leds.o \
-			_misc.o \
-			misc.o \
-			safeio.o \
 			_traps.o \
-			_vectors.o \
 			vectors.o
 
 LIBINCLUDES=$(DIR)/include
@@ -22,6 +10,3 @@ OBJECTS := $(OBJECTS) $(LIBOBJECTS)
 INCLUDES := $(INCLUDES) $(DIR)/include/*
 
 VPATH += machine/ext2fs machine/block_devices
-
-include $(DIR)/ext2fs/include.mk
-include $(DIR)/block_devices/include.mk

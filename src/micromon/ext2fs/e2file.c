@@ -25,13 +25,12 @@ SOFTWARE.
 #include <stddef.h>
 #include <ctype.h>
 #include <machine.h>
-#include <ext2.h>
 #include <string.h>
 #include <extras.h>
 #include <unistd.h>
 #include <errno.h>
 
-#if defined(BAREMETAL)
+#include "micromon.h"
 
 int ext2_open(vfile_t *file, const char *name, int flags, vfile_t *cwd) {
     ext2_file_t *filep = &file->private.data.ext2_file_inf;
@@ -159,10 +158,16 @@ int ext2_read(vfile_t *file, char *buff, size_t count) {
 }
 
 int ext2_write(vfile_t *file, const char *buff, size_t count) {
+    (void)file;
+    (void)buff[0];
+    (void)count;
+    
     return NOT_OK;
 }
 
 int ext2_close(vfile_t *file) {
+    (void)file;
+
     return OK;
 }
 
@@ -206,7 +211,7 @@ static int seek_to(vfile_t *file, off_t offset) {
     file->count = BLOCK_DEVICE_BLOCK_SIZE;
     file->position = offset;
 
-    if (file->position > file->size) {
+    if (file->position > (int)file->size) {
         kprintf("seek_to: PAST EOF\n");
         
         file->position = file->size;
@@ -262,5 +267,3 @@ int ext2_seek(vfile_t *file, off_t offset, int whence) {
     
     return file->position;
 }
-
-#endif

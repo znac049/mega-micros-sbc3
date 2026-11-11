@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <duart.h>
 
 int printf(const char *format, ...) {
 	int res;

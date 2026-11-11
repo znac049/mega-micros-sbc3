@@ -27,8 +27,6 @@ SOFTWARE.
 #include <stdlib.h>
 #include <string.h>
 #include <machine.h>
-#include <disk.h>
-#include <ext2.h>
 #include <extras.h>
 
 #include "micromon.h"

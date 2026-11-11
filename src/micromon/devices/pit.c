@@ -23,8 +23,9 @@ SOFTWARE.
 */
 
 #include <stdio.h>
-#include <pit.h>
 #include <machine.h>
+
+#include "micromon.h"
 
 static uint8_t pit_port_a = 0;
 static uint8_t pit_port_b = 0;
@@ -110,9 +111,6 @@ void idle_for_ticks(uint32_t t) {
     }
 }
 
-
-#if defined(BAREMETAL)
-
 uint32_t pit_get_counter(void) {
     uint32_t l, m, h;
     
@@ -139,8 +137,6 @@ uint32_t pit_set_counter(uint32_t count_max) {
 
     return old_count_max;
 }
-
-#endif 
 
 void pit_set_a(uint8_t val) {
     pit_port_a = ~val;

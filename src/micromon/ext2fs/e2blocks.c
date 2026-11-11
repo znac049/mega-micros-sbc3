@@ -27,10 +27,8 @@ SOFTWARE.
 #include <machine.h>
 #include <errno.h>
 #include <string.h>
-#include <ext2.h>
-#include <disk.h>
 
-#if defined(BAREMETAL)
+#include "micromon.h"
 
 int ext2_read_block(vmp_t *mp, uint32_t block_num, uint8_t *buffer) {
     // kprintf("ext2_read_block %d, device='%s%d'\n", block_num, mp->dev_driver->name, mp->subdev);
@@ -169,5 +167,3 @@ uint32_t ext2_get_next_block_num(ext2_block_follower_t *bf) {
 
     return block_num;
 }
-
-#endif // BAREMETAL

@@ -28,7 +28,7 @@ SOFTWARE.
 #include <machine.h>
 #include <extras.h>
 
-#if defined(BAREMETAL)
+#include "micromon.h"
 
 static kduart_port_t channel_a;
 static kduart_port_t channel_b;
@@ -518,5 +518,3 @@ int setup_vfs_duart_handler(vfs_fs_t *vfs) {
 
     return OK;
 }
-
-#endif

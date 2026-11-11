@@ -26,7 +26,6 @@ SOFTWARE.
 #include <stdio.h>
 #include <unistd.h>
 #include <limits.h>
-#include <duart.h>
 #include <errno.h>
 
 #include "micromon.h"

@@ -27,7 +27,7 @@ SOFTWARE.
 #include <errno.h>
 #include <machine.h>
 
-#include "disk.h"
+#include "micromon.h"
 
 disk_info_t dk_info;
 

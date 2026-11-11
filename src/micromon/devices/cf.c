@@ -28,9 +28,7 @@ SOFTWARE.
 #include <string.h>
 #include <machine.h>
 
-#if defined(BAREMETAL)
-# define printf kprintf
-#endif 
+#include "micromon.h"
 
 void cf_init(void) {
     _cf_wait_busy();
@@ -42,7 +40,7 @@ void cf_init(void) {
 int cf_read(uint8_t drive_num, uint32_t sector, uint8_t *buffer) {
     uint8_t status;
 
-    // printf("cf_read(%d, %d,...)\n", drive_num, sector);
+    // printk("cf_read(%d, %d,...)\n", drive_num, sector);
 
     *cf_reg_lba0 = (uint8_t) sector;
     *cf_reg_lba1 = (uint8_t) (sector >> 8);
@@ -64,7 +62,7 @@ int cf_read(uint8_t drive_num, uint32_t sector, uint8_t *buffer) {
     }
 
     // Wait for device to indicate data is ready to read
-	//printf("Waiting for data...\n");
+	//printk("Waiting for data...\n");
 	//dump_regs();
     //_cf_wait_data();
 	CF_WAIT_FOR_DATA();

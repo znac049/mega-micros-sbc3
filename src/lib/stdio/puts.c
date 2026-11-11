@@ -23,7 +23,6 @@ SOFTWARE.
 */
 
 #include <stdio.h>
-#include <duart.h>
 
 int puts(const char *str) {
   while (*str) {

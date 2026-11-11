@@ -25,7 +25,6 @@ SOFTWARE.
 #include <extras.h>
 #include <stdio.h>
 #include <ctype.h>
-#include <duart.h>
 
 #if defined(BAREBONES)
 # define printf kprintf

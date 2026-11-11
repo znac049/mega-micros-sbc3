@@ -27,13 +27,13 @@ SOFTWARE.
 #include <string.h>
 #include <machine.h>
 
+#include "micromon.h"
+
 extern uint32_t _data_load_start;
 extern uint32_t _data_length;
 
 #define ROM_BASE 0xC00000
 #define ROM_END (ROM_BASE + (1024 * 1024 *4))
-
-#if defined(BAREMETAL)
 
 struct rom_disk_data {
     uint32_t    num_blocks;
@@ -115,11 +115,17 @@ static int rom_dev_read_block(uint32_t block_num, uint8_t *buff, uint8_t subdev)
 
     memcpy(buff, src, BLOCK_DEVICE_BLOCK_SIZE);
 
+    (void)subdev;
+
     return OK;
 }
 
 static int rom_dev_write_block(uint32_t block_num, uint8_t *buff, uint8_t subdev) {
     // Doh - can't write to the ROM
+
+    (void)block_num;
+    (void)buff[0];
+    (void)subdev;
 
     return NOT_OK;
 }
@@ -144,6 +150,3 @@ int create_rom_dev(block_device_t *dev) {
 
     return OK;
 }
-
-#endif
-
