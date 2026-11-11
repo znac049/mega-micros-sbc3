@@ -30,11 +30,23 @@ SOFTWARE.
 
 #include "micromon.h"
 
-void cf_init(void) {
-    _cf_wait_busy();
+int cf_init(void) {
+    if (_cf_wait_busy() == NOT_OK) {
+        return NOT_OK;
+    }
+
 	*cf_reg_feature = CF_FEATURE_8BIT;
     *cf_reg_command = CF_CMD_SET_FEATURE;
-    _cf_wait_busy();
+
+    if (_cf_wait_busy() == NOT_OK) {
+        return NOT_OK;
+    }
+
+    if (*cf_reg_status & CF_ST_ERROR) {
+        return NOT_OK;
+    }
+
+    return OK;
 }
 
 int cf_read(uint8_t drive_num, uint32_t sector, uint8_t *buffer) {

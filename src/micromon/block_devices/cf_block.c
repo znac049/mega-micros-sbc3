@@ -44,7 +44,13 @@ static int cf_dev_init(block_device_t *dev) {
     uint8_t card;
     uint8_t num_cards = 0;
 
-    cf_init();
+    if (cf_init() == NOT_OK) {
+        printk("No CF cards present (controller not responding)\n");
+        dev->num_sub_devices = 0;
+        dev->active = NO;
+
+        return OK;
+    }
 
     for (card=0; card<2; card++) {
         if (cf_drive_ready(card) == YES) {
