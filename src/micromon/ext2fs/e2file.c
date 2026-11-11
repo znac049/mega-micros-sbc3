@@ -29,98 +29,117 @@ SOFTWARE.
 #include <extras.h>
 #include <unistd.h>
 #include <errno.h>
+#include <limits.h>
+#include <fcntl.h>
 
 #include "micromon.h"
 
+/*
+ * Open a file or directory on an ext2 filesystem.
+ *
+ * name is relative to the root of the mount and already normalised by
+ * the VFS layer: no leading slash, no "." or ".." components, no
+ * repeated slashes. "" means the root directory of the mount.
+ */
 int ext2_open(vfile_t *file, const char *name, int flags, vfile_t *cwd) {
     ext2_file_t *filep = &file->private.data.ext2_file_inf;
-    int file_inode_num = EXT2_ROOT_INO;
+    char path[PATH_MAX];
     char *dirv[EXT2_MAX_DIR_DEPTH];
-    int dirc;
-    ext2_fs_t *fs;
+    int dirc = 0;
+    uint32_t inode_num = EXT2_ROOT_INO;
     ext2_inode_t inode;
-    uint8_t file_type;
 
-    // kprintf("ext2_do_open: '%s'\n", name);
+    (void)cwd;      // The VFS always gives us a path from the mount's root
 
     // Creating/writing is not currently coded, so reject any flags
     // that indicate creating/writing is required
     if (flags & (O_WRONLY | O_CREAT | O_TRUNC | O_APPEND)) {
         // Not currently supported
-        kprintf("ext2_do_open: '%s', %04x - writing not supported yet!", name, flags);
+        kprintf("ext2_open: '%s', %04x - writing not supported yet!\n", name, flags);
+        errno = EROFS;
 
         return NOT_OK;
     }
 
     if (file->mp == NULL) {
-        kprintf("ext2_do_open: NULL vmp_t in vfile_t\n");
+        kprintf("ext2_open: NULL vmp_t in vfile_t\n");
+        errno = EBADF;
+
         return NOT_OK;
     }
 
-    fs = &file->mp->private.data.ext2_fs_inf;
-
-    if (strcmp(name, "") == 0) {
-        if (cwd->open == YES) {
-            // use the current directory
-            // kprintf("ext2_do_open: using the current directory\n");
-
-            memcpy(file, cwd, sizeof(vfile_t));
-            ext2_init_block_follower(&filep->bf, file->mp, file_inode_num);
-
-            dump_ext2_fs(fs);
-            
-            return OK;
-        }
-        else {
-            // We don't currently have a current dir. Assume root of current mount
-            strcpy(file->path, "");
-            file->open = YES;
-            ext2_init_block_follower(&filep->bf, file->mp, file_inode_num);
-
-            filep->offset = 0;
-
-            return OK;
-        }
+    if (strlen(name) >= sizeof(path)) {
+        errno = ENAMETOOLONG;
+        return NOT_OK;
     }
-    
-    dirc = split_str(name, '/', dirv, EXT2_MAX_DIR_DEPTH);
 
-    // kprintf("ext2_do_open: '%s' splits into %d parts:\n", name, dirc);
-    // for (int i=0; i<dirc; i++) {
-    //     kprintf("  %s\n", dirv[i]);
-    // }
+    // split_str() writes into the string it splits, so work on a copy
+    strcpy(path, name);
+    if (path[0] != EOS) {
+        dirc = split_str(path, '/', dirv, EXT2_MAX_DIR_DEPTH);
+    }
+
+    // Start at the root directory and walk down the path
+    if (ext2_get_inode(file->mp, inode_num, &inode) == NOT_OK) {
+        errno = EIO;
+        return NOT_OK;
+    }
 
     for (int i=0; i<dirc; i++) {
-        int parent_inode_num = file_inode_num;
+        uint32_t parent_inode_num = inode_num;
 
-        if ((file_inode_num = e2_search(file->mp, file_inode_num, dirv[i], &file_type)) == 0) {
-            kprintf("ext2_do_open: couldn't find '%s' in directory with inode %d\n", dirv[i], parent_inode_num);
+        // We can only look inside directories
+        if (!S_ISDIR(inode.i_mode)) {
+            errno = ENOTDIR;
             return NOT_OK;
         }
 
-        if (ext2_get_inode(file->mp, file_inode_num, &inode) == NOT_OK) {
-            kprintf("ext2_do_open: failed to read inode %d\n", file_inode_num);
+        inode_num = e2_search(file->mp, parent_inode_num, dirv[i], NULL);
+        if (inode_num == 0) {
+            // kprintf("ext2_open: couldn't find '%s' in directory with inode %d\n", dirv[i], parent_inode_num);
+            errno = ENOENT;
             return NOT_OK;
         }
 
-        if (i < dirc-1) {
-            // It must be a directory
-            if (file_type != VFS_FT_DIR) {
-                kprintf("Found '%s' but it's not a directory!\n", dirv[i]);
-                return NOT_OK;
-            }
+        if (ext2_get_inode(file->mp, inode_num, &inode) == NOT_OK) {
+            kprintf("ext2_open: failed to read inode %d\n", inode_num);
+            errno = EIO;
+            return NOT_OK;
         }
     }
 
-    // kprintf("ext_open: final inode is %d\n", file_inode_num);
+    if ((flags & O_DIRECTORY) && !S_ISDIR(inode.i_mode)) {
+        errno = ENOTDIR;
+        return NOT_OK;
+    }
 
-    ext2_init_block_follower(&filep->bf, file->mp, file_inode_num);
+    if (ext2_init_block_follower(&filep->bf, file->mp, inode_num) == NOT_OK) {
+        errno = EIO;
+        return NOT_OK;
+    }
+
+    filep->mp = file->mp;
+    filep->offset = 0;
 
     file->size = inode.i_size;
     file->mode = inode.i_mode;
-    file->file_type = file_type;
 
-    // kprintf("ext2_open: '%s' opened ok. mode=%04x, size=%d\n", name, file->mode, file->size);
+    // Take the type from the inode - the directory entry's file type
+    // byte is only present if the fs has the 'filetype' feature
+    if (S_ISDIR(inode.i_mode)) {
+        file->file_type = VFS_FT_DIR;
+    }
+    else if (S_ISREG(inode.i_mode)) {
+        file->file_type = VFS_FT_REG;
+    }
+    else if (S_ISLNK(inode.i_mode)) {
+        file->file_type = VFS_FT_SYMLINK;
+    }
+    else {
+        file->file_type = VFS_FT_UNKNOWN;
+    }
+
+    // kprintf("ext2_open: '%s' opened ok. inode=%d, mode=%04x, size=%d\n", name, inode_num, file->mode, file->size);
 
     return OK;
 }
@@ -171,38 +190,35 @@ int ext2_close(vfile_t *file) {
     return OK;
 }
 
+/*
+ * Load the block containing offset into the file's buffer and leave the
+ * block follower pointing at the block after it, so the next ext2_read()
+ * carries on from there.
+ */
 static int seek_to(vfile_t *file, off_t offset) {
     uint32_t block = 0;
     ext2_file_t *filep = &file->private.data.ext2_file_inf;
     uint32_t block_num = offset / BLOCK_DEVICE_BLOCK_SIZE;
 
-    kprintf("seek_to: reset block follower\n");
-    kprintf("seek_to: file pos=%d, size=%d. abs offset=%d\n", 
-            file->position, file->size, offset);
-    kprintf("seek_to: data resides in relative block %d\n", block_num);
+    // kprintf("seek_to: file pos=%d, size=%d. abs offset=%d (relative block %d)\n",
+    //         file->position, file->size, offset, block_num);
 
     ext2_reset_block_follower(&filep->bf);
-    file->position = 0;
 
-    dump_ext2_inode(&filep->bf.inode, filep->bf.inode_num);
-
-    // block = ext2_get_next_block_num(&filep->bf);
-    // kprintf("seek_to: first block=%d\n", block);
-
-    for (uint32_t i=0; i<block_num; i++) {
+    // Step through blocks 0..block_num - 'block' ends up as block_num's
+    for (uint32_t i=0; i<=block_num; i++) {
         block = ext2_get_next_block_num(&filep->bf);
-        file->position += BLOCK_DEVICE_BLOCK_SIZE;
-
-        kprintf("seek_to: next block=%d, pos=%d\n", block, file->position);
     }
 
     if (block == 0) {
-        kprintf("seek_to: got a hole.\n");
+        // A hole (or past the end of the file)
         memset(file->buffer, 0, BLOCK_DEVICE_BLOCK_SIZE);
     }
     else {
         if (ext2_read_block(file->mp, block, (uint8_t *)file->buffer) == NOT_OK) {
-            kprintf("seek_to: failed to read block %d\n", block_num);
+            kprintf("seek_to: failed to read block %d\n", block);
+            file->index = file->count = 0;
+            errno = EIO;
             return NOT_OK;
         }
     }
@@ -211,59 +227,55 @@ static int seek_to(vfile_t *file, off_t offset) {
     file->count = BLOCK_DEVICE_BLOCK_SIZE;
     file->position = offset;
 
-    if (file->position > (int)file->size) {
-        kprintf("seek_to: PAST EOF\n");
-        
+    if (file->position > (off_t)file->size) {
         file->position = file->size;
         file->index = file->size % BLOCK_DEVICE_BLOCK_SIZE;
     }
-
-    kprintf("seek_to: final file pos=%d, size=%d, index=%d, offset=%d\n", file->position, file->size, file->index, offset);
 
     return file->position;
 }
 
 int ext2_seek(vfile_t *file, off_t offset, int whence) {
-    off_t abs_offset = offset;
+    off_t abs_offset;
 
     switch (whence) {
         case SEEK_SET:
+            abs_offset = offset;
             break;
 
         case SEEK_CUR:
-        abs_offset = file->position + offset;
+            abs_offset = file->position + offset;
             break;
 
         case SEEK_END:
             abs_offset = file->size + offset;
             break;
+
+        default:
+            errno = EINVAL;
+            return NOT_OK;
     }
 
-    kprintf("ext2_seek: abs_offset=%d\n", abs_offset);
-
-    if (abs_offset == file->position) {
-        kprintf("ext2_seek: we're already at the right place (%d):-)\n", file->position);
+    if (abs_offset < 0) {
+        errno = EINVAL;
+        return NOT_OK;
     }
-    else {
-        // Check to see if it's in the current block
+
+    if (abs_offset != file->position) {
+        // Is it in the block we already have in the buffer?
         off_t start_off = file->position - file->index;
-        off_t end_off = start_off + BLOCK_DEVICE_BLOCK_SIZE;
+        off_t end_off = start_off + file->count;
 
-        if ((abs_offset >= start_off) && (abs_offset < end_off)) {
-            // Yes, it's in the current block, so...
+        if ((file->count > 0) && (abs_offset >= start_off) && (abs_offset < end_off)) {
             off_t diff = abs_offset - file->position;
 
-            kprintf("ext2_seek: current block, delta=%d\n", diff);
             file->position += diff;
             file->index += diff;
         }
-        else {
-            kprintf("ext2_seek: seek absolute %d...\n", abs_offset);
-            seek_to(file, abs_offset);
+        else if (seek_to(file, abs_offset) == NOT_OK) {
+            return NOT_OK;
         }
     }
 
-    kprintf("ext2_seek: returning %d\n", file->position);
-    
     return file->position;
 }
