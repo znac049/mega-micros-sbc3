@@ -87,7 +87,13 @@ uint32_t e2_search(vmp_t *mp, uint32_t dir_inode_num, const char *target_name, u
 
             // kprintf("  name->'%s'\n", ent.name);
 
-            if (names_match(target_name, ent.name, ent.name_len)) {
+            // A zero/short rec_len would loop forever - treat as the end of the block
+            if (ent.rec_len < 8) {
+                break;
+            }
+
+            // inode 0 marks an unused/deleted slot
+            if ((ent.inode != 0) && names_match(target_name, ent.name, ent.name_len)) {
                 // kprintf("BINGO! in=%d, rl=%d, nl=%d\n", ent.inode, ent.rec_len, ent.name_len);
                 if (file_type != NULL) {
                     switch (ent.file_type) {
