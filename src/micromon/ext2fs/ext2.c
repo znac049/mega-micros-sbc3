@@ -301,6 +301,7 @@ int setup_vfs_ext2_handler(vfs_fs_t *vfs) {
     vfs->api.fs.write = ext2_write;
     vfs->api.fs.close = ext2_close;
     vfs->api.fs.seek = ext2_seek;
+    vfs->api.fs.getdents = ext2_getdents;
 
     return OK;
 }

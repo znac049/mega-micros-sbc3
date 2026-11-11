@@ -31,6 +31,8 @@ SOFTWARE.
 
 #if defined(BAREMETAL)
 
+struct dirent;      // from <dirent.h>
+
 // Max number of file descriptors
 #define MAX_FILES 20
 #define MAX_VIRTUAL_FILESYSTEMS 6
@@ -101,6 +103,7 @@ union vfs {
         int (*write)(vfile_t *file, const char *buf, size_t n_bytes);
         int (*close)(vfile_t *file);
         int (*seek)(vfile_t *file, off_t offset, int whence);
+        int (*getdents)(vfile_t *dir, struct dirent *out, int max_ents);
     } fs;
 };
 
@@ -154,9 +157,7 @@ uint32_t ext2_get_next_block_num(ext2_block_follower_t *bf);
 void ext2_dump_block_follower(ext2_block_follower_t *bf);
 
 // ext2/e2dir.c
-int ext2_closedir(ext2_file_t *dirp);
-ext2_dirent_t *ext2_readdir(ext2_file_t *dirp);
-void ext2_rewinddir(ext2_file_t *dirp);
+int ext2_getdents(vfile_t *dir, struct dirent *out, int max_ents);
 uint32_t ext2_find_item_inode_in(vmp_t *mp, uint32_t parent_inode_num, const char *item_name, bool_t is_dir);
 
 // ext2/e2dump.c
