@@ -105,23 +105,24 @@ ram_test_done:
         beq     ram_ok
 
 ; Ram test failed
-        move.l  #$66666666,$ab0000
+ram_test_failed:
+        move.l  #$66666666,HEX_DISPLAY_BASE
         Deelay  d4,d5
 
-        move.l  d0,$ab0000              ; Failing stage
+        move.l  d0,HEX_DISPLAY_BASE     ; Failing stage
         Deelay  d4,d5
 
-        move.l  a0,$ab0000              ; Failing address
+        move.l  a0,HEX_DISPLAY_BASE     ; Failing address
         Deelay  d4,d5
 
-        move.l  d1,$ab0000              ; Expected
+        move.l  d1,HEX_DISPLAY_BASE     ; Expected
         Deelay  d4,d5
 
-        move.l  d2,$ab0000              ; Actual
+        move.l  d2,HEX_DISPLAY_BASE     ; Actual
 
         Deelay  d4,d5
 
-;        bra     stop
+        bra     ram_test_failed
 
 ram_ok:
 
@@ -162,9 +163,9 @@ ibloop:
 ibdone:
 
 
-; invoke main() 
 	move.l  #_INITIAL_STACK,sp
-        ;HexDisp $11,0,$2002
+        bsr.l   early_setup
+
         bsr.l	main
         bra     done
 
@@ -172,7 +173,6 @@ ibdone:
 exit::
     	move.l  4(sp),d0
 done:
-        HexDisp $31,0,$2003
         bra     stop                           ; Don't know what else to do!
 
 

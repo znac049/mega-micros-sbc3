@@ -148,18 +148,6 @@ ROM_SIZE                equ     $00400000
 
 HEX_DISPLAY_BASE::      equ     $AB0000
 
-HexDisp                 macro
-                        move.l  d0,-(sp)
-                        move.b  #\1,d0
-                        move.b  d0,HEX_DISPLAY_BASE
-                        move.b  #\2,d0
-                        move.b  d0,HEX_DISPLAY_BASE+1
-                        move.w  #\3,d0
-                        move.w  d0,HEX_DISPLAY_BASE+2
-                        move.l  (sp)+,d0
-                        endm
-
-
 Deelay                  macro
                         inline
                         move.w  #126,\1
