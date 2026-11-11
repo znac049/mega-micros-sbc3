@@ -30,7 +30,10 @@ SOFTWARE.
 #include <machine.h>
 
 #include "micromon.h"
+#include "duart.h"
 
 void early_setup(void) {
+    uint8_t jumpers = (~(*duart_ip)) & 0x3f;
     
+    early_duart_setup((jumpers & 0x04)?YES:NO);
 }

@@ -267,9 +267,14 @@ int duart_clock_doubled(void) {
     return duart.clock_doubled;
 }
 
-void setup_duart(int is_xr) {
+void early_duart_setup(int is_xr) {
     init_duart_structures();
 
+    duart.is_xr68c681 = is_xr;
+    duart.clock_doubled = is_xr;
+}
+
+void setup_duart(int is_xr) {
     *duart_acr = 0x30;  // Baud rate table: set 1, counter is clock/16
 
     duart.is_xr68c681 = is_xr;
@@ -283,9 +288,6 @@ void setup_duart(int is_xr) {
     init_duart_channel(&channel_a);
 
     *duart_imr = 0x02;                  //  RX interrupts, channel A
-
-    // *pit_padr = 0;
-    // *pit_pbdr = 0;
 }
 
 static int buffered_rx_char(kduart_port_t *channel) {

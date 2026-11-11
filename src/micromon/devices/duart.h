@@ -134,6 +134,7 @@ struct kduart {
 typedef struct kduart kduart_t;
 
 
+void early_duart_setup(int is_xr);
 void setup_duart(int is_xr);
 
 int kchar_available(void);
