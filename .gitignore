@@ -9,6 +9,7 @@
 *.srec
 *.hex
 *.bak
+*.d
 zz*
 *~
 \#*
