@@ -221,7 +221,7 @@ void main(void) {
     char cmdline[MAX_LINE];
     char cwd[PATH_MAX];
 
-    *((uint8_t *)0xab0000) = 0x42;
+    HEXB1(0x42);
     setup();
 
     printk("Ready.\n");

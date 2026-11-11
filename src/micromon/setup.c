@@ -35,7 +35,7 @@ SOFTWARE.
 
 static int major = 0;
 static int minor = 5;
-static int MAGIC_BUILD_NUMBER = 131;
+static int MAGIC_BUILD_NUMBER = 145;
 
 
 uint32_t ram_end;
@@ -209,20 +209,6 @@ static void pr_banner(void) {
     }
 }
 
-/*
- * Probe to see what optional hardware is present
- */
-static inline void probe_hardware(void) {
-    pit_present = is_pit_present();
-    duart_present = is_duart_present();
-    cf_present = YES;
-    hex_display_present = NO;
-    acrtc3_present = is_acrtc_present();
-    rtc_present = is_rtc_present();
-    oled_present = is_oled_present();
-}
-
-
 void setup(void) {
     int is_xr;
 
@@ -232,16 +218,39 @@ void setup(void) {
      * Now we know how much memory we have, we can
      * safely initialise the heap
      */
+    HEXB1(1);
     init_heap();
 
-    probe_hardware();
+    HEXB1(2);
+    pit_present = is_pit_present();
 
+    HEXB1(3);
+    duart_present = is_duart_present();
+
+    cf_present = YES;
+    
+    HEXB1(4);
+    hex_display_present = is_hex_display_present();
+
+    HEXB1(5);
+    acrtc3_present = is_acrtc_present();
+    
+    HEXB1(6);
+    rtc_present = is_rtc_present();
+
+    HEXB1(7);
+    oled_present = is_oled_present();
+
+
+    HEXB1(8);
     strcpy(program_name, DEFAULT_PROGRAM_NAME);
 
     /*
      * The PI/T will always be present on the SBC-3
      */
+    HEXB1(9);
     if (pit_present == YES) {
+        HEXB1(8);
         *pit_tivr = PIT_VECTOR_NUMBER;
         _claim_pit();
 
@@ -265,6 +274,7 @@ void setup(void) {
      * Now we've read the XR jumper, we can setup the duart.
      * From this point on, we can print stuff
      */
+    HEXB1(10);
     setup_duart(is_xr);
 
     /* constants used by the expression evaluator */

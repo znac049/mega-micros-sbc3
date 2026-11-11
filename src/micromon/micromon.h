@@ -38,6 +38,7 @@ SOFTWARE.
 #include "i2c.h"
 #include "sh1107.h"
 #include "ds1307.h"
+#include "hex_display.h"
 
 #define MAX_LINE 512
 #define MAX_ARGS 32
@@ -124,6 +125,7 @@ bool_t is_duart_present(void);
 bool_t is_rtc_present(void);
 bool_t is_oled_present(void);
 bool_t is_acrtc_present(void);
+bool_t is_hex_display_present(void);
 
 
 // dir_cmd.c

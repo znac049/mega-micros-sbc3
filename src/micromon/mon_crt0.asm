@@ -209,9 +209,18 @@ _not_handled::
         rte
 
 ; BUS ERROR handler - set a flag
+;
+; Remember: On the 68030, RTE re-runs a faulted data cycle if the DF bit
+; (bit 8) of the Special Status Word is set - which would just
+; fault again, forever. Clear it so the access is abandoned and
+; the code that made it can check bus_error_flag instead.
+;
+; Stack frame (after we push a0): SSW is at 4+10(sp). DF is bit 8
+; of the word, i.e. bit 0 of its high byte.
 _bus_err_exception::
         movem.l a0,-(sp)
         move.b  #1,bus_error_flag
+        bclr.b  #0,4+10(sp)                     ; Clear DF - don't rerun
         lea.l   $af0001,a0
         move.b  #0,18(a0)
         movem.l (sp)+,a0

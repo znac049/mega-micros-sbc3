@@ -38,6 +38,14 @@ bool_t is_duart_present(void) {
     return (ivr == -1)?NO:YES;
 }
 
+bool_t is_hex_display_present(void) {
+    if (poke(hex_display_base, 0x42) == -1) {
+        return NO;
+    }
+
+    return YES;
+}
+
 bool_t is_rtc_present(void) {
     return i2c_probe(DS1307_ADDR)?YES:NO;
 }
@@ -47,12 +55,22 @@ bool_t is_oled_present(void) {
 }
 
 bool_t is_acrtc_present(void) {
-    uint16_t status;
+    int status;
 
-    *acrtc_address = ACRTC_REG_CCR;    // Command register
-    *acrtc_data = ACRTC_CCR_ABT;        // Abort command
+    if (pokew(acrtc_address, ACRTC_REG_CCR) == -1) {     // Command register
+        return NO;
+    }
 
-    status = *acrtc_status & 0xff;
+    if (pokew(acrtc_data, ACRTC_CCR_ABT) == -1) {        // Abort command
+        return NO;
+    }    
+
+    status = peekw(acrtc_status);
+    if (status == -1) {
+        return NO;
+    }
+
+    status &= 0xff;
     if ((status & 0x23) == 0x23) {
         return YES;
     }

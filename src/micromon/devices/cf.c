@@ -31,20 +31,50 @@ SOFTWARE.
 #include "micromon.h"
 
 int cf_init(void) {
+    uint8_t status;
+
+    /*
+     * Select the master explicitly. The card isn't reset by a warm
+     * reset, so it may still have drive 1 selected from the last
+     * cf_drive_ready() call - and commands sent to a missing slave
+     * are aborted.
+     */
+    *cf_reg_lba3 = 0xe0;
+    CF_DELAY_400NS();
+
     if (_cf_wait_busy() == NOT_OK) {
+        printk("CF: timed out waiting for card (status=$%02X)\n", *cf_reg_status);
         return NOT_OK;
     }
 
 	*cf_reg_feature = CF_FEATURE_8BIT;
     *cf_reg_command = CF_CMD_SET_FEATURE;
 
+      /*
+     * The card may take up to 400nS to set BSY after a command is
+     * written - reading status before then gives a stale result.
+     */
+    CF_DELAY_400NS();
+
     if (_cf_wait_busy() == NOT_OK) {
+        printk("CF: timed out after SET FEATURES (status=$%02X)\n", *cf_reg_status);
         return NOT_OK;
     }
 
     if (*cf_reg_status & CF_ST_ERROR) {
         return NOT_OK;
     }
+
+    /*
+     * Report, but don't fail, on an error here - the old code ignored
+     * it and detection still worked. cf_drive_ready() decides whether
+     * a card is really there.
+     */
+    status = *cf_reg_status;
+    if (status & CF_ST_ERROR) {
+        printk("CF: SET FEATURES (8-bit) rejected (status=$%02X, error=$%02X)\n",
+            status, *cf_reg_error);
+     }
 
     return OK;
 }

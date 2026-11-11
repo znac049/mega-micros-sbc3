@@ -65,6 +65,8 @@ SOFTWARE.
 #define CF_SECTOR_SIZE			512
 
 #define CF_DELAY(x)		{ for (int delay = 0; delay < (x); delay++) { __asm volatile(""); } }
+/* At least 400nS: each CF register read is one full bus cycle */
+#define CF_DELAY_400NS()	{ for (int i_ = 0; i_ < 5; i_++) { (void)*cf_reg_status; } }
 #define CF_WAIT_FOR_DATA()	{ while (!((*cf_reg_status) & CF_ST_DRQ)) { } }
 
 struct cf_info {
