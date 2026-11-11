@@ -24,6 +24,7 @@ SOFTWARE.
 
 #include <stdio.h>
 #include <machine.h>
+#include <extras.h>
 
 #include "micromon.h"
 

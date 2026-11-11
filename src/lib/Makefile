@@ -120,6 +120,7 @@ actual_install: build install_headers
 	$(CP_R) $(CRT0_OBJS) $(INSTALL_LIB)
 
 install_headers:
+	rm $(INSTALL_INC)/*.h
 	$(CP_R) $(INCDIR)/*.h $(INSTALL_INC)
 	$(CP_R) $(INCLUDES) $(INSTALL_INC)
 

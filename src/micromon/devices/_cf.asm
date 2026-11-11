@@ -36,18 +36,40 @@ CF_CMD_READ_SECTORS equ $20
 
 CF_SECTOR_SIZE      equ 512
 
+; Status register bit masks (for and/cmp)
 cf_status_busy      equ $80
 cf_status_drq       equ $08
 cf_status_error     equ $01
 
+; Status register bit NUMBERS (for btst - which takes a bit
+; number, not a mask)
+cf_status_busy_bit  equ 7
+cf_status_error_bit equ 0
+
+
 cf_data_mask        equ cf_status_busy | cf_status_drq
+
+; How many times to poll before giving up
+CF_TIMEOUT          equ 1000000
 
 ; waits for the device to not be busy
 ;
+; returns (d0)
+;   0 - BSY clear
+;  -1 - timed out (BSY never cleared - card missing or hung)
+;
 _cf_wait_busy::
+                move.l  #CF_TIMEOUT,d1
 .loop
-                btst.b  #cf_status_busy,cf_reg_status
+                btst.b  #cf_status_busy_bit,cf_reg_status
+                beq     .ready
+                subq.l  #1,d1
                 bne     .loop
+
+                moveq   #-1,d0
+                rts
+
+.ready          moveq   #0,d0
                 rts
 
 
@@ -57,7 +79,7 @@ _cf_wait_busy::
 ;
 _cf_wait_data::
 .loop           move.b  cf_reg_status,d0
-                btst    #cf_status_error,d0
+                btst    #cf_status_error_bit,d0
                 bne     .err
                 and.b   #cf_data_mask,d0
                 cmp.b   #cf_status_drq,d0

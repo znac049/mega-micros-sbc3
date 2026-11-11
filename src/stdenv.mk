@@ -56,7 +56,7 @@ endif
 SRCINCS=-I. $(addprefix -I,$(filter-out .,$(SRCDIRS)))
 
 FLAGS=-ffreestanding -ffunction-sections -fdata-sections -fomit-frame-pointer	\
-      -Wall -Wextra -Werror -Wno-unused-function -pedantic -I$(SYSINCDIR) $(SRCINCS)	\
+      -Wall -Wextra -Werror -Wno-unused-function -pedantic $(SRCINCS) -I$(SYSINCDIR)	\
       -mcpu=$(CPU) -march=$(ARCH) -mtune=$(TUNE) -msoft-float -g -O2 $(DEFINES)
 # -MMD -MP: generate obj/xxx.d header-dependency files automatically
 DEPFLAGS=-MMD -MP
