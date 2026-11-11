@@ -143,7 +143,7 @@ void print_help(void) {
 }
 
 command_t *find_command(char *cmd) {
-    printk("find_command: looking up '%s'\n", cmd);
+    // printk("find_command: looking up '%s'\n", cmd);
 
     for (unsigned int i=0; i<NUM_COMMANDS; i++) {
         if (is_command(cmd, commands[i].command, commands[i].min_required, commands[i].type) == YES) {

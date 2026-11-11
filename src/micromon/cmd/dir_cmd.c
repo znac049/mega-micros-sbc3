@@ -45,31 +45,33 @@ void handle_cd_command(int argc, char *argv[]) {
 }
 
 void handle_dir_command(int argc, char *argv[]) {
-    DIR *d = opendir(".");
+    const char *path = (argc > 1)?argv[1]:".";
+    DIR *d;
     struct dirent *ent;
 
-    if (d == NULL) {
-        printk("opendir() failed. errno=%d\n", errno);
+    if (argc > 2) {
+        printk("usage: dir [<path>]\n");
         return;
     }
 
-    printk("dir opened ok\n");
-
-    ent = readdir(d);
-    while (ent != NULL) {
-        printk("%s\n", ent->d_name);
-
-        ent = readdir(d);
+    d = opendir(path);
+    if (d == NULL) {
+        printk("%s: can't open directory. errno=%d\n", path, errno);
+        return;
     }
 
-    printk("closing dir\n");
+    errno = 0;
+    while ((ent = readdir(d)) != NULL) {
+        printk("%s%s\n", ent->d_name, (ent->d_type == DT_DIR)?"/":"");
+    }
+
+    if (errno != 0) {
+        printk("readdir() failed. errno=%d\n", errno);
+    }
 
     if (closedir(d) == NOT_OK) {
-        printf("closedir() failed. errno=%d\n", errno);
+        printk("closedir() failed. errno=%d\n", errno);
     }
-
-    (void)argc;
-    (void)argv;
 }
 
 void handle_pwd_command(void) {
