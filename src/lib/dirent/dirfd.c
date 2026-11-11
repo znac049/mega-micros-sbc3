@@ -31,5 +31,10 @@ SOFTWARE.
 // #include <machine.h>
 
 int dirfd(DIR *dirp) {
-    return ENOTSUP;
+    if ((dirp == NULL) || (dirp->open == NO)) {
+        errno = EINVAL;
+        return NOT_OK;
+    }
+
+    return dirp->fd;
 }

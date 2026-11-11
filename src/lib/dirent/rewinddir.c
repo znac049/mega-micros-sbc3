@@ -23,7 +23,13 @@ SOFTWARE.
 */
 
 #include <stddef.h>
+#include <unistd.h>
 #include <dirent.h>
 
 void rewinddir(DIR *dirp) {
+    if ((dirp == NULL) || (dirp->open == NO)) {
+        return;
+    }
+
+    lseek(dirp->fd, 0, SEEK_SET);
 }

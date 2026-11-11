@@ -23,14 +23,26 @@ SOFTWARE.
 */
 
 #include <stddef.h>
+#include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
 
+/*
+ * Fetch one entry per call. The VFS layer buffers a whole directory
+ * block, so this costs very little and keeps DIR small.
+ *
+ * Returns NULL at the end of the directory (errno unchanged) or on
+ * error (errno set).
+ */
 struct dirent *readdir(DIR *dirp) {
-    if (dirp == NULL) {
+    if ((dirp == NULL) || (dirp->open == NO)) {
         errno = EBADF;
         return NULL;
     }
 
-    return OK;
+    if (getdents(dirp->fd, &dirp->ent, sizeof(struct dirent)) <= 0) {
+        return NULL;
+    }
+
+    return &dirp->ent;
 }

@@ -23,8 +23,19 @@ SOFTWARE.
 */
 
 #include <stddef.h>
+#include <unistd.h>
 #include <dirent.h>
+#include <errno.h>
 
+/*
+ * The directory's file position is the byte offset of the next entry,
+ * so it can be handed back to seekdir() as-is.
+ */
 long telldir(DIR *dirp) {
-    return 0;
+    if ((dirp == NULL) || (dirp->open == NO)) {
+        errno = EBADF;
+        return NOT_OK;
+    }
+
+    return lseek(dirp->fd, 0, SEEK_CUR);
 }

@@ -23,8 +23,22 @@ SOFTWARE.
 */
 
 #include <stddef.h>
+#include <unistd.h>
 #include <dirent.h>
+#include <errno.h>
 
 int closedir(DIR *dirp) {
-    return OK;
+    int res;
+
+    if ((dirp == NULL) || (dirp->open == NO)) {
+        errno = EBADF;
+        return NOT_OK;
+    }
+
+    res = close(dirp->fd);
+
+    dirp->open = NO;
+    dirp->fd = -1;
+
+    return (res == NOT_OK)?NOT_OK:OK;
 }

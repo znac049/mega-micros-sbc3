@@ -23,7 +23,14 @@ SOFTWARE.
 */
 
 #include <stddef.h>
+#include <unistd.h>
 #include <dirent.h>
 
+/* loc must be a value previously returned by telldir() */
 void seekdir(DIR *dirp, long loc) {
+    if ((dirp == NULL) || (dirp->open == NO)) {
+        return;
+    }
+
+    lseek(dirp->fd, loc, SEEK_SET);
 }
