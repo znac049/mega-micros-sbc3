@@ -134,7 +134,7 @@ ram_ok:
 cpvec:
         move.l  (a0)+,d1
         move.l  d1,(a1)+
-        dbeq    d0,cpvec
+        dbra    d0,cpvec
 
 ; relocate the data section into RAM
 ;

@@ -48,7 +48,7 @@ static int cf_dev_init(block_device_t *dev) {
 
     for (card=0; card<2; card++) {
         if (cf_drive_ready(card) == YES) {
-            kprintf("CF card #%d - present\n", card);
+            printk("CF card #%d - present\n", card);
             num_cards++;
         }
     }
@@ -57,7 +57,7 @@ static int cf_dev_init(block_device_t *dev) {
     dev->num_sub_devices = num_cards;
 
     if (num_cards == 0) {
-        kprintf("No CF cards present\n");
+        printk("No CF cards present\n");
         dev->active = NO;
 
         return OK;
@@ -73,13 +73,13 @@ static int cf_dev_finish(void) {
 static int cf_dev_read_block(uint32_t block_num, uint8_t *buff, uint8_t subdev) {
     uint32_t sector = block_num * SECTORS_PER_BLOCK;
 
-    // kprintf("CF_dev_read_block() block # = %d, subdev=%d\n", block_num, subdev);
-    // kprintf("block %d -> sector %d\n", block_num, sector);
+    // printk("CF_dev_read_block() block # = %d, subdev=%d\n", block_num, subdev);
+    // printk("block %d -> sector %d\n", block_num, sector);
 
     for (int i=0; i<SECTORS_PER_BLOCK; i++) {
         int res = cf_read(subdev, sector, buff);
         if (res != OK) {
-            kprintf("Blargle - %d!\n", res);
+            printk("Blargle - %d!\n", res);
             return NOT_OK;
         }
 

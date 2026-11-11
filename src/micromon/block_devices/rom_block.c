@@ -49,7 +49,7 @@ static uint8_t *find_start_of_disk(void) {
     uint32_t len = (uint32_t)&_data_length;
     uint8_t *base = (uint8_t *)(start+len);
 
-    // kprintf("base=$%06X ($%06X + %06X)\n", base, start, len);
+    // printk("base=$%06X ($%06X + %06X)\n", base, start, len);
 
     // Hunt the pre-disk signature
     for (int i=0; i<1024; i++) {
@@ -63,7 +63,7 @@ static uint8_t *find_start_of_disk(void) {
                 (base[6] == 0xbe) &&
                 (base[7] == 0xef)
             ) {
-            // kprintf("Found signature at $%06X!!!\n", base);
+            // printk("Found signature at $%06X!!!\n", base);
 
             return base+8;
         }
@@ -78,7 +78,7 @@ static int rom_dev_init(block_device_t *dev) {
     uint8_t *rom_disk_base = find_start_of_disk();
 
     if (rom_disk_base == NULL) {
-        // kprintf("ROM disk signature not found\n");
+        // printk("ROM disk signature not found\n");
 
         return NOT_OK;
     }
@@ -90,7 +90,7 @@ static int rom_dev_init(block_device_t *dev) {
     rom_disk.num_blocks = (ROM_END - (uint32_t)rom_disk_base) / BLOCK_DEVICE_BLOCK_SIZE; 
     dev->num_sub_devices = 1;
 
-    kprintf("ROM disk @ $%08X, # blocks=%d, read-only\n", rom_disk.base, rom_disk.num_blocks);
+    printk("ROM disk @ $%08X, # blocks=%d, read-only\n", rom_disk.base, rom_disk.num_blocks);
 
     return OK;
 }
@@ -103,15 +103,15 @@ static int rom_dev_read_block(uint32_t block_num, uint8_t *buff, uint8_t subdev)
     uint8_t *src = rom_disk.base;
     uint32_t offset = block_num*BLOCK_DEVICE_BLOCK_SIZE;
 
-    // kprintf("rom_dev_read_block() block # = %d, subdev=%d\n", block_num);
+    // printk("rom_dev_read_block() block # = %d, subdev=%d\n", block_num);
 
     if (block_num >= rom_disk.num_blocks) {
-        kprintf("block %d out of range\n", block_num);
+        printk("block %d out of range\n", block_num);
         return NOT_OK;
     }
 
     src += offset;
-    // kprintf("block %d starts at $%08x, offset=%d\n", block_num, src, offset);
+    // printk("block %d starts at $%08x, offset=%d\n", block_num, src, offset);
 
     memcpy(buff, src, BLOCK_DEVICE_BLOCK_SIZE);
 
