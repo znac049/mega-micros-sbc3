@@ -28,6 +28,7 @@ SOFTWARE.
 #include <errno.h>
 #include <extras.h>
 #include <machine.h>
+#include <dirent.h>
 
 #include "micromon.h"
 
@@ -44,111 +45,88 @@ void dump_dirent (ext2_dirent_t *ent) {
     kprintf("\n");
 }
 
-#if 0
-static int ext2_find_path(vfile_t *dir, const char *name) {
-    char name_copy[EXT2_MAX_PATH_LEN];
-    char *s = name_copy;
-    char *dirv[EXT2_MAX_DIR_DEPTH];
-    int dirc = 0;
-    int dir_inode_num = EXT2_ROOT_INO;
-    ext2_dirp_t *dirp;
-    vmp_t *mp = dir->mp;
+/*
+ * Read up to max_ents directory entries from an open directory into out[].
+ *
+ * Directory blocks are read into the vfile's own buffer (not the shared
+ * mount block buffer), using the same index/count/position bookkeeping
+ * as bios_read(), so seeking (rewinddir/seekdir) works the same way:
+ *
+ *   position - byte offset in the directory of the next entry
+ *   index    - offset of that entry within buffer[]
+ *   count    - number of valid bytes in buffer[]
+ *
+ * Returns the number of entries stored (0 at end of directory), or
+ * NOT_OK with errno set.
+ */
+int ext2_getdents(vfile_t *dir, struct dirent *out, int max_ents) {
+    int n = 0;
 
-    kprintf("ext2_find_path: '%s'\n", name);
-
-    if (mp == NULL) {
-        kprintf("NULL vmp_t in vfile_t\n");
-        return NOT_OK;
-    }
-
-    dirp = &dir->fs.private;
-    dirp->offset = 0;
-    dirp->mp = mp;
-
-    strcpy(name_copy, name);
-    
-    if (*s == '/') {
-        s++;
-    }
-
-    if (*s) {
-        dirc = split_str(s, '/', dirv, EXT2_MAX_DIR_DEPTH);
-
-        kprintf("The path splits into %d parts:\n", dirc);
-        for (int i=0; i<dirc; i++) {
-            kprintf("  %s\n", dirv[i]);
-        }
-    }
-
-    // do stuff
-    if (dirc) {
-        for (int i=0; (i<dirc) && (dir_inode_num != -1); i++) {
-            dir_inode_num = ext2_find_item_inode_in(&mp->fs_data.e2fs, dir_inode_num, dirv[i], YES);
-            kprintf("Directory inode # is %d\n", dir_inode_num);
-        }
-    }
-
-    kprintf("The final dir inode # is %d\n", dir_inode_num);
-
-    ext2_init_block_follower(&mp->fs_data.e2fs, dir_inode_num, &dirp->bf);
-
-    return OK;
-}
-#endif
-
-int ext2_closedir(ext2_file_t *dirp) {
-    if (dirp == NULL) {
+    if ((dir == NULL) || (dir->mp == NULL) || (out == NULL)) {
         errno = EBADF;
         return NOT_OK;
     }
 
-    dirp->mp = NULL;
+    while (n < max_ents) {
+        uint8_t *raw;
+        uint32_t ino;
+        uint16_t rec_len;
+        uint8_t name_len;
+        uint8_t ftype;
 
-    return OK;
-}
-
-ext2_dirent_t *ext2_readdir(ext2_file_t *file) {
-    uint8_t *buf = (uint8_t *)&file->mp->block_buffer;
-
-    if (file == NULL) {
-        errno = EBADF;
-        return NULL;
-    }
-
-    // do stuff
-    if (file->offset == 0) {
-        uint32_t block_num = ext2_get_next_block_num(&file->bf);
-
-        if (block_num == 0) {
-            return NULL;
+        if (dir->position >= (off_t)dir->size) {
+            break;                                      // end of directory
         }
 
-        kprintf("Grab dir block %d\n", block_num);
-        if (ext2_read_fs_block(file->mp, block_num, YES) != 0) {
-            kprintf("Failed to read block %d\n", block_num);
-            return NULL;
+        if (dir->index >= dir->count) {
+            // Buffer used up - fetch the next directory block
+            int got = ext2_read(dir, dir->buffer, BLOCK_DEVICE_BLOCK_SIZE);
+
+            if (got == NOT_OK) {
+                errno = EIO;
+                return NOT_OK;
+            }
+
+            dir->index = 0;
+            dir->count = got;
         }
+
+        /* 
+         * On-disk entries are little-endian. Pick the fields out byte
+         * by byte - no byte swapping or alignment worries.
+         */
+        raw = (uint8_t *)&dir->buffer[dir->index];
+        ino = (uint32_t)raw[0] | ((uint32_t)raw[1] << 8) | ((uint32_t)raw[2] << 16) | ((uint32_t)raw[3] << 24);
+        rec_len = (uint16_t)(raw[4] | (raw[5] << 8));
+        name_len = raw[6];
+        ftype = raw[7];         // only valid if the fs has the 'filetype' feature
+
+        // A bad rec_len would otherwise loop forever or run off the block
+        if ((rec_len < 8) || (rec_len & 3) ||
+            (dir->index + rec_len > dir->count) ||
+            (name_len + 8 > rec_len)) {
+            kprintf("ext2_getdents: corrupt directory entry at offset %d\n", dir->position);
+            errno = EIO;
+            return NOT_OK;
+        }
+
+        dir->index += rec_len;
+        dir->position += rec_len;
+
+        if (ino == 0) {
+            continue;                                   // unused/deleted slot
+        }
+
+        out->d_ino = ino;
+        out->d_off = dir->position;                     // where the next entry starts
+        out->d_reclen = sizeof(struct dirent);
+        out->d_type = (ftype <= DT_LNK)?ftype:DT_UNKNOWN;
+        memcpy(out->d_name, &raw[8], name_len);
+        out->d_name[name_len] = EOS;
+
+        out++;
+        n++;
     }
 
-    kprintf("dirent offset=%d\n", file->offset);
-    ext2_sanitize_dirent((ext2_dirent_t *)&buf[file->offset], &file->dirent);
-    // dump_dirent((ext2_dirent_t *)&buf[file->offset]);
-
-    // update the offset ready for the next call
-    file->offset += file->dirent.rec_len;
-    if (file->offset >= BLOCK_DEVICE_BLOCK_SIZE) {
-        file->offset = 0;
-    }
-
-    return &file->dirent;
-}
-
-void ext2_rewinddir(ext2_file_t *file) {
-    if (file == NULL) {
-        errno = EBADF;
-        return;
-    }
-
-    ext2_reset_block_follower(&file->bf);
-    file->offset = 0;
+    return n;
 }

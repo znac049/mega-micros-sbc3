@@ -167,8 +167,8 @@ int bios_creat(const char *pathname, mode_t mode);
 int bios_open(const char *pathname, int flags);
 int bios_close(int fd);
 int bios_read(int fd, char *buff, size_t num_bytes);
+off_t bios_seek(int fd, off_t offset, int whence);
 size_t bios_write(int fd, const char *buff, size_t num_bytes);
-int bios_opendir(const char *name);
 ssize_t bios_getdents(int fd, void *dirp, size_t count);
 
 

@@ -36,6 +36,7 @@ int close(int fd);
 void exit(int);
 char *getcwd(char *buf, size_t size);
 pid_t getpid(void);
+ssize_t getdents(int fd, void *dirp, size_t count);
 int isatty(int fd);
 off_t lseek(int fd, off_t offset, int whence);
 ssize_t read(int fd, void *buf, size_t count);
