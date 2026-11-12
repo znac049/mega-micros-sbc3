@@ -98,11 +98,19 @@ int ext2_get_inode(vmp_t *mp, uint32_t inode_num, ext2_inode_t *inode) {
     ext2_inode_t *ent;
     ext2_bg_t *bg;
     
-    uint32_t block_group_num = (inode_num - 1) / fs->sb.s_inodes_per_group;
-    uint32_t index = (inode_num - 1) % fs->sb.s_inodes_per_group;
+    uint32_t block_group_num;
+    uint32_t index;
 
     uint32_t block_num;
     uint32_t offset;
+
+    if ((inode_num == 0) || (inode_num > fs->sb.s_inodes_count)) {
+        kprintf("ext2_get_inode: inode %d is out of range\n", inode_num);
+        return NOT_OK;
+    }
+
+    block_group_num = (inode_num - 1) / fs->sb.s_inodes_per_group;
+    index = (inode_num - 1) % fs->sb.s_inodes_per_group;
 
     // kprintf("ext2_get_inode: inode %d from %s\n", inode_num, mp->name);
     // kprintf("ext2_inode: the inode table we want is in bgdt %d\n", block_group_num);
@@ -110,10 +118,6 @@ int ext2_get_inode(vmp_t *mp, uint32_t inode_num, ext2_inode_t *inode) {
     if (block_group_num >= fs->num_blockgroups) {
         kprintf("ext2_get_inode: block group %d is out of range\n", block_group_num);
         return NOT_OK;
-    }
-
-    if ((inode_num == 0) || (inode_num > fs->sb.s_inodes_count)) {
-        kprintf("ext2_get_inode: inode %d is out of range\n", inode_num);
     }
 
     if ((bg = ext2_get_bg(fs, block_group_num)) == NULL) {
@@ -127,14 +131,13 @@ int ext2_get_inode(vmp_t *mp, uint32_t inode_num, ext2_inode_t *inode) {
 
     offset = (index * fs->sb.s_inode_size) % BLOCK_DEVICE_BLOCK_SIZE; 
 
-    // kprintf("ext2_get_inode: inode %d is in block %d + %d + %d, offset %d\n", 
+    // kprintf("ext2_get_inode: inode %d is in block %d + %d, offset %d\n",
     //         inode_num,
-    //         block_group_num * fs->sb.s_blocks_per_group,
     //         bg->bg_inode_table, 
     //         block_num, 
     //         offset);
 
-    block_num = block_num +  (block_group_num * fs->sb.s_blocks_per_group) + bg->bg_inode_table;
+    block_num = block_num + bg->bg_inode_table;
     if (ext2_read_fs_block(mp, block_num, NO) != 0) {
         kprintf("ext2_get_inode: ext_read_fs_block() failed.\n");
         return NOT_OK;
@@ -235,12 +238,11 @@ vmp_t *ext2_mount(vmp_t *mp) {
 
     // Read the bgdt one at a time
     for (uint32_t i=0; i<bg1; i++) {
-        uint32_t bgdt_block = (i * sb->s_blocks_per_group);
-
-        if (ext2_has_superblock(i)) {
-            bgdt_block++;
-        }
-
+        uint32_t byte_offset = i * sizeof(ext2_bg_t);
+        uint32_t bgdt_block = (sb->s_first_data_block + 1) + (byte_offset / BLOCK_DEVICE_BLOCK_SIZE);
+        uint32_t offset = byte_offset % BLOCK_DEVICE_BLOCK_SIZE;
+ 
+        // Consecutive descriptors in the same block come from the buffer
         if (ext2_read_fs_block(mp, bgdt_block, NO) == NOT_OK) {
             free(bgdt);
 
@@ -248,7 +250,7 @@ vmp_t *ext2_mount(vmp_t *mp) {
             return null(EIO);
         }
 
-        ext2_sanitize_bg((ext2_bg_t *)mp->block_buffer, &bgdt[i]);
+        ext2_sanitize_bg((ext2_bg_t *)&mp->block_buffer[offset], &bgdt[i]);
         // dump_ext2_bg(&bgdt[i], i, sb);
     }
 

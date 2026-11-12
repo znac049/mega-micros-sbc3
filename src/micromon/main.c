@@ -71,6 +71,8 @@ static command_t commands[] = {
     {"dw",          2, ALIAS,   {.cmd = "worddump"},        VEC},
     {"dl",          2, ALIAS,   {.cmd = "longdump"},        VEC},
 
+    {"ls",          2, ALIAS,   {.cmd = "dir"},             VEC},
+
     {"=",           1, PREFIX,  {.cmd = "eval"},            STR},
     {"!",           1, PREFIX,  {.cmd = "byteset"},         STR},
     {"?",           1, PREFIX,  {.cmd = "bytedump"},        VEC},

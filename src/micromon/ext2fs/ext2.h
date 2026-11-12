@@ -175,6 +175,9 @@ struct ext2_bg {
 
 typedef struct ext2_bg ext2_bg_t;
 
+// The on-disk descriptor table is packed 32-byte entries
+_Static_assert(sizeof(ext2_bg_t) == 32, "ext2_bg_t must be 32 bytes");
+
 struct ext2_inode {
     uint16_t    i_mode;
     uint16_t    i_uid;
