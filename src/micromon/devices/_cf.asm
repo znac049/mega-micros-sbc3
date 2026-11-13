@@ -24,13 +24,13 @@
 
 cf_reg_base         equ $ae0000
 cf_reg_data_byte    equ cf_reg_base
-cf_reg_sector_count equ cf_reg_base + 4
-cf_reg_lba0         equ cf_reg_base + 6
-cf_reg_lba1         equ cf_reg_base + 8
-cf_reg_lba2         equ cf_reg_base + 10
-cf_reg_lba3         equ cf_reg_base + 12
-cf_reg_command      equ cf_reg_base + 14
-cf_reg_status       equ cf_reg_base + 14
+cf_reg_sector_count equ cf_reg_base+4
+cf_reg_lba0         equ cf_reg_base+6
+cf_reg_lba1         equ cf_reg_base+8
+cf_reg_lba2         equ cf_reg_base+10
+cf_reg_lba3         equ cf_reg_base+12
+cf_reg_command      equ cf_reg_base+14
+cf_reg_status       equ cf_reg_base+14
 
 CF_CMD_READ_SECTORS equ $20
 
@@ -47,7 +47,7 @@ cf_status_busy_bit  equ 7
 cf_status_error_bit equ 0
 
 
-cf_data_mask        equ cf_status_busy | cf_status_drq
+cf_data_mask        equ cf_status_busy|cf_status_drq
 
 ; How many times to poll before giving up
 CF_TIMEOUT          equ 1000000
@@ -90,58 +90,3 @@ _cf_wait_data::
 .err            move.l  #-1,d0
                 rts
 
-
-; Assembly version of cf_read(uint8_t drive_num, uint32_t sector, uint8_t *buffer)
-;
-; returns (d0)
-;   0 - success
-;  -1 - Something went wrong (set errno)
-;
-_cf_read::
-                movem.l d2/a0,-(sp)
-                
-                move.l  16(sp),d1           ; block_num
-                move.b  d1,cf_reg_lba0
-
-                lsr.l   #8,d1
-                move.b  d1,cf_reg_lba1
-
-                lsr.l   #8,d1
-                move.b  d1,cf_reg_lba2
-
-                lsr.l   #8,d1
-; lba3 is special - the top 4 bits contain the drive number and
-; a flag to set LBA mode
-                and.b   #$0f,d1
-                or.b    #$e0,d1
-;                tst.b   15(sp)               ; drive 0 or 1?
-;                beq     _cfr_d0
-;                or.b    #$10,d1
-_cfr_d0         move.b  d1,cf_reg_lba3
-
-                move.b  #1,cf_reg_sector_count
-                move.b  #CF_CMD_READ_SECTORS,cf_reg_command
-;                bsr     _cf_wait_busy
-;                bne     _cfr_timeout
-
-                bsr     _cf_wait_data
-                tst.l   d0
-                bne     _cfr_error
-
-                move.w  #CF_SECTOR_SIZE-1,d2  ; loop counter
-
-_cfr_get_byte   move.b  cf_reg_data_byte,(a0)+   ; read a byte
-                dbra    d2,_cfr_get_byte
-                bra     _cfr_ok
-
-_cfr_error      move.l  #2,d0
-                bra     _cfr_done
-
-_cfr_timeout    move.l  #1,d0
-                bra     _cfr_done
-
-_cfr_ok         move.l  #0,d0
-
-_cfr_done
-                movem.l (sp)+,d2/a0
-                rts

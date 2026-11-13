@@ -34,7 +34,7 @@ SOFTWARE.
 static int ext2_read_superblock(vmp_t *mp, ext2_sb_t *sb) {
     // kprintf("attempt to read superblock\n");
 
-    if (bd_read(mp->dev_driver, 0, mp->block_buffer, mp->subdev) != OK) {
+    if (bd_read(mp->dev_driver, 0, mp->block_buffer) != OK) {
         return NOT_OK;
     }
 

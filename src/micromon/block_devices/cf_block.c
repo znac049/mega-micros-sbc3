@@ -28,46 +28,14 @@ SOFTWARE.
 #include <machine.h>
 
 #include "micromon.h"
+#include "cf_block.h"
 
-#define SECTORS_PER_BLOCK (BLOCK_DEVICE_BLOCK_SIZE / CF_SECTOR_SIZE)
-
-struct cf_disks_data {
-    uint32_t    num_disks;
-};
-
-typedef struct cf_disks_data cf_disks_data_t;
-
-static cf_disks_data_t cf_disks;
-
+extern disk_info_t dk_info;
 
 static int cf_dev_init(block_device_t *dev) {
-    uint8_t card;
-    uint8_t num_cards = 0;
+    // this was done earlier
 
-    if (cf_init() == NOT_OK) {
-        printk("No CF cards present (controller not responding)\n");
-        dev->num_sub_devices = 0;
-        dev->active = NO;
-
-        return OK;
-    }
-
-    for (card=0; card<2; card++) {
-        if (cf_drive_ready(card) == YES) {
-            printk("CF card #%d - present\n", card);
-            num_cards++;
-        }
-    }
-
-    cf_disks.num_disks = num_cards;
-    dev->num_sub_devices = num_cards;
-
-    if (num_cards == 0) {
-        printk("No CF cards present\n");
-        dev->active = NO;
-
-        return OK;
-    }
+    dev->active = YES;
 
     return OK;
 }
@@ -76,14 +44,15 @@ static int cf_dev_finish(void) {
     return -1;
 }
 
-static int cf_dev_read_block(uint32_t block_num, uint8_t *buff, uint8_t subdev) {
+static int cf_dev_read_block(block_device_t *dev, uint32_t block_num, uint8_t *buff) {
     uint32_t sector = block_num * SECTORS_PER_BLOCK;
 
-    // printk("CF_dev_read_block() block # = %d, subdev=%d\n", block_num, subdev);
+    // printk("CF_dev_read_block() block # = %d\n", block_num);
     // printk("block %d -> sector %d\n", block_num, sector);
 
     for (int i=0; i<SECTORS_PER_BLOCK; i++) {
-        int res = cf_read(subdev, sector, buff);
+        int res = cf_read(dev->private.data.cf.drive_num, 
+                            sector + dev->private.data.cf.start_sector, buff);
         if (res != OK) {
             printk("Blargle - %d!\n", res);
             return NOT_OK;
@@ -96,17 +65,19 @@ static int cf_dev_read_block(uint32_t block_num, uint8_t *buff, uint8_t subdev) 
     return OK;
 }
 
-static int cf_dev_write_block(uint32_t block_num, uint8_t *buff, uint8_t subdev) {
+static int cf_dev_write_block(block_device_t *dev, uint32_t block_num, uint8_t *buff) {
+    (void)dev;
     (void)block_num;
     (void)buff[0];
-    (void)subdev;
     
     return NOT_OK;
 }
 
-int create_cf_dev(block_device_t *dev) {
+static block_device_t *new_dev(void) {
+    block_device_t *dev = find_free_device_slot();
+
     if (dev == NULL) {
-        return NOT_OK;
+        return NULL;
     }
 
     dev->init = cf_dev_init;
@@ -117,10 +88,66 @@ int create_cf_dev(block_device_t *dev) {
 
     strcpy(dev->name, "cf");
 
-    dev->driver_data = &cf_disks;
-    dev->num_sub_devices = 2;       // Max
+    dev->private.data.cf.start_sector = 0;
+    dev->private.data.cf.num_sectors = 0;
 
     dev->active = YES;
+
+    return dev;
+}
+
+static int probe_cf_card(int drive_num) {
+    if (cf_drive_ready(drive_num) == YES) {
+        int table_type;
+
+        printk("CF card #%d - present\n", drive_num);
+
+        // Is it a raw disk or does it have partitions
+        if ((table_type = has_partition_table(drive_num)) >= YES) {
+            printk("Partition table found on CF drive %d\n", drive_num);
+
+            if (read_partition_table(drive_num) != OK) {
+                printk("Failed to read partition table :-(\n");
+                return NOT_OK;
+            };
+
+            printk("number of partitions found: %d\n", dk_info.num_partitions);
+            for (int i=0; i<dk_info.num_partitions; i++) {
+                block_device_t *dev = new_dev();
+
+                if (dev == NULL) {
+                    printk("Couldn't grab a block_device_t entry\n");
+                    return NOT_OK;
+                }
+
+                dev->private.data.cf.start_sector = dk_info.partitions[i].start_sector;
+                dev->private.data.cf.num_sectors = dk_info.partitions[i].num_sectors;
+
+                snprintf(dev->name, sizeof(dev->name), "cf%d%c", drive_num, 'a'+i);
+            }
+        }
+        else {
+            block_device_t *dev = new_dev();
+
+            if (dev == NULL) {
+                return NOT_OK;
+            }
+
+            snprintf(dev->name, sizeof(dev->name), "cf%d", drive_num);
+        }
+    }
+
+    return OK;
+}
+
+int create_cf_devs(void) {
+    if (cf_init() == NOT_OK) {
+        printk("No CF cards present (controller not responding)\n");
+        return OK;
+    }
+
+    probe_cf_card(0);
+    probe_cf_card(1);
 
     return OK;
 }

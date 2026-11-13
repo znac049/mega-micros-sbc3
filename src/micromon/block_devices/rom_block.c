@@ -28,21 +28,11 @@ SOFTWARE.
 #include <machine.h>
 
 #include "micromon.h"
+#include "rom_block.h"
 
 extern uint32_t _data_load_start;
 extern uint32_t _data_length;
 
-#define ROM_BASE 0xC00000
-#define ROM_END (ROM_BASE + (1024 * 1024 *4))
-
-struct rom_disk_data {
-    uint32_t    num_blocks;
-    uint8_t    *base;
-};
-
-typedef struct rom_disk_data rom_disk_data_t;
-
-static rom_disk_data_t rom_disk;
 
 static uint8_t *find_start_of_disk(void) {
     uint32_t start = (uint32_t)&_data_load_start;
@@ -84,13 +74,13 @@ static int rom_dev_init(block_device_t *dev) {
     }
 
     // set the start of disk - point to the data immediately after the monitor
-    rom_disk.base = rom_disk_base;
+    dev->private.data.rom.base = rom_disk_base;
 
     // Figure out how big the 'disk' is, in blocks
-    rom_disk.num_blocks = (ROM_END - (uint32_t)rom_disk_base) / BLOCK_DEVICE_BLOCK_SIZE; 
-    dev->num_sub_devices = 1;
+    dev->private.data.rom.num_blocks = (ROM_END - (uint32_t)rom_disk_base) / BLOCK_DEVICE_BLOCK_SIZE; 
+    // dev->num_sub_devices = 1;
 
-    printk("ROM disk @ $%08X, # blocks=%d, read-only\n", rom_disk.base, rom_disk.num_blocks);
+    printk("ROM disk @ $%08X, # blocks=%d, read-only\n", dev->private.data.rom.base, dev->private.data.rom.num_blocks);
 
     return OK;
 }
@@ -99,13 +89,13 @@ static int rom_dev_finish(void) {
     return OK;
 }
 
-static int rom_dev_read_block(uint32_t block_num, uint8_t *buff, uint8_t subdev) {
-    uint8_t *src = rom_disk.base;
+static int rom_dev_read_block(block_device_t *dev, uint32_t block_num, uint8_t *buff) {
+    uint8_t *src = dev->private.data.rom.base;
     uint32_t offset = block_num*BLOCK_DEVICE_BLOCK_SIZE;
 
     // printk("rom_dev_read_block() block # = %d, subdev=%d\n", block_num);
 
-    if (block_num >= rom_disk.num_blocks) {
+    if (block_num >= dev->private.data.rom.num_blocks) {
         printk("block %d out of range\n", block_num);
         return NOT_OK;
     }
@@ -115,17 +105,14 @@ static int rom_dev_read_block(uint32_t block_num, uint8_t *buff, uint8_t subdev)
 
     memcpy(buff, src, BLOCK_DEVICE_BLOCK_SIZE);
 
-    (void)subdev;
-
     return OK;
 }
 
-static int rom_dev_write_block(uint32_t block_num, uint8_t *buff, uint8_t subdev) {
+static int rom_dev_write_block(block_device_t *dev, uint32_t block_num, uint8_t *buff) {
     // Doh - can't write to the ROM
-
+    (void)dev;
     (void)block_num;
     (void)buff[0];
-    (void)subdev;
 
     return NOT_OK;
 }
@@ -141,10 +128,10 @@ int create_rom_dev(block_device_t *dev) {
     dev->read_block = rom_dev_read_block;
     dev->write_block = rom_dev_write_block;
 
-    strcpy(dev->name, "rom");
+    strcpy(dev->name, "rom0");
 
-    dev->driver_data = &rom_disk;
-    dev->num_sub_devices = 1;
+    dev->private.data.rom.base = 0;
+    dev->private.data.rom.num_blocks = 0;
 
     dev->active = YES;
 

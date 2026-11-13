@@ -29,8 +29,6 @@ SOFTWARE.
 #include <ext2.h>
 #include <limits.h>
 
-#if defined(BAREMETAL)
-
 struct dirent;      // from <dirent.h>
 
 // Max number of file descriptors
@@ -76,7 +74,7 @@ struct vmp {
 
     unsigned int mounted : 1;
     unsigned int read_only : 1;
-    uint8_t subdev;
+    // uint8_t subdev;
 
     // This data depends on the specific filesystem type
     vmp_private_t private;
@@ -193,5 +191,3 @@ int ext2_seek(vfile_t *file, off_t offset, int whence);
 
 // ext2/e2search.c
 uint32_t e2_search(vmp_t *mp, uint32_t dir_inode_num, const char *target_name, uint8_t *file_type);
-
-#endif

@@ -37,12 +37,12 @@ SOFTWARE.
 
 #define hex_long_0          ((volatile uint32_t *) hex_display_base)
 
-#define HEXB0(val) (*hex_byte_0 = val)
-#define HEXB1(val) (*hex_byte_1 = val)
-#define HEXB2(val) (*hex_byte_2 = val)
-#define HEXB3(val) (*hex_byte_3 = val)
+#define HEXB0(val) (*hex_byte_0 = (val))
+#define HEXB1(val) (*hex_byte_1 = (val))
+#define HEXB2(val) (*hex_byte_2 = (val))
+#define HEXB3(val) (*hex_byte_3 = (val))
 
-#define HEXW0(val) (*hex_word_0 = val)
-#define HEXW1(val) (*hex_word_1 = val)
+#define HEXW0(val) (*hex_word_0 = (uint16_t)(val))
+#define HEXW1(val) (*hex_word_1 = (uint16_t(val))
 
-#define HEXL0(val) (*hex_long_0 = val)
+#define HEXL0(val) (*hex_long_0 = (uint32_t)(val))

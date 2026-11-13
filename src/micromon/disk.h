@@ -24,7 +24,7 @@ SOFTWARE.
 
 #pragma once
 
-#define MAX_PARTITIONS 4
+#define MAX_PARTITIONS 12
 #define MAX_FILESYSTEMS MAX_PARTITIONS
 
 struct disk_partition {
@@ -44,7 +44,6 @@ struct disk_info {
 
 typedef struct disk_info disk_info_t;
 
-uint8_t get_partition_count(void);
-int partition_read(uint8_t part_num, uint32_t sector, uint8_t *buffer);
 int read_partition_table(uint8_t drive_num);
 disk_partition_t *get_partition(int part_num);
+int has_partition_table(uint8_t drive_num);

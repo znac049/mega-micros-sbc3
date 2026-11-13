@@ -24,29 +24,40 @@ SOFTWARE.
 
 #pragma once
 
+#include "cf_block.h"
+#include "rom_block.h"
+
 #define BLOCK_DEVICE_BLOCK_SIZE 2048
 #define BLOCK_NUM_SHIFT 11
-#define MAX_BLOCK_DEVICES 4
+#define MAX_BLOCK_DEVICES 8
 
+
+struct block_dev_private {
+    union {
+        cf_disk_data_t  cf;
+        rom_disk_data_t rom;
+    } data;
+};
+
+typedef struct block_dev_private block_dev_private_t;
 
 // typedef struct device_block device_block_t;
 typedef struct block_device block_device_t;
 
-
 struct block_device {
     bool_t active;
     char name[16];
-    uint8_t num_sub_devices;
+    // uint8_t num_sub_devices;
 
     int (*init)(block_device_t *dev);
     int (*finish)(void);
 
-    int (*read_block)(uint32_t block_num, uint8_t *buff, uint8_t subdev);
-    int (*write_block)(uint32_t block_num, uint8_t *buff, uint8_t subdev);
+    int (*read_block)(block_device_t *dev, uint32_t block_num, uint8_t *buff);
+    int (*write_block)(block_device_t *dev, uint32_t block_num, uint8_t *buff);
 
-    void *driver_data;
+    block_dev_private_t private;
 };
 
-
-
 extern block_device_t block_devices[MAX_BLOCK_DEVICES];
+
+block_device_t *find_free_device_slot(void);

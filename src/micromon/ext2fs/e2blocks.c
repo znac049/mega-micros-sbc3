@@ -33,7 +33,7 @@ SOFTWARE.
 int ext2_read_block(vmp_t *mp, uint32_t block_num, uint8_t *buffer) {
     // printk("ext2_read_block %d, device='%s%d'\n", block_num, mp->dev_driver->name, mp->subdev);
 
-    return bd_read(mp->dev_driver, block_num, buffer, mp->subdev);
+    return bd_read(mp->dev_driver, block_num, buffer);
 }
 
 // Read a block into the block buffer associated with the mount-point

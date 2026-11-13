@@ -223,7 +223,7 @@ static int resolve_path(const char *path, vmp_t **mpp, char *fs_path) {
     return OK;
 }
 
-static vmp_t *attempt_to_mount(block_device_t *dev, uint8_t subdev) {
+static vmp_t *attempt_to_mount(block_device_t *dev) {
     vmp_t *vmp = find_free_vmp();
     vmp_t *res;
 
@@ -233,7 +233,6 @@ static vmp_t *attempt_to_mount(block_device_t *dev, uint8_t subdev) {
     }
 
     vmp->dev_driver = dev;
-    vmp->subdev = subdev;
     vmp->read_only = YES;
     vmp->block_num_in_buffer = -1;
 
@@ -254,7 +253,7 @@ static vmp_t *attempt_to_mount(block_device_t *dev, uint8_t subdev) {
                 // printk("%s%d: mounted as %s\n", vmp->dev_driver->name, vmp->subdev, vmp->fs_driver->name);
 
                 // save the mountpoint name
-                snprintf(vmp->name, 16, "%s%d", vmp->dev_driver->name, vmp->subdev);
+                snprintf(vmp->name, 16, "%s", vmp->dev_driver->name);
 
                 return vmp;
             }
@@ -299,18 +298,15 @@ int vfs_init(void) {
         block_device_t *dev = &block_devices[bd];
 
         if (dev->active == YES) {
-            // printk("Looking at blockdev '%s', subdevs=%d\n", dev->name, dev->num_sub_devices);
+            vmp_t *mp;
 
-            // Check if we can mount anything on each subdev
-            for (uint8_t subdev=0; subdev<dev->num_sub_devices; subdev++) {
-                vmp_t *mp;
-            
-                if ((mp = attempt_to_mount(dev, subdev)) == NULL) {
-                    printk("vfs_init: %s%d not mounted\n", dev->name, subdev);
-                }
-                else {
-                    printk("%s%d: mounted as %s\n", mp->dev_driver->name, mp->subdev, mp->fs_driver->name);
-                }
+            // printk("Looking at blockdev '%s'\n", dev->name);
+
+            if ((mp = attempt_to_mount(dev)) == NULL) {
+                printk("vfs_init: %s not mounted\n", dev->name);
+            }
+            else {
+                printk("%s: mounted as %s\n", mp->dev_driver->name, mp->fs_driver->name);
             }
         }
     }
@@ -359,7 +355,7 @@ int vfs_shutdown(void) {
             mp->dev_driver = NULL;
             mp->fs_driver = NULL;
             mp->name[0] = EOS;
-            mp->subdev = 0;
+            // mp->subdev = 0;
         }
     }
 
@@ -410,7 +406,7 @@ int bios_getcwd(char*buff, size_t size) {
         return (int)buff;
     }
 
-    snprintf(buff, size, "/%s%d/%s", cwd.mp->dev_driver->name, cwd.mp->subdev, cwd.path);
+    snprintf(buff, size, "/%s/%s", cwd.mp->dev_driver->name, cwd.path);
 
     return (int)buff;
 }

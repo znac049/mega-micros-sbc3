@@ -30,7 +30,7 @@ SOFTWARE.
 
 block_device_t block_devices[MAX_BLOCK_DEVICES];
 
-static block_device_t *find_free_device_slot(void) {
+block_device_t *find_free_device_slot(void) {
     for (int i=0; i<MAX_BLOCK_DEVICES; i++) {
         if (block_devices[i].active == NO) {
             return &block_devices[i];
@@ -43,12 +43,12 @@ static block_device_t *find_free_device_slot(void) {
 int bd_init(void) {
     for (int i=0; i<MAX_BLOCK_DEVICES; i++) {
         block_devices[i].active = NO;
-        block_devices[i].num_sub_devices = 0;
+        // block_devices[i].num_sub_devices = 0;
         block_devices[i].name[0] = EOS;
     }
 
     create_rom_dev(find_free_device_slot());
-    create_cf_dev(find_free_device_slot());
+    create_cf_devs();
 
     // Initialise each block device in turn
     printk("Attempting to initialise all registered block devices\n");
@@ -63,14 +63,8 @@ int bd_init(void) {
             }
             else {
                 if (bd->active == YES) {
-                    printk("block device %d (%s): ", i, bd->name);
-                    
-                    for (uint8_t i=0; i<bd->num_sub_devices; i++) {
-                        printk("%s%d, ", bd->name, i);
-                    }
-                    printk("\n");
+                    printk("block device %d (%s)\n", i, bd->name);
                 }
-                else {}
             }
         }
     }
@@ -78,9 +72,9 @@ int bd_init(void) {
     return 0;
 }
 
-int bd_read(block_device_t *dev, uint32_t block_num, uint8_t *buff, uint8_t subdev) {
-    if ((dev != NULL) && (dev->active == YES) && (subdev < dev->num_sub_devices)) {
-        return dev->read_block(block_num, buff, subdev);
+int bd_read(block_device_t *dev, uint32_t block_num, uint8_t *buff) {
+    if ((dev != NULL) && (dev->active == YES)) {
+        return dev->read_block(dev, block_num, buff);
     }
 
     return NOT_OK;
