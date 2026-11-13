@@ -29,9 +29,5 @@ SOFTWARE.
 
 void *malloc(size_t size)
 {
-#if defined(BAREMETAL)
-    return bios_malloc(size, getpid());
-#else
     return (void *)syscall(BIOS_MALLOC, size, getpid(), 0);
-#endif
 }

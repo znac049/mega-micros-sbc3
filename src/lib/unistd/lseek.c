@@ -29,9 +29,5 @@ SOFTWARE.
 #include <bios.h>
 
 off_t lseek(int fd, off_t offset, int whence) {
-#if defined(BAREMETAL)
-    return bios_seek(fd, offset, whence);
-#else
     return syscall(BIOS_SEEK, fd, offset, whence);
-#endif
 }

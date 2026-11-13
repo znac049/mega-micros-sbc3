@@ -27,9 +27,5 @@ SOFTWARE.
 #include <bios.h>
 
 int close(int fd) {
-#if defined(BAREMETAL)
-    return bios_close(fd);
-#else
     return syscall(BIOS_CLOSE, fd, 0, 0);
-#endif
 }

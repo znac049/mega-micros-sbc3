@@ -26,9 +26,5 @@ SOFTWARE.
 #include <machine.h>
 
 int getchar(void) {
-#if defined(BAREMETAL)
-    return -1;
-#else
     return syscall(BIOS_GETCHAR, 0, 0, 0);
-#endif
 }

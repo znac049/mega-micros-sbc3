@@ -29,9 +29,5 @@ SOFTWARE.
 
 void free(void *ptr)
 {
-#if defined(BAREMETAL)
-    bios_free(ptr, getpid());
-#else
     syscall(BIOS_FREE, (uint32_t)ptr, getpid(), 0);
-#endif
 }

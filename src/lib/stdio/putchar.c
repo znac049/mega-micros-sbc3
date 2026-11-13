@@ -27,11 +27,7 @@ SOFTWARE.
 #include <bios.h>
 
 int putchar(int c) {
-#if defined(BAREMETAL)
-    return bios_write(0, (const char *)&c, 1);
-#else
     syscall(BIOS_PUTCHAR, 0, c, 0);
-#endif
 
     return c;
 }
