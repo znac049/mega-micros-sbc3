@@ -27,34 +27,62 @@ SOFTWARE.
 
 extern volatile uint8_t bus_error_flag;
 
-int peek(volatile uint8_t *addr) {
+uint8_t peek(volatile uint8_t *addr, int *err) {
     uint8_t data;
     
     bus_error_flag = 0;
     data = *addr;
 
-    return bus_error_flag?-1:(int)data;
+    *err = bus_error_flag;
+
+    return data;
 }
 
-int poke(volatile uint8_t *addr, uint8_t val) {
+uint8_t poke(volatile uint8_t *addr, uint8_t val, int *err) {
     bus_error_flag = 0;
     *addr = val;
 
-    return bus_error_flag?-1:val;
+    *err = bus_error_flag;
+
+    return val;
 }
 
-int peekw(volatile uint16_t *addr) {
+uint16_t peekw(volatile uint16_t *addr, int *err) {
     uint16_t data;
     
     bus_error_flag = 0;
     data = *addr;
 
-    return bus_error_flag?-1:(int)data;
+    *err = bus_error_flag;
+
+    return data;
 }
 
-int pokew(volatile uint16_t *addr, uint16_t val) {
+uint16_t pokew(volatile uint16_t *addr, uint16_t val, int *err) {
     bus_error_flag = 0;
     *addr = val;
 
-    return bus_error_flag?-1:val;
+    *err = bus_error_flag;
+
+    return val;
+}
+
+uint32_t peekl(volatile uint32_t *addr, int *err) {
+    uint32_t data;
+    
+    bus_error_flag = 0;
+    data = *addr;
+
+    *err = bus_error_flag;
+
+    return data;
+}
+
+uint32_t pokel(volatile uint32_t *addr, uint32_t val, int *err) {
+    bus_error_flag = 0;
+    *addr = val;
+
+    *err = bus_error_flag;
+
+    return val;
 }

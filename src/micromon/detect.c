@@ -26,24 +26,24 @@ SOFTWARE.
 
 #include "micromon.h"
 
-bool_t is_pit_present(void) {
-    int ivr = peek(pit_pivr);
+static int io_err;
 
-    return (ivr == -1)?NO:YES;
+bool_t is_pit_present(void) {
+    peek(pit_pivr, &io_err);
+
+    return (io_err==YES)?NO:YES;
 }
 
 bool_t is_duart_present(void) {
-    int ivr = peek(duart_ivr);
+    peek(duart_ivr, &io_err);
 
-    return (ivr == -1)?NO:YES;
+    return (io_err==YES)?NO:YES;
 }
 
 bool_t is_hex_display_present(void) {
-    if (poke(hex_display_base, 0x42) == -1) {
-        return NO;
-    }
+    poke(hex_display_base, 0x42, &io_err);
 
-    return YES;
+    return (io_err==YES)?NO:YES;
 }
 
 bool_t is_rtc_present(void) {
@@ -57,16 +57,18 @@ bool_t is_oled_present(void) {
 bool_t is_acrtc_present(void) {
     int status;
 
-    if (pokew(acrtc_address, ACRTC_REG_CCR) == -1) {     // Command register
+    pokew(acrtc_address, ACRTC_REG_CCR, &io_err);
+    if (io_err == YES) {     // Command register
         return NO;
     }
 
-    if (pokew(acrtc_data, ACRTC_CCR_ABT) == -1) {        // Abort command
+    pokew(acrtc_data, ACRTC_CCR_ABT, &io_err);
+    if (io_err == YES) {        // Abort command
         return NO;
     }    
 
-    status = peekw(acrtc_status);
-    if (status == -1) {
+    status = peekw(acrtc_status, &io_err);
+    if (io_err == YES) {
         return NO;
     }
 

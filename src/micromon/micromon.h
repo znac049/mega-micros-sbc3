@@ -83,6 +83,15 @@ extern char program_name[PATH_MAX];
 
 extern uint32_t ram_end;
 
+extern uint32_t ram_end;
+extern bool_t duart_present;
+extern bool_t pit_present;
+extern bool_t cf_present;
+extern bool_t hex_display_present;
+extern bool_t acrtc3_present;
+extern bool_t rtc_present;
+extern bool_t oled_present;
+extern bool_t experimental;
 
 
 // mon_crt0.asm
@@ -96,11 +105,11 @@ int bios_test(int p1, int p2, int p3);
 
 // block_devices.c
 int bd_init(void);
-int bd_read(block_device_t *dev, uint32_t block_num, uint8_t *buff, uint8_t subdev);
+int bd_read(block_device_t *dev, uint32_t block_num, uint8_t *buff);
 
 
 //block_devices/cf_block.c
-int create_cf_dev(block_device_t *dev);
+int create_cf_devs(void);
 
 
 //block_devices/rom_block.c
@@ -212,10 +221,12 @@ void handle_rtc_command(int argc, char *argv[]);
 
 
 // safeio.c
-int peek(volatile uint8_t *addr);
-int poke(volatile uint8_t *addr, uint8_t val);
-int peekw(volatile uint16_t *addr);
-int pokew(volatile uint16_t *addr, uint16_t val);
+uint8_t peek(volatile uint8_t *addr, int *err);
+uint8_t poke(volatile uint8_t *addr, uint8_t val, int *err);
+uint16_t peekw(volatile uint16_t *addr, int *err);
+uint16_t pokew(volatile uint16_t *addr, uint16_t val, int *err);
+uint32_t peekl(volatile uint32_t *addr, int *err);
+uint32_t pokel(volatile uint32_t *addr, uint32_t val, int *err);
 
 
 // serial_cmd.c

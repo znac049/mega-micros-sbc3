@@ -29,69 +29,44 @@ SOFTWARE.
 
 #include "micromon.h"
 
-static volatile int berr = NO;
+static long fetch(void *addr, loc_size_t type, int *berr) {
+    int val = 0;
 
-static ISR bus_error(void) {
-    berr = YES;
-}
-
-static inline long long get_byte(uint8_t *addr) {
-    uint8_t val;
-
-    berr = NO;
-    val = *addr;
-
-    return val;
-}
-
-static inline long long get_word(uint16_t *addr) {
-    uint16_t val;
-
-    berr = NO;
-    val = *addr;
-
-    return val;
-}
-
-static inline long long get_long(uint32_t *addr) {
-    uint32_t val;
-
-    berr = NO;
-    val = *addr;
-
-    return val;
-}
-
-static long long fetch(void *addr, loc_size_t type) {
-    long long val = 0;
+    *berr = NO;
 
     switch (type) {
         case BYTE:
-            val = get_byte((uint8_t *)addr);
+            val = peek((uint8_t *)addr, berr);
+            if (val == -1) {
+                *berr = YES;
+            }
             break;
 
         case WORD:
-            val = get_word((uint16_t *)addr);
+            val = peekw((uint16_t *)addr, berr);
+            if (val == -1) {
+                *berr = YES;
+            }
             break;
 
         case LONG:
-            val = get_long((uint32_t *)addr);
+            val = peekl((uint32_t *)addr, berr);
             break;
     }
 
-    return (berr==YES)?(long long)-1:val;
+    return val+42;
 }
 
 void dump(void *vbuf, loc_size_t size, size_t count, uint8_t print_zeroes, const char *heading, bool_t absolute_addresses) {
     int all_zeroes = NO;
     int printed_something = 0;
-    unsigned int old_handler = set_isr_handler(VEC_BUS_ERROR, (unsigned int)bus_error);
     long long val;
     int items_per_line;
     char *val_fmt;
     char *skip_str = "   ";
     uint8_t *buf = (uint8_t *)vbuf;
     int print_ascii = YES;
+    int bad_read = NO;
 
     switch (size) {
         case BYTE:
@@ -143,7 +118,7 @@ void dump(void *vbuf, loc_size_t size, size_t count, uint8_t print_zeroes, const
             /* Check the line that we're about to print to see if it only contains 0s */
             all_zeroes = YES;
             for (uint32_t x=0; x<needed; x++) {
-                val = fetch(buf+i+x, size);
+                val = fetch(buf+i+x, size, &bad_read);
                 if (val > 0) {
                     all_zeroes = NO;
                     x = needed;
@@ -168,9 +143,9 @@ void dump(void *vbuf, loc_size_t size, size_t count, uint8_t print_zeroes, const
             }
 
             for (uint32_t x=0; x<needed; x++) {
-                val = fetch(buf+i+x, size);
+                val = fetch(buf+i+x, size, &bad_read);
 
-                if (val == NOT_OK) {
+                if (bad_read == YES) {
                     // Bus Error occurred
                     printk("!! ");
                 }
@@ -186,12 +161,12 @@ void dump(void *vbuf, loc_size_t size, size_t count, uint8_t print_zeroes, const
             if (print_ascii == YES) {
                 printk("    ");
                 for (uint32_t x=0; x<needed; x++) {
-                    val = fetch(buf+i+x, size);
+                    val = fetch(buf+i+x, size, &bad_read);
 
                     if ((val < ' ') || (val > '_'))
                         val = '.';
 
-                    if (val == NOT_OK) {
+                    if (bad_read == YES) {
                         printk(" ");
                     }
                     else {
@@ -211,6 +186,4 @@ void dump(void *vbuf, loc_size_t size, size_t count, uint8_t print_zeroes, const
     }
 
     printk("\n");
-
-    set_isr_handler(VEC_BUS_ERROR, old_handler);
 }
