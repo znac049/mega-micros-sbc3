@@ -101,8 +101,6 @@ SOFTWARE.
 
 #define ACR_CK_DIV_16 0x30
 
-#if defined(BAREMETAL)
-
 #define DUART_VECTOR_NUMBER 64
 #define RX_BUFFER_SIZE 16
 #define HIGH_WATER_MARK 10
@@ -158,5 +156,3 @@ int kio_rx_info(void);
 int duart_clock_doubled(void);
 
 int setup_vfs_duart_handler(vfs_fs_t *vfs);
-
-#endif

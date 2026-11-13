@@ -236,6 +236,7 @@ void main(void) {
         printk("\r%s# ", cwd);
 
         if (kgets(cmdline) != NULL) {
+            printk("\r");
             handle_command(cmdline);
         }
     }
