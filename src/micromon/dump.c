@@ -113,7 +113,7 @@ void dump(void *vbuf, loc_size_t size, size_t count, uint8_t print_zeroes, const
             all_zeroes = YES;
             for (uint32_t x=0; x<needed; x++) {
                 val = fetch(buf+i+x, size, &bad_read);
-                if (val > 0) {
+                if ((val != 0) || bad_read) {
                     all_zeroes = NO;
                     x = needed;
                 }
@@ -141,10 +141,10 @@ void dump(void *vbuf, loc_size_t size, size_t count, uint8_t print_zeroes, const
 
                 if (bad_read == YES) {
                     // Bus Error occurred
-                    printk("!! ");
+                    printk(" !!%s", skip_str + 3);
                 }
                 else {
-                    printk(val_fmt, val);
+                    printk(val_fmt, (unsigned int)val);
                 }
             }
 
@@ -157,14 +157,15 @@ void dump(void *vbuf, loc_size_t size, size_t count, uint8_t print_zeroes, const
                 for (uint32_t x=0; x<needed; x++) {
                     val = fetch(buf+i+x, size, &bad_read);
 
-                    if ((val < ' ') || (val > '_'))
+                    if ((val < ' ') || (val > '~')) {
                         val = '.';
+                    }
 
                     if (bad_read == YES) {
                         printk(" ");
                     }
                     else {
-                        printk("%c", val);
+                        printk("%c", (int)val);
                     }
                 }
             }
