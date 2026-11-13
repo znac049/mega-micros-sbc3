@@ -29,24 +29,18 @@ SOFTWARE.
 
 #include "micromon.h"
 
-static long fetch(void *addr, loc_size_t type, int *berr) {
-    int val = 0;
+static uint32_t fetch(void *addr, loc_size_t type, int *berr) {
+    uint32_t val = 0;
 
     *berr = NO;
 
     switch (type) {
         case BYTE:
             val = peek((uint8_t *)addr, berr);
-            if (val == -1) {
-                *berr = YES;
-            }
             break;
 
         case WORD:
             val = peekw((uint16_t *)addr, berr);
-            if (val == -1) {
-                *berr = YES;
-            }
             break;
 
         case LONG:
@@ -54,13 +48,13 @@ static long fetch(void *addr, loc_size_t type, int *berr) {
             break;
     }
 
-    return val+42;
+    return val;
 }
 
 void dump(void *vbuf, loc_size_t size, size_t count, uint8_t print_zeroes, const char *heading, bool_t absolute_addresses) {
     int all_zeroes = NO;
     int printed_something = 0;
-    long long val;
+    uint32_t val;
     int items_per_line;
     char *val_fmt;
     char *skip_str = "   ";
