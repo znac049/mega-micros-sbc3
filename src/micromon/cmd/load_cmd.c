@@ -198,6 +198,10 @@ static int load_single_srec(void) {
             }
             else {
                 printk("\r%04x", address);
+                if (hex_display_present == YES) {
+                    HEXL0(address);
+                }
+
                 if (read_data(address, count-3) == OK) {
                     if (compare_xsums() != OK) {
                         printk(" (failed checksum)");
@@ -221,6 +225,10 @@ static int load_single_srec(void) {
             }
             else {
                 printk("\r%06x", address);
+                if (hex_display_present == YES) {
+                    HEXL0(address);
+                }
+                
                 if (read_data(address, count-4) == OK) {
                     if (compare_xsums() != OK) {
                         printk(" (failed checksum)");
@@ -244,6 +252,10 @@ static int load_single_srec(void) {
             }
             else {
                 printk("\r%08x", address);
+                if (hex_display_present == YES) {
+                    HEXL0(address);
+                }
+                
                 if (read_data(address, count-5) == OK) {
                     if (compare_xsums() != OK) {
                         printk(" (failed checksum)");
@@ -290,6 +302,10 @@ static int load_single_srec(void) {
                 }
                 else {
                     printk("\nGO address is 0x%04x\n", address);
+                    if (hex_display_present == YES) {
+                        HEXL0(address);
+                    }
+                
                     go_address = (uint32_t) address;
                 }
             }

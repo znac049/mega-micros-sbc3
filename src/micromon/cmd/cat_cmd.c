@@ -36,20 +36,25 @@ void handle_cat_command(int argc, char *argv[]) {
     int ch;
 
     if (argc != 2) {
-        printf("usage: cat <filename>\n");
+        printk("usage: cat <filename>\n");
         return;
     }
 
     fd = fopen(argv[1], "r");
     if (fd == NULL) {
-        printf("Couldn't open file '%s'\n", argv[1]);
+        printk("Couldn't open file '%s'\n", argv[1]);
         return;
     }
 
     while ((ch = fgetc(fd)) != EOF) {
-        putchar(ch);
+        if (ch == '\n') {
+            bios_putchar(0, '\r');
+        }
+
+        bios_putchar(0, ch);
     }
 
     fclose(fd);
-    putchar('\n');
+    bios_putchar(0, '\r');
+    bios_putchar(0, '\n');
 }
