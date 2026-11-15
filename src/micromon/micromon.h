@@ -161,6 +161,12 @@ void handle_longdump_command(int argc, char *argv[]);
 int load_elf(int fd);
 
 
+// endian.c
+uint16_t le16(const uint8_t *p);
+uint32_t le32(const uint8_t *p);
+uint64_t le64(const uint8_t *p);
+
+
 // eval_cmd.c
 void handle_eval_command(char *cmdline);
 

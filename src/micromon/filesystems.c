@@ -292,6 +292,9 @@ int vfs_init(void) {
     // Register a handler for ext2 filesystems
     res = setup_vfs_ext2_handler(find_free_fs());
 
+    // Register a handler for fat filesystems
+    res = setup_vfs_fat_handler(find_free_fs());
+
     // Anything we can mount?
     // printk("vfs_init: what can we mount?\n");
     for (int bd=0; bd<MAX_BLOCK_DEVICES; bd++) { 

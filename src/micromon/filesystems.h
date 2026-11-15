@@ -26,15 +26,17 @@ SOFTWARE.
 
 #include <ctype.h>
 #include <blockdev.h>
-#include <ext2.h>
 #include <limits.h>
+
+#include "ext2.h"
+#include "fat.h"
 
 struct dirent;      // from <dirent.h>
 
 // Max number of file descriptors
 #define MAX_FILES 20
 #define MAX_VIRTUAL_FILESYSTEMS 6
-#define MAX_MOUNTS 4
+#define MAX_MOUNTS 12
 
 #define VFS_TYPE_NONE 0
 #define VFS_TYPE_CHAR 1
@@ -60,6 +62,7 @@ struct vmp_private {
 
     union {
         ext2_fs_t ext2_fs_inf;
+        fat_fs_t fat_fs_inf;
     } data;
 };
 
@@ -191,3 +194,7 @@ int ext2_seek(vfile_t *file, off_t offset, int whence);
 
 // ext2/e2search.c
 uint32_t e2_search(vmp_t *mp, uint32_t dir_inode_num, const char *target_name, uint8_t *file_type);
+
+
+// fat/fat.c
+int setup_vfs_fat_handler(vfs_fs_t *vfs);
