@@ -40,17 +40,6 @@ disk_partition_t *get_partition(int part_num) {
     return &dk_info.partitions[part_num];
 }
 
-static uint32_t le32(const uint8_t *p) {
-    return (uint32_t)p[0]         |
-           ((uint32_t)p[1] << 8)  |
-           ((uint32_t)p[2] << 16) |
-           ((uint32_t)p[3] << 24);
-}
-
-static uint64_t le64(const uint8_t *p) {
-    return le32(p) | ((uint64_t)le32(p + 4) << 32);
-}
-
 // GPT Types, in on-disk order
 static const uint8_t GPT_TYPE_LINUX[16] = {
     0xAF, 0x3D, 0xC6, 0x0F, 0x83, 0x84, 0x72, 0x47,
