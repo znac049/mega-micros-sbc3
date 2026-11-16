@@ -230,6 +230,7 @@ int setup_vfs_fat_handler(vfs_fs_t *vfs) {
     vfs->api.fs.close = fat_close;
     vfs->api.fs.seek = fat_seek;
     vfs->api.fs.getdents = fat_getdents;
+    vfs->api.fs.stat = NULL;           // no inodes - the VFS defaults will do
 
     return OK;
 }
