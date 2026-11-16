@@ -158,7 +158,7 @@ void handle_longdump_command(int argc, char *argv[]);
 
 
 // elf.c
-int load_elf(int fd);
+int load_elf(int fd, uint32_t *entry);
 
 
 // endian.c
@@ -191,11 +191,13 @@ ssize_t bios_getdents(int fd, void *dirp, size_t count);
 extern uint32_t go_address;
 extern jmp_buf go_env;
 void handle_go_command(int argc, char *argv[]);
+int go_run(int argc, char *argv[]);
 
 // heap.c
 void bios_free(void *ptr, pid_t pid);
 void *bios_malloc(size_t size, pid_t pid);
 void clean_heap(pid_t pid);
+bool_t heap_range_in_use(uint32_t start, uint32_t end);
 void init_heap(void);
 // void _heap_print_free(void);
 
@@ -207,6 +209,10 @@ int printk(const char *format, ...);
 
 // load.c
 void handle_load_command(int argc, char *argv[]);
+
+
+// run_cmd.c
+void handle_run_command(int argc, char *argv[]);
 
 
 // main.c
