@@ -14,6 +14,7 @@ TUNE?=$(CPU)
 SYSINCDIR?=$(MEGA_MICROS_DIR)/built/include
 SYSLIBDIR?=$(MEGA_MICROS_DIR)/built/lib/bios
 ROMDISKDIR?=$(MEGA_MICROS_DIR)/src/romdisk/romdisk
+ROMDISK_BINDIR?=$(ROMDISKDIR)/bin
 
 LDSCRIPT?=$(MEGA_MICROS_DIR)/built/lib/bios/program.ld
 ROM_LDSCRIPT?=none
@@ -49,6 +50,7 @@ SIZE=$(GCC_68K_PFX)-size
 VASM=vasmm68k_mot
 RM=rm -f
 CP=cp
+MKDIR=mkdir -p
 
 # GCC-version-specific settings
 ifneq ($(findstring GCC,$(shell $(CC) --version 2>/dev/null)),)
@@ -66,17 +68,9 @@ CFLAGS+=--param=min-pagesize=0
 endif
 endif
 
-# For systems without MMU support, aligning LOAD segments with pages is not needed
-# In those cases, provide fake page sizes to both save space and remove RWX warnings
-ifeq ($(CPU),68030)
-LD_SUPPORT_MMU?=true
-endif
-ifeq ($(CPU),68040)
-LD_SUPPORT_MMU?=true
-endif
-ifeq ($(CPU),68060)
-LD_SUPPORT_MMU?=true
-endif
+# This is dor programs that run directly under the monitor's control, so, since
+# the monitor doesn't use the MMU in any way, even though the 68030 has an MMU,
+# we set this to false
 LD_SUPPORT_MMU?=false
 ifneq ($(LD_SUPPORT_MMU),true)
 # Saves space in binaries, but will break MMU use
@@ -130,8 +124,9 @@ clean:
 	$(RM) $(TO_CLEAN)
 
 install: all
-	$(CP) $(ELF) $(ROMDISKDIR)/$(ELF)
-	$(STRIP) $(ROMDISKDIR)/$(ELF)
+	$(MKDIR) $(ROMDISK_BINDIR)
+	$(CP) $(ELF) $(ROMDISK_BINDIR)/$(ELF)
+	$(STRIP) $(ROMDISK_BINDIR)/$(ELF)
 
 # Makefile magic (for "phony" targets that are not real files)
 .PHONY: all clean install
