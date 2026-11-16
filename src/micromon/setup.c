@@ -35,7 +35,7 @@ SOFTWARE.
 
 static int major = 0;
 static int minor = 6;
-static int MAGIC_BUILD_NUMBER = 4;
+static int MAGIC_BUILD_NUMBER = 6;
 
 
 uint32_t ram_end;
@@ -212,7 +212,7 @@ static void pr_banner(void) {
 void setup(void) {
     int is_xr;
 
-    ram_end = 0x3fffff; //get_ram_end();
+    ram_end = get_ram_end();
 
     /*
      * Now we know how much memory we have, we can
