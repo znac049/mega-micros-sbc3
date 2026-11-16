@@ -48,95 +48,149 @@ static long do_eval(char *exp) {
     return val;
 }
 
-static void do_date_command(int argc, char *argv[]) {
-    ds1307_time_t t;
-    int status;
+static int read_clock(ds1307_time_t *t) {
+    int status = ds1307_read_time(t);
 
-    status = ds1307_read_time(&t);
     if (status < 0) {
         printk("DS1307: no ACK from device -- check address/wiring/pull-ups\n");
+        return NOT_OK;
     }
-    else if (status == 1) {
+
+    if (status == 1) {
         printk("Warning: clock-halt (CH) bit is set -- oscillator is "
             "stopped, time above will not advance until the clock "
             "is (re)started. Time is standing still!\n");
     }
     
-    if (!argc) {
-        // Display the date
-        printk("%s %02d-%02d-%04d\n", day_names[t.day], t.date, t.month, t.year + 2000);    
+    return OK;
+}
+
+static long get_arg(int argc, char *argv[], int index, const char *what, long min, long max) {
+    long val;
+
+    if (index >= argc) {
+        return -1;
     }
-    else if ((argc >= 1) && (argc < 3)) {
-        long year = do_eval(argv[0]);
-        long month = 0;
-        long date = 0;
 
-        if (argc >= 1) {
-            month = do_eval(argv[1]);
-
-            if (argc >= 2) {
-                date = do_eval(argv[2]);
-            }
-        }
-
-        t.year = (uint8_t)year;
-        t.month = (uint8_t)month;
-        t.date = (uint8_t)date;
-
-        status = ds1307_write_time(&t);
-        if (status != OK) {
-            printk("Failed to set the date.\n");
-        }
-        else {
-            printk("Date set.\n");
-        }
+    val = do_eval(argv[index]);
+    if (val == -1) {
+        return -1;
     }
+
+    if ((val < min) || (val > max)) {
+        printk("The %s must be between %d and %d\n", what, min, max);
+        return -1;
+    }
+
+    return val;
+}
+
+static int is_leap_year(int year) {
+    return ((year % 4) == 0) && (((year % 100) != 0) || ((year % 400) == 0));
+}
+static int days_in_month(int year, int month) {
+    static const uint8_t days[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+
+    if ((month == 2) && is_leap_year(year)) {
+        return 29;
+    }
+
+    return days[month-1];
+}
+
+// Sakamoto's method - google it!
+static int day_of_week(int year, int month, int date) {
+    static const uint8_t offsets[12] = {0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4};
+
+    if (month < 3) {
+        year--;
+    }
+
+    return ((year + year/4 - year/100 + year/400 + offsets[month - 1] + date) % 7) + 1;
+}
+
+static void do_date_command(int argc, char *argv[]) {
+    ds1307_time_t t;
+    long year;
+    long month;
+    long date;
+
+    if (read_clock(&t) == NOT_OK) {
+        return;
+    }
+
+    if (argc == 0) {
+        printk("%s %02d-%02d-%04d\n", day_names[(t.day <= 7)?t.day:0], t.date, t.month, t.year + 2000);
+        return;
+    }
+
+    if (argc != 3) {
+        printk("usage: rtc date [yyyy mm dd]\n");
+        return;
+    }
+
+    year = get_arg(argc, argv, 0, "year", 2000, 2099);
+    month = get_arg(argc, argv, 1, "month", 1, 12);
+    if ((year == -1) || (month == -1)) {
+        return;
+    }
+
+    date = get_arg(argc, argv, 2, "date", 1, days_in_month(year, month));
+    if (date == -1) {
+        return;
+    }
+
+    t.year = (uint8_t)(year - 2000);
+    t.month = (uint8_t)month;
+    t.date = (uint8_t)date;
+    t.day = (uint8_t)day_of_week(year, month, date);
+
+    if (ds1307_write_time(&t) != OK) {
+        printk("Failed to set the date.\n");
+        return;
+    }
+
+    printk("Date set: %s %02d-%02d-%04d\n", day_names[t.day], t.date, t.month, t.year + 2000);
 }
 
 static void do_time_command(int argc, char *argv[]) {
-        ds1307_time_t t;
-        int status;
+    ds1307_time_t t;
+    long hours;
+    long mins;
+    long secs;
 
-        status = ds1307_read_time(&t);
-        if (status < 0) {
-            printk("DS1307: no ACK from device -- check address/wiring/pull-ups\n");
-        }
-        else if (status == 1) {
-            printk("Warning: clock-halt (CH) bit is set -- oscillator is "
-                "stopped, time above will not advance until the clock "
-                "is (re)started. Time is standing still!\n");
-        }
-    
-    if (!argc) {
-        // Display the time
+    if (read_clock(&t) == NOT_OK) {
+        return;
+    }
+
+    if (argc == 0) {
         printk("%02u:%02u:%02u\n", t.hours, t.minutes, t.seconds);
-    
+        return;
     }
-    else if ((argc >= 1) && (argc < 3)) {
-        long hours = do_eval(argv[0]);
-        long mins = 0;
-        long secs = 0;
 
-        if (argc >= 1) {
-            mins = do_eval(argv[1]);
-
-            if (argc >= 2) {
-                secs = do_eval(argv[2]);
-            }
-        }
-
-        t.hours = (uint8_t)hours;
-        t.minutes = (uint8_t)mins;
-        t.seconds = (uint8_t)secs;
-
-        status = ds1307_write_time(&t);
-        if (status != OK) {
-            printk("Failed to set the time.\n");
-        }
-        else {
-            printk("Time set.\n");
-        }
+    if ((argc < 2) || (argc > 3)) {
+        printk("usage: rtc time [hh mm [ss]]\n");
+        return;
     }
+
+    hours = get_arg(argc, argv, 0, "hour", 0, 23);
+    mins = get_arg(argc, argv, 1, "mins", 0, 59);
+    secs = get_arg(argc, argv, 2, "secs", 0, 59);
+
+    if ((hours == -1) || (mins == -1) || (secs == -1)) {
+        return;
+    }
+
+    t.hours = (uint8_t)hours;
+    t.minutes = (uint8_t)mins;
+    t.seconds = (uint8_t)secs;
+
+    if (ds1307_write_time(&t) != OK) {
+        printk("Failed to set the time.\n");
+        return;
+    }
+
+    printk("Time set: %02u:%02u:%02u\n", t.hours, t.minutes, t.seconds);
 }
 
 static void do_nvram_command(int argc, char *argv[]) {

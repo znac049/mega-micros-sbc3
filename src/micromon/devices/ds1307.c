@@ -89,9 +89,24 @@ int ds1307_write(int addr, uint8_t *buf, size_t num_bytes) {
         i2c_stop();
         return -1;
     }
+
+    /*
+     * Check that we are noty trying to write too many bytes as bytes > 63
+     * will wrap around and overwrite time/date data!
+     */
+    if (addr + num_bytes > 64) {
+        num_bytes = 64 - addr;
+    }
  
-    for (i = 0; i < num_bytes; i++)
-        i2c_write_byte(*buf++);
+    for (i = 0; i < num_bytes; i++) {
+        if (i2c_write_byte(*buf++)) {
+            // Got NACK
+            i2c_stop();
+
+            // return the number of bytes successfully written
+            return i;
+        }
+    }
  
     i2c_stop();
  
