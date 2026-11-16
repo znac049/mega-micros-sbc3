@@ -36,7 +36,7 @@ SOFTWARE.
 #include "expr.h"
 
 
-void print_help(void);
+static void print_help(void);
 
 static command_t commands[] = {
     {"help",        2, COMMAND, {print_help},               NONE},
@@ -50,6 +50,7 @@ static command_t commands[] = {
     {"probe",       3, COMMAND, {handle_probe_command},     VEC},
     {"pwd",         0, COMMAND, {handle_pwd_command},       VEC},
     {"rtc",         3, COMMAND, {handle_rtc_command},       VEC},
+    {"run",         2, COMMAND, {handle_run_command},       VEC},
     {"ser1",        0, COMMAND, {handle_ser_command},       VEC},
     {"ser2",        0, COMMAND, {handle_ser_command},       VEC},
     {"byteset",     6, COMMAND, {handle_setbyte_cmd},   STR},
@@ -125,7 +126,7 @@ bool_t is_command(const char *cmd, const char *target, int min_target_len, cmd_t
     return YES;
 }
 
-void print_help(void) {
+static void print_help(void) {
     printk("Commands are:\n");
     printk("  byteedit [<address>] [[=] <expr> [, <expr> ...]]\n");
     printk("  cat <filename>\n");
@@ -139,12 +140,13 @@ void print_help(void) {
     printk("  longedit [<address>] [[=] <expr> [, <expr> ...]]\n");
     printk("  probe\n");
     printk("  rtc (erase) | (time [hh:mm[:ss]]) | (date [yyyy:mm:dd])\n");
+    printk("  run <file> [<args> ...]\n");
     printk("  ser1|2 baud <baudrate>\n");
     printk("  wordedit [<address>] [[=] <expr> [, <expr> ...]]\n");
     printk("  quit\n\n");
 }
 
-command_t *find_command(char *cmd) {
+static command_t *find_command(char *cmd) {
     // printk("find_command: looking up '%s'\n", cmd);
 
     for (unsigned int i=0; i<NUM_COMMANDS; i++) {
@@ -156,7 +158,18 @@ command_t *find_command(char *cmd) {
     return NULL;
 }
 
-void handle_command(char *cmdline) {
+static FILE *find_command_on_disk(char *cmdline) {
+    char *argv[MAX_ARGS];
+    int argc = split_str(cmdline, ' ', argv, MAX_ARGS);
+
+    if (argc > 0) {
+        printk("Looking on disk for something to handle the '%s' command\n", argv[0]);
+    }
+
+    return NULL;
+}
+
+static void handle_command(char *cmdline) {
     command_t *cmd;
     char cmdstr[MAX_LINE];
     char *cp;
@@ -172,50 +185,62 @@ void handle_command(char *cmdline) {
     }
 
     cmd = find_command(cmdstr);
-    /* 
-     * We've found the command, but it might be an alias
-     * or a prefix (or NULL)
-     */
-    while ((cmd != NULL) && (cmd->type != COMMAND)) {
-        // printk("handle_command: found %s '%s'\n",
-        //     (cmd->type == ALIAS)?"alias":"prefix", cmd->command);
-        cmd = find_command(cmd->cmd);
-    }
 
     if (cmd == NULL) {
-        printk("'%s': Unrecognised command.\n", cmdstr);
-        return;
-    }
-
-    // printk("handle_command: calling handler for'%s'\n", cmd->command);
-
-    switch (cmd->args) {
-        case NONE:
-            cmd->handler();
-            break;
-
-        case STR:
-            printk("Passing command line: '%s'\n", cmdline);
-            cmd->handler(cmdline);
-            break;
+        // It's not a builtin command. Search the disk
+        FILE *fd = find_command_on_disk(cmdstr);
+        if (fd != NULL) {
+            ;
+        }
         
-        case VEC:
-            {
-                char *argv[MAX_ARGS];
-                int argc = split_str(cmdline, ' ', argv, MAX_ARGS);
+        fclose(fd);
+    }
+    else {
+        /* 
+        * We've found a builtin command, but it might be an alias
+        * or a prefix (or NULL)
+        */
+        while ((cmd->type != COMMAND)) {
+            // printk("handle_command: found %s '%s'\n",
+            //     (cmd->type == ALIAS)?"alias":"prefix", cmd->command);
+            cmd = find_command(cmd->cmd);
+        }
 
-                cmd->handler(argc, argv);
-            }
-            break;
+        if (cmd == NULL) {
+            printk("'%s': Unrecognised command.\n", cmdstr);
+            return;
+        }
 
-        case BOTH:
-            {
-                char *argv[MAX_ARGS];
-                int argc = split_str(cmdline, ' ', argv, MAX_ARGS);
+        // printk("handle_command: calling handler for'%s'\n", cmd->command);
 
-                cmd->handler(argc, argv, cmdline);
-            }
-            break;
+        switch (cmd->args) {
+            case NONE:
+                cmd->handler();
+                break;
+
+            case STR:
+                printk("Passing command line: '%s'\n", cmdline);
+                cmd->handler(cmdline);
+                break;
+            
+            case VEC:
+                {
+                    char *argv[MAX_ARGS];
+                    int argc = split_str(cmdline, ' ', argv, MAX_ARGS);
+
+                    cmd->handler(argc, argv);
+                }
+                break;
+
+            case BOTH:
+                {
+                    char *argv[MAX_ARGS];
+                    int argc = split_str(cmdline, ' ', argv, MAX_ARGS);
+
+                    cmd->handler(argc, argv, cmdline);
+                }
+                break;
+        }
     }
 }
 
