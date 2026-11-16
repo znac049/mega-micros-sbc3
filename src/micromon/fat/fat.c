@@ -185,7 +185,6 @@ static vmp_t *fat_mount(vmp_t *mp) {
 
     ft = fat_probe(mp->block_buffer);
     if (ft == FS_NOT_FAT) {
-        printk("NOT a FAT filesystem: %d\n", ft);
         return NULL;
     }
 
