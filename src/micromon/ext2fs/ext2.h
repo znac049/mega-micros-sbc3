@@ -25,6 +25,7 @@ SOFTWARE.
 #pragma once
 
 #include <ctype.h>
+#include <sys/stat.h>
 #include <blockdev.h>
 // #include <filesystems.h>
 
@@ -77,13 +78,7 @@ SOFTWARE.
 #define EXT2_MAX_PATH_LEN   511
 
 // Mode testing macros
-#define S_ISREG(m) ((m&0xf000)==EXT2_S_IFREG)
-#define S_ISDIR(m) ((m&0xf000)==EXT2_S_IFDIR)
-#define S_ISCHR(m) ((m&0xf000)==EXT2_S_IFCHR)
-#define S_ISBLK(m) ((m&0xf000)==EXT2_S_IFBLK)
-#define S_ISFIFO(m) ((m&0xf000)==EXT2_S_IFIFO)
-#define S_ISLNK(m) ((m&0xf000)==EXT2_S_IFLNK)
-#define S_ISSOCK(m) ((m&0xf000)==EXT2_S_IFSOCK)
+// S_ISREG(), S_ISDIR() etc. come from <sys/stat.h> - ext2 uses the standard mode values
 
 
 // defined in filesystems.h

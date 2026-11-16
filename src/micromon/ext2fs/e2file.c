@@ -31,6 +31,7 @@ SOFTWARE.
 #include <errno.h>
 #include <limits.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 
 #include "micromon.h"
 
@@ -275,4 +276,25 @@ int ext2_seek(vfile_t *file, off_t offset, int whence) {
     }
 
     return file->position;
+}
+
+/*
+ * Add what ext2 knows about an open file to *st. The VFS has already
+ * filled in the common fields; the inode was read when the file was
+ * opened (and byte-swapped), so this needs no disk access.
+ */
+int ext2_stat(vfile_t *file, struct stat *st) {
+    ext2_block_follower_t *bf = &file->private.data.ext2_file_inf.bf;
+    ext2_inode_t *in = &bf->inode;
+
+    st->st_ino = bf->inode_num;
+    st->st_nlink = in->i_links_count;
+    st->st_uid = in->i_uid;
+    st->st_gid = in->i_gid;
+    st->st_atime = in->i_atime;
+    st->st_mtime = in->i_mtime;
+    st->st_ctime = in->i_ctime;
+    st->st_blocks = in->i_blocks;       // ext2 already counts 512-byte sectors
+
+    return OK;
 }
