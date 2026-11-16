@@ -46,7 +46,7 @@ static int do_the_business(int argc, char *argv[]) {
         int return_code;
 
         // First call - invoke the user program
-        printk("Launching code at 0x%08x\n", go_address);
+        // printk("Launching code at 0x%08x\n", go_address);
         return_code = fn(argc, (const char **)argv);
         if (return_code) {
             printk("\n---\nSHOULDN'T HAPPEN: User code exited with %d\n", return_code);
@@ -61,7 +61,7 @@ static int do_the_business(int argc, char *argv[]) {
         // If we arrive here, it's because either:
         //   1. something has gone wrong
         //   2. the user code has called exit() (most likely)
-        printk("\n---\nUser code exited with code %d\n", go_res-1);
+        // printk("\n---\nUser code exited with code %d\n", go_res-1);
 
         return go_res - 1;
     }

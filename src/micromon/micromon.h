@@ -93,6 +93,7 @@ extern bool_t rtc_present;
 extern bool_t oled_present;
 extern bool_t experimental;
 
+extern vmp_t mounts[MAX_MOUNTS];
 
 // mon_crt0.asm
 uint32_t get_cacr(void);

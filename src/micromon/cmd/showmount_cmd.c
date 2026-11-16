@@ -29,7 +29,6 @@ SOFTWARE.
 
 #include "micromon.h"
 
-extern vmp_t mounts[MAX_MOUNTS];
 void handle_showmount_command(int argc, char *argv[]) {
     if (argc != 1) {
         printk("usage: showmount\n");

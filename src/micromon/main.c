@@ -31,6 +31,7 @@ SOFTWARE.
 #include <unistd.h>
 #include <limits.h>
 #include <machine.h>
+#include <sys/stat.h>
 
 #include "micromon.h"
 #include "expr.h"
@@ -158,15 +159,37 @@ static command_t *find_command(char *cmd) {
     return NULL;
 }
 
-static FILE *find_command_on_disk(char *cmdline) {
+static int find_command_on_disk(char *cmdline) {
     char *argv[MAX_ARGS];
     int argc = split_str(cmdline, ' ', argv, MAX_ARGS);
 
-    if (argc > 0) {
-        printk("Looking on disk for something to handle the '%s' command\n", argv[0]);
+    (void)argc;
+
+    /*
+     * Keep is simple, so look in /bin on every mountpoint,
+     * in the order they were mounted
+     */
+
+   for (int i=0; i<MAX_MOUNTS; i++) {
+        vmp_t *mp = &mounts[i];
+        char name[PATH_MAX];
+        struct stat sb;
+
+        if (mp->mounted == YES) {
+            snprintf(name, sizeof(name), "/%s/bin/%s", mp->name, argv[0]);
+
+            if (stat(name, &sb) == OK) {
+                // Something found. Check it's a file
+                if (S_ISREG(sb.st_mode)) {
+                    int fd = open(name, O_RDONLY);
+
+                    return fd;
+                }
+            }
+        }
     }
 
-    return NULL;
+    return NOT_OK;
 }
 
 static void handle_command(char *cmdline) {
@@ -187,13 +210,29 @@ static void handle_command(char *cmdline) {
     cmd = find_command(cmdstr);
 
     if (cmd == NULL) {
+        int res;
+        uint32_t entry;
+        char *argv[MAX_ARGS];
+        int argc;
+
         // It's not a builtin command. Search the disk
-        FILE *fd = find_command_on_disk(cmdstr);
-        if (fd != NULL) {
-            ;
+        int fd = find_command_on_disk(cmdstr);
+        if (fd == NOT_OK) {
+            printk("'%s': unrecognised command\n", cmdstr);
+            return;
         }
-        
-        fclose(fd);
+
+        res = load_elf(fd, &entry);
+        close(fd);
+
+        if (res == NOT_OK) {
+            printk("%s: not loaded\n", argv[1]);
+            return;
+        }
+    
+        go_address = entry;
+        argc = split_str(cmdline, ' ', argv, MAX_ARGS);
+        go_run(argc, argv);
     }
     else {
         /* 
