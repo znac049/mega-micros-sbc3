@@ -34,8 +34,8 @@ SOFTWARE.
 #define PAD_COL 45
 
 static int major = 0;
-static int minor = 5;
-static int MAGIC_BUILD_NUMBER = 244;
+static int minor = 6;
+static int MAGIC_BUILD_NUMBER = 3;
 
 
 uint32_t ram_end;
@@ -196,7 +196,7 @@ static void pr_banner(void) {
 
             printk("\nThe current time is: %02u:%02u:%02u on %02u-%02u-%04u %s\n", 
                 t.hours, t.minutes, t.seconds,
-                t.date, t.month, t.year,
+                t.date, t.month, t.year+2000,
                 (status == 1)?"(halted)":""            );
         }
     }
