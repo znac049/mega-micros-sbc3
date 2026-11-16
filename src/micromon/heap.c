@@ -368,17 +368,44 @@ void *bios_malloc(size_t nbytes, pid_t pid) {
     return NULL;
 }
 
+/*
+ * Would writing to [start, end] (inclusive) damage the heap? True if it
+ * overlaps an allocated block, or the header of a free one (free payloads
+ * are fair game).
+ */
+bool_t heap_range_in_use(uint32_t start, uint32_t end) {
+    for (list_item_t *item=allocated_items; item != NULL; item=item->next) {
+        uint32_t item_start = (uint32_t)item;
+        uint32_t item_end = item_start + sizeof(list_item_t) + item->payload_size - 1;
+
+        if ((start <= item_end) && (end >= item_start)) {
+            return YES;
+        }
+    }
+
+    for (list_item_t *item=free_items; item != NULL; item=item->next) {
+        uint32_t item_start = (uint32_t)item;
+        uint32_t item_end = item_start + sizeof(list_item_t) - 1;
+
+        if ((start <= item_end) && (end >= item_start)) {
+            return YES;
+        }
+    }
+
+    return NO;
+}
+
 void clean_heap(pid_t pid) {
     list_item_t *next = NULL;
 
-    printk("clean_heap: pid=%d\n", pid);
+    // printk("clean_heap: pid=%d\n", pid);
 
     for (list_item_t *item=allocated_items; item!=NULL; item=next) {
         next = item->next;
 
         if (item->owner == pid) {
             void *p = (void *)(CP(item) + sizeof(list_item_t));
-            printk("clean_heap: reclaiming 0x%08x\n", p);
+            // printk("clean_heap: reclaiming 0x%08x\n", p);
             bios_free(p, pid);
         }
     }

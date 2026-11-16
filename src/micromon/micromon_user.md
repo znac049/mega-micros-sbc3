@@ -163,6 +163,18 @@ pwd
 ```
 ```
 
+### run - load and run a program from a file
+#### Synopsis
+```
+run <file> [ <args> ... ]
+```
+#### Details
+Loads **_<file>_**, which must be a 32-bit big-endian m68k ELF executable (as produced by the standard program build), and runs it. The program receives **_<file>_** as `argv[0]`, followed by any **_<args>_**.
+
+Each loadable segment must lie between the top of the monitor's stack ($00040000) and the end of RAM, and must not overlap memory the monitor is using. The whole file is checked before anything is loaded, so a bad file leaves memory unchanged.
+
+After a successful **_run_**, **_go_** on its own runs the same program again without reloading it. Its data is not reset, so reload it with **_run_** if it depends on its initial values.
+
 ### ser1 | ser2
 #### Synopsis
 ```

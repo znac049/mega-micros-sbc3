@@ -67,6 +67,10 @@ static int do_the_business(int argc, char *argv[]) {
     }
 }
 
+int go_run(int argc, char *argv[]) {
+    return do_the_business(argc, argv);
+}
+
 void handle_go_command(int argc, char *argv[]) {
     long val;
     expr_error_t res;
