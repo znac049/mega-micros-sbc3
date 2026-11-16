@@ -61,11 +61,6 @@ int bd_init(void) {
 
                 bd->active = NO;
             }
-            else {
-                if (bd->active == YES) {
-                    printk("block device %d (%s)\n", i, bd->name);
-                }
-            }
         }
     }
 
