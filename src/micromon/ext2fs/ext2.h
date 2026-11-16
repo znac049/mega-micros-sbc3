@@ -235,10 +235,9 @@ struct ext2_block_follower {
     vmp_t           *mp;
     uint32_t        inode_num;
     ext2_inode_t    inode;
-    uint32_t        direct_offset;
-    uint32_t        single_offset;
-    uint32_t        double_offset;
-    uint32_t        triple_offset;
+    uint32_t        next_block;     // logical block number returned next
+    uint32_t        leaf_id;        // which indirect block leaf_block is (0 = none)
+    uint32_t        leaf_block;     // indirect block holding the current block pointers
 };
 
 typedef struct ext2_block_follower ext2_block_follower_t;

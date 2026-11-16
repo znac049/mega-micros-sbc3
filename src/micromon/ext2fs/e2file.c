@@ -203,12 +203,9 @@ static int seek_to(vfile_t *file, off_t offset) {
     // kprintf("seek_to: file pos=%d, size=%d. abs offset=%d (relative block %d)\n",
     //         file->position, file->size, offset, block_num);
 
-    ext2_reset_block_follower(&filep->bf);
-
-    // Step through blocks 0..block_num - 'block' ends up as block_num's
-    for (uint32_t i=0; i<=block_num; i++) {
-        block = ext2_get_next_block_num(&filep->bf);
-    }
+    // Go straight to block_num - the next read carries on after it
+    ext2_set_block_follower(&filep->bf, block_num);
+    block = ext2_get_next_block_num(&filep->bf);
 
     if (block == 0) {
         // A hole (or past the end of the file)
