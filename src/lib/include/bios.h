@@ -42,8 +42,10 @@ SOFTWARE.
 #define BIOS_TEST           16
 #define BIOS_SEEK           17
 #define BIOS_ISATTY         18
+#define BIOS_STAT           19
+#define BIOS_FSTAT          20
 
-#define NUM_BIOS_CALLS	    19
+#define NUM_BIOS_CALLS	    21
 
 
 
@@ -56,6 +58,10 @@ int do_trap0(uint32_t syscall_num, uint32_t arg1, uint32_t arg2, uint32_t arg3, 
 
 int bios_close(int fd);
 int bios_isatty(int fd);
+
+struct stat;
+int bios_stat(const char *pathname, struct stat *st);
+int bios_fstat(int fd, struct stat *st);
 int bios_open(const char *pathname, int flags);
 int bios_read(int fd, char *buff, size_t num_bytes);
 off_t bios_seek(int fd, off_t offset, int whence);

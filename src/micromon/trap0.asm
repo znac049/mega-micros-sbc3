@@ -86,6 +86,8 @@ trap0_call_table::
         dc.l    bios_test
         dc.l    bios_seek
         dc.l    bios_isatty
+        dc.l    bios_stat
+        dc.l    bios_fstat
 t0ct_end     
 
         end

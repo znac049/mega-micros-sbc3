@@ -32,6 +32,7 @@ SOFTWARE.
 #include "fat.h"
 
 struct dirent;      // from <dirent.h>
+struct stat;        // from <sys/stat.h>
 
 // Max number of file descriptors
 #define MAX_FILES 20
@@ -105,6 +106,7 @@ union vfs {
         int (*close)(vfile_t *file);
         int (*seek)(vfile_t *file, off_t offset, int whence);
         int (*getdents)(vfile_t *dir, struct dirent *out, int max_ents);
+        int (*stat)(vfile_t *file, struct stat *st);   // optional - may be NULL
     } fs;
 };
 
@@ -189,6 +191,7 @@ int ext2_read(vfile_t *file, char *buff, size_t count);
 int ext2_write(vfile_t *file, const char *buff, size_t count);
 int ext2_close(vfile_t *file);
 int ext2_seek(vfile_t *file, off_t offset, int whence);
+int ext2_stat(vfile_t *file, struct stat *st);
 
 // ext2/utils.c
 // void printn(const char *pfx, const uint8_t *str, int len);

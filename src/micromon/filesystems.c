@@ -31,6 +31,7 @@ SOFTWARE.
 #include <bios.h>
 #include <extras.h>
 #include <errno.h>
+#include <sys/stat.h>
 
 #include "micromon.h"
 
@@ -719,6 +720,94 @@ off_t bios_seek(int fd, off_t offset, int whence) {
     }
 
     return where;
+}
+
+/*
+ * Fill in the fields every filesystem can supply, then let the
+ * filesystem add what else it knows.
+ */
+static void fill_stat(vfile_t *file, struct stat *st) {
+    memset(st, 0, sizeof(*st));
+
+    st->st_dev = file->mp - mounts;
+    st->st_mode = file->mode;
+    st->st_size = file->size;
+    st->st_nlink = 1;
+    st->st_blksize = BLOCK_DEVICE_BLOCK_SIZE;
+    st->st_blocks = (file->size + 511) / 512;
+
+    if (file->mp->fs_driver->api.fs.stat != NULL) {
+        file->mp->fs_driver->api.fs.stat(file, st);
+    }
+}
+
+int bios_fstat(int fd, struct stat *st) {
+    vfile_t *file;
+
+    if ((fd < 0) || (fd >= MAX_FILES) || (vfs_files[fd].open == NO) || (vfs_files[fd].mp == NULL)) {
+        errno = EBADF;
+        return NOT_OK;
+    }
+
+    if (st == NULL) {
+        errno = EFAULT;
+        return NOT_OK;
+    }
+
+    file = &vfs_files[fd];
+
+    if (file->mp->fs_driver->type == VFS_TYPE_CHAR) {
+        memset(st, 0, sizeof(*st));
+        st->st_mode = S_IFCHR | 0666;
+        st->st_nlink = 1;
+
+        return OK;
+    }
+
+    fill_stat(file, st);
+
+    return OK;
+}
+
+/*
+ * Like bios_open(), but only as far as reading the inode: no file data
+ * is read and no file descriptor is used.
+ */
+int bios_stat(const char *pathname, struct stat *st) {
+    static vfile_t file;            // ~2.7KB - keep it off the stack
+    char fs_path[PATH_MAX];
+    vmp_t *mp;
+
+    if (st == NULL) {
+        errno = EFAULT;
+        return NOT_OK;
+    }
+
+    if (resolve_path(pathname, &mp, fs_path) == NOT_OK) {
+        return NOT_OK;
+    }
+
+    if (mp->fs_driver->type != VFS_TYPE_FS) {
+        errno = ENOENT;
+        return NOT_OK;
+    }
+
+    memset(&file, 0, sizeof(file));
+    file.mp = mp;
+    file.file_type = VFS_FT_UNKNOWN;
+
+    if (mp->fs_driver->api.fs.open(&file, fs_path, O_RDONLY, &cwd) == NOT_OK) {
+        // errno set by the filesystem
+        return NOT_OK;
+    }
+
+    fill_stat(&file, st);
+
+    if (mp->fs_driver->api.fs.close != NULL) {
+        mp->fs_driver->api.fs.close(&file);
+    }
+
+    return OK;
 }
 
 int bios_isatty(int fd) {
