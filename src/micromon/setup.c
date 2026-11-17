@@ -36,7 +36,7 @@ SOFTWARE.
 
 static int major = 0;
 static int minor = 6;
-static int MAGIC_BUILD_NUMBER = 28;
+static int MAGIC_BUILD_NUMBER = 31;
 
 
 uint32_t ram_low_size;
@@ -145,7 +145,8 @@ static void pr_banner(void) {
     }
 
     pr_info(tmp_str, RAM_LOW_BASE, RAM_LOW_BASE + ram_low_size-1, NO);
-    test_ram(RAM_LOW_BASE + 0x400, ram_low_size-1);
+    // Below ram_test_start() was tested by ram_test.asm at reset
+    test_ram(ram_test_start(), RAM_LOW_BASE + ram_low_size-1);
     // printk("\n");
 
     if (ram_high_size != 0) {

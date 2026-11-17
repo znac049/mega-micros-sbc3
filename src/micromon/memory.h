@@ -50,3 +50,19 @@ SOFTWARE.
 #define FOUR_MEG (ONE_MEG*4)
 #define FIVE_MEG (ONE_MEG*5)
 #define EIGHT_MEG (ONE_MEG*8)
+
+// Result of a RAM test (memory.c)
+typedef struct {
+    int stage;              // 0 if it passed, else the failing stage (1-6)
+    uint32_t addr;          // failing address
+    uint32_t expected;
+    uint32_t actual;
+    bool_t aborted;         // a key was pressed
+} memtest_result_t;
+
+
+int mem_test_quick(uint32_t start, uint32_t end, bool_t verbose, memtest_result_t *r);
+int mem_test_march(uint32_t start, uint32_t end, bool_t verbose, memtest_result_t *r);
+const char *mem_test_stage_name(int stage);
+void pr_mem_test_failure(const memtest_result_t *r);
+uint32_t ram_test_start(void);

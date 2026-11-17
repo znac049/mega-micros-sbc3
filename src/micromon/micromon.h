@@ -234,6 +234,7 @@ uint32_t get_ram_end(void);
 uint32_t size_ram_area(uint32_t base);
 void size_ram(uint32_t *low_size, uint32_t *high_size);
 int test_ram(uint32_t start_addr, uint32_t end_addr);
+void handle_memtest_command(int argc, char *argv[]);
 
 
 // probe_cmd.c

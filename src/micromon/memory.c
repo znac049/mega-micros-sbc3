@@ -29,11 +29,14 @@ SOFTWARE.
 #include "micromon.h"
 #include "memory.h"
 
+// From the linker script: the top of the monitor's stack
+extern char _INITIAL_STACK[];
+
 /*
  * The SBC-3 has two RAM areas, each an 8MB window:
  *
  *   $00000000-$007FFFFF   2MB, 4MB or 8MB fitted
- *   $01000000-$017FFFFF   nothing, 2MB or 8MB fitted
+ *   $10000000-$107FFFFF   nothing, 2MB or 8MB fitted
  *
  * The CPLD generates DTACK for the whole of a populated 8MB window, however
  * much memory is fitted, so running off the end of the RAM doesn't cause a
@@ -278,54 +281,449 @@ uint32_t get_ram_end(void) {
     return RAM_LOW_BASE + size -1;
 }
 
-int test_ram(uint32_t start_addr, uint32_t end_addr) {
-    int i = 0;
-    uint8_t aborted = NO;
+/*
+ * RAM tests
+ *
+ * These are destructive: they're only run on memory nothing is using.
+ * At boot that's everything above the monitor's stack (see
+ * ram_test_start()); the bottom of bank 0 is checked by ram_test in
+ * ram_test.asm before any C code runs.
+ *
+ * mem_test_quick() runs, in order:
+ *
+ *   1  Data bus      walking 1s and 0s at one longword. A guard value is
+ *                    written next door between the write and the read, so
+ *                    a floating bus can't hand back the last value written.
+ *   2  Byte lanes    byte and word writes, read back as a longword. These
+ *                    use the CPLD's per-byte write strobes, which longword
+ *                    writes never exercise.
+ *   3  Address bus   a marker at start and at start + 4, 8, 16 ... Writing
+ *                    each one in turn must leave all the others alone, so a
+ *                    stuck, open or shorted address line shows up here,
+ *                    with the faulty offset in the report.
+ *   4  Own address   every longword holds its own address: the whole
+ *                    range is written before anything is read back, so
+ *                    any two addresses that reach the same cell (a decode
+ *                    fault) or a stuck bit shows up.
+ *   5  Complement    the same with the complement, so every bit of every
+ *                    cell has held both a 0 and a 1.
+ *
+ * mem_test_march() adds a March C- test (stage 6), repeated over several
+ * data backgrounds, for soak testing with the memtest command:
+ *
+ *   up(w0) up(r0,w1) up(r1,w0) down(r0,w1) down(r1,w0) up(r0)
+ *
+ * which finds stuck-at, transition and most coupling faults between
+ * cells, and the backgrounds find coupling between bits of one longword.
+ *
+ * The data cache is turned off while testing (it would answer the reads
+ * instead of the RAM). Interrupts stay on: the handlers only touch the
+ * monitor's own variables and stack, which are never in a tested range.
+ * Any key aborts.
+ */
 
-    // Test whole longwords from start_addr up to and including end_addr
-    start_addr = (start_addr + 3) & ~3U;
-    end_addr = (end_addr + 1) & ~3U;
+#define TEST_PATTERN    0xaaaaaaaaU
+#define TEST_ANTI       0x55555555U
+#define PROGRESS_LONGS  0x20000         // spin and check for a key this often
 
-    printk(" Testing......");
-    for (uint32_t *addr=(uint32_t *)start_addr; addr<(uint32_t *)end_addr; addr++) {
-        uint32_t orig = addr[0];
-        uint32_t x,y;
+static const char *stage_names[] = {
+    "", "data bus", "byte lanes", "address bus", "own address",
+    "complement", "march C-"
+};
 
-        addr[0] = 0x55555555;
-        x = addr[0];
+static const uint32_t backgrounds[] = {
+    0x00000000, 0x55555555, 0x33333333, 0x0f0f0f0f, 0x00ff00ff, 0x0000ffff
+};
 
-        addr[0] = 0xaaaaaaaa;
-        y = addr[0];
-        
-        addr[0] = orig;
+static uint32_t progress_count;
+static bool_t show_progress;
+static bool_t test_aborted;
 
-        if (!((x == 0x55555555) && (y == 0xaaaaaaaa))) {
-            printk("\nMemory test failed at $%08x\n", addr);
-            return (int)addr;
+/*
+ * Called once per longword in the long passes. Returns YES if a key has
+ * been pressed, which aborts the test.
+ */
+static inline bool_t progress(void) {
+    if (++progress_count >= PROGRESS_LONGS) {
+        progress_count = 0;
+
+        if (show_progress) {
+            spin();
         }
 
-        if (++i == 0x00020000) {
-            i = 0;
-            spin();
+        if (kchar_available()) {
+            kgetchar();
+            test_aborted = YES;
+        }
+    }
 
-            if (kchar_available()) {
-                addr = (uint32_t *)end_addr;
-                aborted = YES;
-                kgetchar();
+    return test_aborted;
+}
+
+static int fail(memtest_result_t *r, int stage, volatile uint32_t *addr, uint32_t expected, uint32_t actual) {
+    int err;
+
+    r->stage = stage;
+    r->addr = (uint32_t)addr;
+    r->expected = expected;
+    r->actual = actual;
+
+    // Failing address on the hex display, if there is one
+    pokel(hex_long_0, (uint32_t)addr, &err);
+
+    return NOT_OK;
+}
+
+static uint32_t dcache_off(void) {
+    uint32_t cacr = get_cacr();
+
+    if (cacr & CACR_ED) {
+        write_cacr((cacr & ~CACR_ED) | CACR_CD);
+    }
+
+    return cacr;
+}
+
+static void dcache_restore(uint32_t cacr) {
+    if (cacr & CACR_ED) {
+        write_cacr(cacr | CACR_CD);
+    }
+}
+
+// 1: data bus
+static int test_data_bus(volatile uint32_t *p, memtest_result_t *r) {
+    for (uint32_t bit = 1; bit != 0; bit <<= 1) {
+        uint32_t v;
+
+        p[0] = bit;
+        p[1] = ~bit;            // drive the bus the other way
+        v = p[0];
+        if (v != bit) {
+            return fail(r, 1, p, bit, v);
+        }
+
+        p[0] = ~bit;
+        p[1] = bit;
+        v = p[0];
+        if (v != ~bit) {
+            return fail(r, 1, p, ~bit, v);
+        }
+    }
+
+    return OK;
+}
+
+// 2: byte lanes
+static int test_byte_lanes(volatile uint32_t *p, memtest_result_t *r) {
+    volatile uint8_t *b = (volatile uint8_t *)p;
+    volatile uint16_t *w = (volatile uint16_t *)p;
+    uint32_t v;
+
+    p[0] = 0;
+    b[0] = 0x11;
+    b[1] = 0x22;
+    b[2] = 0x33;
+    b[3] = 0x44;
+    p[1] = 0xffffffff;
+    if ((v = p[0]) != 0x11223344) {
+        return fail(r, 2, p, 0x11223344, v);
+    }
+
+    b[2] = 0xcc;                // one byte in the middle
+    p[1] = 0;
+    if ((v = p[0]) != 0x1122cc44) {
+        return fail(r, 2, p, 0x1122cc44, v);
+    }
+
+    w[1] = 0x5566;              // low word only
+    p[1] = 0xffffffff;
+    if ((v = p[0]) != 0x11225566) {
+        return fail(r, 2, p, 0x11225566, v);
+    }
+
+    w[0] = 0x7788;              // high word only
+    p[1] = 0;
+    if ((v = p[0]) != 0x77885566) {
+        return fail(r, 2, p, 0x77885566, v);
+    }
+
+    // And the bytes read back one at a time
+    if ((b[0] != 0x77) || (b[1] != 0x88) || (b[2] != 0x55) || (b[3] != 0x66)) {
+        return fail(r, 2, p, 0x77885566, ((uint32_t)b[0] << 24) | ((uint32_t)b[1] << 16) | ((uint32_t)b[2] << 8) | b[3]);
+    }
+
+    return OK;
+}
+
+// 3: address bus. size is in bytes, a multiple of 4.
+static int test_address_bus(uint32_t start, uint32_t size, memtest_result_t *r) {
+    volatile uint32_t *base = (volatile uint32_t *)start;
+    uint32_t off, other, v;
+
+    // A marker everywhere
+    base[0] = TEST_PATTERN;
+    for (off = 4; off < size; off <<= 1) {
+        base[off / 4] = TEST_PATTERN;
+    }
+
+    // Lines stuck high: changing the base mustn't change the others
+    base[0] = TEST_ANTI;
+    for (off = 4; off < size; off <<= 1) {
+        if ((v = base[off / 4]) != TEST_PATTERN) {
+            return fail(r, 3, &base[off / 4], TEST_PATTERN, v);
+        }
+    }
+    base[0] = TEST_PATTERN;
+
+    // Lines stuck low or shorted together: change each in turn
+    for (off = 4; off < size; off <<= 1) {
+        base[off / 4] = TEST_ANTI;
+
+        if ((v = base[0]) != TEST_PATTERN) {
+            return fail(r, 3, &base[0], TEST_PATTERN, v);
+        }
+
+        for (other = 4; other < size; other <<= 1) {
+            if ((other != off) && ((v = base[other / 4]) != TEST_PATTERN)) {
+                return fail(r, 3, &base[other / 4], TEST_PATTERN, v);
+            }
+        }
+
+        base[off / 4] = TEST_PATTERN;
+    }
+
+    return OK;
+}
+
+// 4 and 5: every longword holds its own address, xor'd with mask
+static int test_fill(uint32_t start, uint32_t end, uint32_t mask, int stage, memtest_result_t *r) {
+    volatile uint32_t *p;
+    uint32_t v;
+
+    for (p = (volatile uint32_t *)start; p < (volatile uint32_t *)end; p++) {
+        *p = (uint32_t)p ^ mask;
+        if (progress()) {
+            return OK;
+        }
+    }
+
+    for (p = (volatile uint32_t *)start; p < (volatile uint32_t *)end; p++) {
+        if ((v = *p) != ((uint32_t)p ^ mask)) {
+            return fail(r, stage, p, (uint32_t)p ^ mask, v);
+        }
+        if (progress()) {
+            return OK;
+        }
+    }
+
+    return OK;
+}
+
+// 6: March C-, with data background bg
+static int test_march(uint32_t start, uint32_t end, uint32_t bg, memtest_result_t *r) {
+    volatile uint32_t *lo = (volatile uint32_t *)start;
+    volatile uint32_t *hi = (volatile uint32_t *)end;
+    volatile uint32_t *p;
+    const uint32_t d0 = bg;
+    const uint32_t d1 = ~bg;
+    uint32_t v;
+
+#define MARCH_CHECK(want) \
+    if ((v = *p) != (want)) { \
+        return fail(r, 6, p, (want), v); \
+    } \
+    if (progress()) { \
+        return OK; \
+    }
+
+    // up(w0)
+    for (p = lo; p < hi; p++) {
+        *p = d0;
+        if (progress()) {
+            return OK;
+        }
+    }
+
+    // up(r0, w1)
+    for (p = lo; p < hi; p++) {
+        MARCH_CHECK(d0);
+        *p = d1;
+    }
+
+    // up(r1, w0)
+    for (p = lo; p < hi; p++) {
+        MARCH_CHECK(d1);
+        *p = d0;
+    }
+
+    // down(r0, w1)
+    for (p = hi; p-- > lo; ) {
+        MARCH_CHECK(d0);
+        *p = d1;
+    }
+
+    // down(r1, w0)
+    for (p = hi; p-- > lo; ) {
+        MARCH_CHECK(d1);
+        *p = d0;
+    }
+
+    // up(r0)
+    for (p = lo; p < hi; p++) {
+        MARCH_CHECK(d0);
+    }
+
+#undef MARCH_CHECK
+
+    return OK;
+}
+
+/*
+ * Stages 1-5 over start..end (inclusive). Returns OK if it passed or was
+ * aborted (r->aborted says which), NOT_OK with the details in r if not.
+ */
+int mem_test_quick(uint32_t start, uint32_t end, bool_t verbose, memtest_result_t *r) {
+    uint32_t cacr;
+    int res;
+
+    // Whole longwords, end exclusive from here on
+    start = (start + 3) & ~3U;
+    end = (end + 1) & ~3U;
+
+    r->stage = 0;
+    r->aborted = NO;
+
+    if (end < start + 16) {
+        return OK;              // too small to bother
+    }
+
+    show_progress = verbose;
+    test_aborted = NO;
+    progress_count = 0;
+    cacr = dcache_off();
+
+    res = test_data_bus((volatile uint32_t *)start, r);
+    if (res == OK) {
+        res = test_byte_lanes((volatile uint32_t *)start, r);
+    }
+    if (res == OK) {
+        res = test_address_bus(start, end - start, r);
+    }
+    if ((res == OK) && !test_aborted) {
+        res = test_fill(start, end, 0, 4, r);
+    }
+    if ((res == OK) && !test_aborted) {
+        res = test_fill(start, end, 0xffffffff, 5, r);
+    }
+
+    dcache_restore(cacr);
+    r->aborted = test_aborted;
+
+    return res;
+}
+
+/*
+ * Stage 6 (March C-) over start..end (inclusive), once per data
+ * background. Prints the background being tested if verbose.
+ */
+int mem_test_march(uint32_t start, uint32_t end, bool_t verbose, memtest_result_t *r) {
+    uint32_t cacr;
+    int res = OK;
+
+    start = (start + 3) & ~3U;
+    end = (end + 1) & ~3U;
+
+    r->stage = 0;
+    r->aborted = NO;
+
+    if (end <= start) {
+        return OK;
+    }
+
+    show_progress = verbose;
+    test_aborted = NO;
+    progress_count = 0;
+    cacr = dcache_off();
+
+    for (unsigned i = 0; (i < sizeof(backgrounds) / sizeof(backgrounds[0])) && (res == OK) && !test_aborted; i++) {
+        if (verbose) {
+            printk(" $%08X ", backgrounds[i]);
+        }
+
+        res = test_march(start, end, backgrounds[i], r);
+
+        if (verbose) {
+            for (int j = 0; j < 11; j++) {
+                printk("%c", BS);
             }
         }
     }
+
+    dcache_restore(cacr);
+    r->aborted = test_aborted;
+
+    return res;
+}
+
+const char *mem_test_stage_name(int stage) {
+    if ((stage < 0) || (stage >= (int)(sizeof(stage_names) / sizeof(stage_names[0])))) {
+        return "?";
+    }
+
+    return stage_names[stage];
+}
+
+void pr_mem_test_failure(const memtest_result_t *r) {
+    printk("\n    Failed: stage %d (%s) at $%08X: expected $%08X, read $%08X (bits $%08X)\n",
+           r->stage, mem_test_stage_name(r->stage), r->addr,
+           r->expected, r->actual, r->expected ^ r->actual);
+}
+
+/*
+ * The lowest address the boot test and the memtest command may use: above
+ * the monitor's stack and variables. Below this, bank 0 is checked by
+ * ram_test.asm at reset.
+ */
+uint32_t ram_test_start(void) {
+    uint32_t start = (uint32_t)_INITIAL_STACK + 4;
+
+    if ((uint32_t)&_bss_end > start) {
+        start = (uint32_t)&_bss_end;
+    }
+
+    return (start + 3) & ~3U;
+}
+
+/*
+ * The boot-time test, with the spinner and the PASS/FAIL report that
+ * follows each RAM line of the banner.
+ */
+int test_ram(uint32_t start_addr, uint32_t end_addr) {
+    memtest_result_t r;
+    int res;
+
+    if (heap_range_in_use(start_addr, end_addr)) {
+        printk(" In use: not tested\n");
+        return OK;
+    }
+
+    printk(" Testing......");
+    res = mem_test_quick(start_addr, end_addr, YES, &r);
 
     for (int j=0; j<6; j++) {
         printk("%c", BS);
     }
 
-    if (aborted == YES) {
+    if (res != OK) {
+        printk(": FAIL          ");
+        pr_mem_test_failure(&r);
+    }
+    else if (r.aborted == YES) {
         printk(": ABORTED       \n");
     }
     else {
         printk(": PASS          \n");
     }
 
-    return OK;
+    return res;
 }

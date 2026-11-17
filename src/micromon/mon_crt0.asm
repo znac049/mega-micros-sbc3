@@ -33,8 +33,8 @@
 ; completely valid. So, as quickly as possible, we need to do the following:
 ;
 ; 1. Calculate a ROM checksum and compare it against a checksum (stored in
-;    te ROM). 
-; 2. Quickly perform a functional memory test between 0 and 1MB.
+;    the ROM). 
+; 2. Quickly test the RAM the monitor uses ($400 to the top of the stack).
 
 ; Beyond this point, we can use the stack and the first MB of RAM.
 
@@ -94,11 +94,9 @@ stop:
         bra     stop
 
 sum_ok:
-        bra     ram_ok
 
-
-
-; Now check the first 1meg of ran
+; Now check the RAM the monitor itself uses: $400 up to the top of its
+; stack. The rest is tested from C (test_ram in memory.c).
         lea     ram_test_done(pc),a6    ; Still can't trust the stack
         jmp     ram_test
 ram_test_done:

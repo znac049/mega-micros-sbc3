@@ -29,7 +29,7 @@
 ;           an exhaustive cell test.
 ;
 ; Stages (the number is returned in D0 on failure):
-;   1  Data bus  - walking 1 across all 32 data lines at $000000
+;   1  Data bus  - walking 1 across all 32 data lines at RAM_START
 ;   2  Byte lanes - byte and word writes land in the right lanes
 ;   3  Address bus - power-of-two addresses don't alias each other
 ;   4  Fill/verify - every longword holds its own address
@@ -53,7 +53,9 @@
 
 
 RAM_START       equ     $00000400
-RAM_END         equ     $00100000
+RAM_END         equ     $00040000               ; top of the monitor's stack
+                                                ; (_STACK_SIZE); the C test
+                                                ; covers the rest
 
 ram_test::
 
@@ -72,7 +74,7 @@ ram_test::
 
         move.l  d1,d2
         not.l   d2
-;        move.l  d2,4(a0)                        ; drive the bus the other way
+        move.l  d2,4(a0)                        ; drive the bus the other way
 
         cmp.l   (a0),d1                         ; Test the bit
         bne     .rt_fail
@@ -107,43 +109,42 @@ ram_test::
         bne     .rt_fail
 
 ;------------------------------------------------------------------------------
-; Stage 3: address bus. Write ~addr to $0 and to each power-of-two address
-; ($4, $8 ... $80000), then read them all back. A stuck or shorted address
+; Stage 3: address bus. Write ~0 at RAM_START and ~offset at RAM_START +
+; each power-of-two offset ($4, $8 ... $20000), then read them all back. A stuck or shorted address
 ; line makes two of these addresses hit the same cell, so one write
 ; overwrites the other and the readback shows it.
 
         moveq   #3,d0                           ; Stage number
 
-        lea     RAM_START,a0
+        lea     RAM_START,a1                    ; A1 = base
 
-        moveq   #-1,d1                          ; ~$0
-        move.l  d1,(a0)
-        moveq   #4,d3
+        moveq   #-1,d1                          ; ~0 at the base
+        move.l  d1,(a1)
+        moveq   #4,d3                           ; D3 = offset
 .s3write:
-        movea.l d3,a0
+        lea     (a1,d3.l),a0
         move.l  d3,d1
         not.l   d1
-        move.l  d1,(a0)
+        move.l  d1,(a0)                         ; ~offset at base+offset
         add.l   d3,d3
-        cmp.l   #RAM_END,d3
+        cmp.l   #RAM_END-RAM_START,d3
         blo.s   .s3write
 
-        lea     RAM_START,a0
-        
+        movea.l a1,a0
         moveq   #-1,d1
         move.l  (a0),d2
         cmp.l   d1,d2
         bne     .rt_fail
         moveq   #4,d3
 .s3read:
-        movea.l d3,a0
+        lea     (a1,d3.l),a0
         move.l  d3,d1
         not.l   d1
         move.l  (a0),d2
         cmp.l   d1,d2
         bne     .rt_fail
         add.l   d3,d3
-        cmp.l   #RAM_END,d3
+        cmp.l   #RAM_END-RAM_START,d3
         blo.s   .s3read
 
 ;------------------------------------------------------------------------------
@@ -162,7 +163,7 @@ ram_test::
         cmpa.l  #RAM_END,a0
         blo.s   .s4write
 
-        movea.l a5,a0                           ; Start address
+        lea     RAM_START,a0                    ; Start address
 .s4read:
         move.l  a0,d1
         move.l  (a0),d2

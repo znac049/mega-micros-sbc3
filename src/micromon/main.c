@@ -50,6 +50,7 @@ static command_t commands[] = {
     {"eval",        2, COMMAND, {handle_eval_command},      STR},
     {"go",          0, COMMAND, {handle_go_command},        VEC},
     {"load",        2, COMMAND, {handle_load_command},      VEC},
+    {"memtest",     4, COMMAND, {handle_memtest_command},   VEC},
     {"probe",       3, COMMAND, {handle_probe_command},     VEC},
     {"pwd",         0, COMMAND, {handle_pwd_command},       VEC},
     {"rtc",         3, COMMAND, {handle_rtc_command},       VEC},
@@ -143,6 +144,7 @@ static void print_help(void) {
     printk("  go <address>]\n");
     printk("  load\n");
     printk("  longedit [<address>] [[=] <expr> [, <expr> ...]]\n");
+    printk("  memtest [<start> <end> [<passes>]]\n");
     printk("  probe\n");
     printk("  rtc (erase) | (time [hh:mm[:ss]]) | (date [yyyy:mm:dd])\n");
     printk("  run <file> [<args> ...]\n");
