@@ -67,6 +67,9 @@ SOFTWARE.
 #define CF_DELAY(x)		{ for (int delay = 0; delay < (x); delay++) { __asm volatile(""); } }
 /* At least 400nS: each CF register read is one full bus cycle */
 #define CF_DELAY_400NS()	{ for (int i_ = 0; i_ < 5; i_++) { (void)*cf_reg_status; } }
+// Polls of the status register before giving up on DRQ
+#define CF_DRQ_TIMEOUT          1000000
+
 #define CF_WAIT_FOR_DATA()	{ while (!((*cf_reg_status) & CF_ST_DRQ)) { } }
 
 struct cf_info {
@@ -102,5 +105,6 @@ int _cf_wait_busy(void);
 void _cf_wait_data(void);
 int cf_init(void);
 int cf_read(uint8_t drive_num, uint32_t sector, uint8_t *buffer);
+int cf_write(uint8_t drive_num, uint32_t sector, const uint8_t *buffer);
 int cf_identify(uint8_t drive_num, cf_info_t *info);
 uint8_t cf_drive_ready(uint8_t drive_num);

@@ -25,6 +25,7 @@ SOFTWARE.
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <errno.h>
 #include <machine.h>
 
 #include "micromon.h"
@@ -66,11 +67,32 @@ static int cf_dev_read_block(block_device_t *dev, uint32_t block_num, uint8_t *b
 }
 
 static int cf_dev_write_block(block_device_t *dev, uint32_t block_num, uint8_t *buff) {
-    (void)dev;
-    (void)block_num;
-    (void)buff[0];
-    
-    return NOT_OK;
+    uint32_t sector = block_num * SECTORS_PER_BLOCK;
+    uint32_t num_sectors = dev->private.data.cf.num_sectors;
+
+    /*
+     * Never write outside the partition - that would damage whatever
+     * is next to it. (0 means a whole, unpartitioned card.)
+     */
+    if ((num_sectors != 0) &&
+        ((block_num >= num_sectors / SECTORS_PER_BLOCK) || (sector + SECTORS_PER_BLOCK > num_sectors))) {
+        printk("%s: write to block %d is outside the partition\n", dev->name, block_num);
+        errno = EINVAL;
+        return NOT_OK;
+    }
+
+    for (int i=0; i<SECTORS_PER_BLOCK; i++) {
+        if (cf_write(dev->private.data.cf.drive_num,
+                     sector + dev->private.data.cf.start_sector, buff) != OK) {
+            errno = EIO;
+            return NOT_OK;
+        }
+
+        buff = &buff[CF_SECTOR_SIZE];
+        sector++;
+    }
+
+    return OK;
 }
 
 static block_device_t *new_dev(void) {

@@ -107,6 +107,7 @@ int bios_test(int p1, int p2, int p3);
 // block_devices.c
 int bd_init(void);
 int bd_read(block_device_t *dev, uint32_t block_num, uint8_t *buff);
+int bd_write(block_device_t *dev, uint32_t block_num, uint8_t *buff);
 
 
 //block_devices/cf_block.c
@@ -166,6 +167,10 @@ int load_elf(int fd, uint32_t *entry);
 uint16_t le16(const uint8_t *p);
 uint32_t le32(const uint8_t *p);
 uint64_t le64(const uint8_t *p);
+
+
+// cftest_cmd.c
+void handle_cftest_command(int argc, char *argv[]);
 
 
 // eval_cmd.c

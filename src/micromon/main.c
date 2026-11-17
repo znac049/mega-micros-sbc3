@@ -43,6 +43,7 @@ static command_t commands[] = {
     {"help",        2, COMMAND, {print_help},               NONE},
     {"cat",         0, COMMAND, {handle_cat_command},       VEC},
     {"cd",          0, COMMAND, {handle_cd_command},        VEC},
+    {"cftest",      0, COMMAND, {handle_cftest_command},    VEC},
     {"dir",         0, COMMAND, {handle_dir_command},       VEC},
     {"disassemble", 3, COMMAND, {handle_disasm_command},    VEC},
     {"eval",        2, COMMAND, {handle_eval_command},      STR},
@@ -132,6 +133,7 @@ static void print_help(void) {
     printk("  byteedit [<address>] [[=] <expr> [, <expr> ...]]\n");
     printk("  cat <filename>\n");
     printk("  cd <path>\n");
+    printk("  cftest <drive> <sector>\n");
     printk("  dir [ <path> ]\n");
     printk("  disassemble <address>\n");
     printk("  dump [<start_address> [<count>]]\n");

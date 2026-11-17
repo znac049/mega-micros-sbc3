@@ -25,6 +25,7 @@ SOFTWARE.
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <errno.h>
 #include <machine.h>
 
 #include "micromon.h"
@@ -114,6 +115,7 @@ static int rom_dev_write_block(block_device_t *dev, uint32_t block_num, uint8_t 
     (void)block_num;
     (void)buff[0];
 
+    errno = EROFS;
     return NOT_OK;
 }
 

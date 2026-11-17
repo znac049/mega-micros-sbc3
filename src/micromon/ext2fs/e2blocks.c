@@ -39,6 +39,37 @@ int ext2_read_block(vmp_t *mp, uint32_t block_num, uint8_t *buffer) {
     return bd_read(mp->dev_driver, block_num, buffer);
 }
 
+/*
+ * Write a block from any buffer. If that block is also in the mount's
+ * block buffer, refresh the copy there so later cached reads see the
+ * new contents.
+ */
+int ext2_write_block(vmp_t *mp, uint32_t block_num, uint8_t *buffer) {
+    if (bd_write(mp->dev_driver, block_num, buffer) == NOT_OK) {
+        return NOT_OK;
+    }
+
+    if ((mp->block_in_buffer_valid == YES) && (mp->block_num_in_buffer == block_num) &&
+        (buffer != mp->block_buffer)) {
+        memcpy(mp->block_buffer, buffer, BLOCK_DEVICE_BLOCK_SIZE);
+    }
+
+    return OK;
+}
+
+/*
+ * Write the mount's block buffer back to the block it holds (after
+ * changing it in place - a bitmap, an inode table block, ...).
+ */
+int ext2_write_fs_block(vmp_t *mp) {
+    if (mp->block_in_buffer_valid != YES) {
+        errno = EINVAL;
+        return NOT_OK;
+    }
+
+    return ext2_write_block(mp, mp->block_num_in_buffer, mp->block_buffer);
+}
+
 // Read a block into the block buffer associated with the mount-point
 int ext2_read_fs_block(vmp_t *mp, uint32_t block_num, uint8_t force_read) {
     int res;

@@ -24,6 +24,7 @@ SOFTWARE.
 
 #include <stddef.h>
 #include <ctype.h>
+#include <errno.h>
 #include <machine.h>
 
 #include "micromon.h"
@@ -73,4 +74,18 @@ int bd_read(block_device_t *dev, uint32_t block_num, uint8_t *buff) {
     }
 
     return NOT_OK;
+}
+
+int bd_write(block_device_t *dev, uint32_t block_num, uint8_t *buff) {
+    if ((dev == NULL) || (dev->active == NO)) {
+        errno = ENODEV;
+        return NOT_OK;
+    }
+
+    if (dev->write_block == NULL) {
+        errno = EROFS;
+        return NOT_OK;
+    }
+
+    return dev->write_block(dev, block_num, buff);
 }

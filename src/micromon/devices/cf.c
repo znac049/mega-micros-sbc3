@@ -79,18 +79,46 @@ int cf_init(void) {
     return OK;
 }
 
+/*
+ * Wait for DRQ (the card is ready to transfer data), with a timeout.
+ * Returns NOT_OK if the card reports an error or never gets there.
+ */
+static int cf_wait_drq(void) {
+    for (uint32_t i=0; i<CF_DRQ_TIMEOUT; i++) {
+        uint8_t status = *cf_reg_status;
+
+        if (status & (CF_ST_ERROR | CF_ST_DWF)) {
+            return NOT_OK;
+        }
+
+        if ((status & (CF_ST_BUSY | CF_ST_DRQ)) == CF_ST_DRQ) {
+            return OK;
+        }
+    }
+
+    return NOT_OK;
+}
+
+static void cf_set_lba(uint8_t drive_num, uint32_t sector) {
+    *cf_reg_lba0 = (uint8_t) sector;
+    *cf_reg_lba1 = (uint8_t) (sector >> 8);
+    *cf_reg_lba2 = (uint8_t) (sector >> 16);
+    *cf_reg_lba3 = 0xe0 | ((drive_num & 1)<<4) | (uint8_t) ((sector >> 24) & 0x0f);
+}
+
 int cf_read(uint8_t drive_num, uint32_t sector, uint8_t *buffer) {
     uint8_t status;
 
     // printk("cf_read(%d, %d,...)\n", drive_num, sector);
 
-    *cf_reg_lba0 = (uint8_t) sector;
-    *cf_reg_lba1 = (uint8_t) (sector >> 8);
-    *cf_reg_lba2 = (uint8_t) (sector >> 16);
-    *cf_reg_lba3 = 0xe0 | ((drive_num & 1)<<4) | (uint8_t) ((sector >> 24) & 0x0f);
+    cf_set_lba(drive_num, sector);
 
     *cf_reg_sector_count = 1;
     *cf_reg_command = CF_CMD_READ_SECTORS;
+
+    // BSY may take up to 400nS to appear after the command
+    CF_DELAY_400NS();
+
 	if (_cf_wait_busy() == NOT_OK) {
         // Timed out
         return NOT_OK;
@@ -107,7 +135,9 @@ int cf_read(uint8_t drive_num, uint32_t sector, uint8_t *buffer) {
 	//printk("Waiting for data...\n");
 	//dump_regs();
     //_cf_wait_data();
-	CF_WAIT_FOR_DATA();
+    if (cf_wait_drq() == NOT_OK) {
+        return NOT_OK;
+    }
 
 	for (int i = 0; i < CF_SECTOR_SIZE; i++) {
 		buffer[i] = *cf_reg_data_byte;
@@ -115,6 +145,58 @@ int cf_read(uint8_t drive_num, uint32_t sector, uint8_t *buffer) {
 	}
 
 	return OK;
+}
+
+/*
+ * Write one 512-byte sector. Returns OK once the card says the data is
+ * stored, or NOT_OK on an error or timeout.
+ */
+int cf_write(uint8_t drive_num, uint32_t sector, const uint8_t *buffer) {
+    uint8_t status;
+
+    // The card must be idle before it'll take a command
+    if (_cf_wait_busy() == NOT_OK) {
+        return NOT_OK;
+    }
+
+    cf_set_lba(drive_num, sector);
+    *cf_reg_sector_count = 1;
+    *cf_reg_command = CF_CMD_WRITE_SECTORS;
+
+    // BSY may take up to 400nS to appear after the command
+    CF_DELAY_400NS();
+
+    if (_cf_wait_busy() == NOT_OK) {
+        return NOT_OK;
+    }
+
+    // Wait for the card to ask for the data
+    if (cf_wait_drq() == NOT_OK) {
+        printk("cf_write: sector %d refused (status=$%02X, error=$%02X)\n",
+            sector, *cf_reg_status, *cf_reg_error);
+        return NOT_OK;
+    }
+
+    for (int i = 0; i < CF_SECTOR_SIZE; i++) {
+        *cf_reg_data_byte = buffer[i];
+    }
+
+    // The card goes busy while it stores the sector
+    CF_DELAY_400NS();
+
+    if (_cf_wait_busy() == NOT_OK) {
+        printk("cf_write: sector %d timed out\n", sector);
+        return NOT_OK;
+    }
+
+    status = *cf_reg_status;
+    if (status & (CF_ST_ERROR | CF_ST_DWF)) {
+        printk("cf_write: sector %d failed (status=$%02X, error=$%02X)\n",
+            sector, status, *cf_reg_error);
+        return NOT_OK;
+    }
+
+    return OK;
 }
 
 uint8_t cf_drive_ready(uint8_t drive_num) {

@@ -154,6 +154,8 @@ struct vfile {
 int ext2_read_block(vmp_t *mp, uint32_t block_num, uint8_t *buffer);
 int ext2_read_blocks(vmp_t *mp, uint32_t block_num, int num_blocks, uint8_t *buffer);
 int ext2_read_fs_block(vmp_t *mp, uint32_t block_num, uint8_t force_read);
+int ext2_write_block(vmp_t *mp, uint32_t block_num, uint8_t *buffer);
+int ext2_write_fs_block(vmp_t *mp);
 int ext2_init_block_follower(ext2_block_follower_t *bf, vmp_t *mp, uint32_t inode_num);
 void ext2_reset_block_follower(ext2_block_follower_t *bf);
 uint32_t ext2_get_next_block_num(ext2_block_follower_t *bf);
