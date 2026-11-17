@@ -139,6 +139,7 @@ struct vfile {
     off_t position;
     unsigned int readable : 1;
     unsigned int writeable : 1;
+    unsigned int append : 1;        // O_APPEND: every write goes at the end
     unsigned int ateof : 1;
     uint8_t file_type;
 
@@ -162,12 +163,20 @@ const char *ext2_check_writable(vmp_t *mp);
 
 // filesystems.c
 vmp_t *vfs_find_mount(const char *name);
+void vfs_close_all(void);
 int ext2_alloc_block(vmp_t *mp, uint32_t goal, bool_t zero, uint32_t *block);
 int ext2_free_block(vmp_t *mp, uint32_t block);
 int ext2_alloc_inode(vmp_t *mp, uint32_t parent_inode, bool_t is_dir, uint32_t *inode_num);
 int ext2_free_inode(vmp_t *mp, uint32_t inode_num, bool_t is_dir);
 int ext2_put_inode(vmp_t *mp, uint32_t inode_num, ext2_inode_t *inode);
 int ext2_sync(vmp_t *mp);
+
+// ext2/e2write.c
+uint32_t ext2_now(void);
+int ext2_flush_inode(vfile_t *file);
+int ext2_bmap(vfile_t *file, uint32_t n, bool_t create, uint32_t *block, bool_t *created);
+int ext2_truncate(vfile_t *file);
+int ext2_add_dirent(vmp_t *mp, uint32_t dir_inode, const char *name, uint32_t inode_num, uint8_t file_type);
 int ext2_init_block_follower(ext2_block_follower_t *bf, vmp_t *mp, uint32_t inode_num);
 void ext2_reset_block_follower(ext2_block_follower_t *bf);
 uint32_t ext2_get_next_block_num(ext2_block_follower_t *bf);

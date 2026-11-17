@@ -420,29 +420,17 @@ int bios_getcwd(char*buff, size_t size) {
     return (int)buff;
 }
 
-int bios_creat(const char *pathname, mode_t mode) {
-    vmp_t *mp = find_mount(pathname);
+// Permissions for files made by open(O_CREAT), which has no mode argument
+#define DEFAULT_CREATE_MODE     0644
 
-    if (mp == NULL) {
-        return NOT_OK;
-    }
-
-    (void)mode;
-
-    return NOT_OK;
-}
-
-/* 
-* bios_open() understands the following flags so far
-*
-* O_RDWR
-* O_RDONLY
-* O_CREAT
-* O_WRONLY
-* O_APPEND
-* O_DIRECTORY
-*/
-int bios_open(const char *pathname, int flags) {
+/*
+ * Open (and with O_CREAT, create) a file. 'mode' gives the permissions of
+ * a newly created file.
+ *
+ * Understands O_RDONLY, O_WRONLY, O_RDWR, O_CREAT, O_TRUNC, O_APPEND and
+ * O_DIRECTORY.
+ */
+static int do_open(const char *pathname, int flags, mode_t mode) {
     char fs_path[PATH_MAX];
     vmp_t *mp;
     vfile_t *file;
@@ -469,9 +457,10 @@ int bios_open(const char *pathname, int flags) {
     file->ateof = NO;
     file->file_type = VFS_FT_UNKNOWN;
     file->size = 0;
-    file->mode = 0;
+    file->mode = mode;              // only used if the file is created
     file->readable = (flags & O_RDONLY)?YES:NO;
     file->writeable = (flags & O_WRONLY)?YES:NO;
+    file->append = (flags & O_APPEND)?YES:NO;
 
     // invoke the filesystem specific open function
     switch (mp->fs_driver->type) {
@@ -495,6 +484,15 @@ int bios_open(const char *pathname, int flags) {
     strcpy(file->path, fs_path);
 
     return fd;
+}
+
+int bios_open(const char *pathname, int flags) {
+    return do_open(pathname, flags, DEFAULT_CREATE_MODE);
+}
+
+// Same as open(pathname, O_CREAT | O_WRONLY | O_TRUNC), with permissions 'mode'
+int bios_creat(const char *pathname, mode_t mode) {
+    return do_open(pathname, O_CREAT | O_WRONLY | O_TRUNC, mode);
 }
 
 int bios_close(int fd) {
@@ -633,13 +631,70 @@ int bios_read(int fd, char *buff, size_t num_bytes) {
 }
 
 size_t bios_write(int fd, const char *buff, size_t num_bytes) {
+    vfile_t *file;
+
     if ((fd < 0) || (fd >= MAX_FILES)) {
+        errno = EBADF;
         return NOT_OK;
     }
 
-    (void)buff[0];
+    file = &vfs_files[fd];
 
-    return num_bytes;
+    if ((file->open == NO) || (file->mp == NULL)) {
+        // stdout and stderr aren't opened as files: send them to the console
+        if ((fd == 1) || (fd == 2)) {
+            for (size_t i=0; i<num_bytes; i++) {
+                if (buff[i] == '\n') {
+                    bios_putchar(0, '\r');
+                }
+
+                bios_putchar(0, buff[i]);
+            }
+
+            return num_bytes;
+        }
+
+        errno = EBADF;
+        return NOT_OK;
+    }
+
+    if (file->writeable == NO) {
+        errno = EBADF;
+        return NOT_OK;
+    }
+
+    if (num_bytes == 0) {
+        return 0;
+    }
+
+    switch (file->mp->fs_driver->type) {
+        case VFS_TYPE_FS:
+            if (file->file_type == VFS_FT_DIR) {
+                errno = EISDIR;
+                return NOT_OK;
+            }
+
+            if ((file->append == YES) &&
+                (file->mp->fs_driver->api.fs.seek(file, 0, SEEK_END) == NOT_OK)) {
+                return NOT_OK;
+            }
+
+            // Returns the number of bytes written, or NOT_OK with errno set
+            return file->mp->fs_driver->api.fs.write(file, buff, num_bytes);
+
+        default:
+            errno = ENODEV;
+            return NOT_OK;
+    }
+}
+
+// Close every open file (e.g. when a program finishes, to flush its writes)
+void vfs_close_all(void) {
+    for (int i=0; i<MAX_FILES; i++) {
+        if (vfs_files[i].open == YES) {
+            bios_close(i);
+        }
+    }
 }
 
 /*

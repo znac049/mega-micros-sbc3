@@ -68,7 +68,12 @@ static int do_the_business(int argc, char *argv[]) {
 }
 
 int go_run(int argc, char *argv[]) {
-    return do_the_business(argc, argv);
+    int res = do_the_business(argc, argv);
+
+    // Close anything the program left open, so its writes are flushed
+    vfs_close_all();
+
+    return res;
 }
 
 void handle_go_command(int argc, char *argv[]) {
@@ -117,5 +122,5 @@ void handle_go_command(int argc, char *argv[]) {
     //     printk("%d: '%s'\n", i, argv[i]);
     // }
 
-    do_the_business(argc, argv);
+    go_run(argc, argv);
 }

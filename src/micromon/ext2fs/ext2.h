@@ -33,6 +33,9 @@ SOFTWARE.
 
 #define EXT2_SB_MAGIC 0xef53
 
+// inode i_flags
+#define EXT2_INDEX_FL       0x00001000  // directory has a hash index
+
 #define EXT2_FT_UNKNOWN     0
 #define EXT2_FT_REG_FILE    1
 #define EXT2_FT_DIR         2
@@ -256,10 +259,12 @@ typedef struct ext2_block_follower ext2_block_follower_t;
 
 
 struct ext2_file {
-    ext2_block_follower_t   bf;
+    ext2_block_follower_t   bf;         // includes the in-memory copy of the inode
     ext2_dirent_t           dirent;
     uint32_t                offset;
     vmp_t                   *mp;
+    bool_t                  inode_dirty;    // bf.inode changed since it was written
+    uint32_t                last_block;     // last block allocated (goal for the next)
 };
 
 typedef struct ext2_file ext2_file_t;
