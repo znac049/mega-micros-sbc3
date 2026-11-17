@@ -89,6 +89,11 @@ static vmp_t *find_mount_by_name(const char *name, size_t len) {
     return NULL;
 }
 
+// Look up a mounted filesystem by name ("rom0", "cf0", ...)
+vmp_t *vfs_find_mount(const char *name) {
+    return find_mount_by_name(name, strlen(name));
+}
+
 static vmp_t *find_mount(const char *pathname) {
     // Find the mount responsible for the given pathname
     const char *end;

@@ -46,6 +46,7 @@ static command_t commands[] = {
     {"cftest",      0, COMMAND, {handle_cftest_command},    VEC},
     {"dir",         0, COMMAND, {handle_dir_command},       VEC},
     {"disassemble", 3, COMMAND, {handle_disasm_command},    VEC},
+    {"e2test",      0, COMMAND, {handle_e2test_command},    VEC},
     {"eval",        2, COMMAND, {handle_eval_command},      STR},
     {"go",          0, COMMAND, {handle_go_command},        VEC},
     {"load",        2, COMMAND, {handle_load_command},      VEC},
@@ -134,6 +135,7 @@ static void print_help(void) {
     printk("  cat <filename>\n");
     printk("  cd <path>\n");
     printk("  cftest <drive> <sector>\n");
+    printk("  e2test <mount>\n");
     printk("  dir [ <path> ]\n");
     printk("  disassemble <address>\n");
     printk("  dump [<start_address> [<count>]]\n");

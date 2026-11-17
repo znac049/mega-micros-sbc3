@@ -173,6 +173,10 @@ uint64_t le64(const uint8_t *p);
 void handle_cftest_command(int argc, char *argv[]);
 
 
+// e2test_cmd.c
+void handle_e2test_command(int argc, char *argv[]);
+
+
 // eval_cmd.c
 void handle_eval_command(char *cmdline);
 

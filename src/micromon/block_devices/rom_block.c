@@ -109,16 +109,6 @@ static int rom_dev_read_block(block_device_t *dev, uint32_t block_num, uint8_t *
     return OK;
 }
 
-static int rom_dev_write_block(block_device_t *dev, uint32_t block_num, uint8_t *buff) {
-    // Doh - can't write to the ROM
-    (void)dev;
-    (void)block_num;
-    (void)buff[0];
-
-    errno = EROFS;
-    return NOT_OK;
-}
-
 int create_rom_dev(block_device_t *dev) {
     if (dev == NULL) {
         return NOT_OK;
@@ -128,7 +118,7 @@ int create_rom_dev(block_device_t *dev) {
     dev->finish = rom_dev_finish;
 
     dev->read_block = rom_dev_read_block;
-    dev->write_block = rom_dev_write_block;
+    dev->write_block = NULL;            // Doh - can't write to the ROM
 
     strcpy(dev->name, "rom0");
 

@@ -196,6 +196,21 @@ struct ext2_inode {
 
 typedef struct ext2_inode ext2_inode_t;
 
+// s_state
+#define EXT2_VALID_FS           0x0001  // cleanly unmounted
+#define EXT2_ERROR_FS           0x0002  // errors detected
+
+// Features this code can write safely
+#define EXT2_FEATURE_INCOMPAT_FILETYPE      0x0002
+#define EXT2_FEATURE_RO_COMPAT_SPARSE_SUPER 0x0001
+#define EXT2_FEATURE_RO_COMPAT_LARGE_FILE   0x0002
+
+#define EXT2_FEATURE_INCOMPAT_SUPP      (EXT2_FEATURE_INCOMPAT_FILETYPE)
+#define EXT2_FEATURE_RO_COMPAT_SUPP     (EXT2_FEATURE_RO_COMPAT_SPARSE_SUPER | EXT2_FEATURE_RO_COMPAT_LARGE_FILE)
+
+// First non-reserved inode on revision 0 filesystems
+#define EXT2_GOOD_OLD_FIRST_INO 11
+
 #define EXT2_SNGL_IND   12
 #define EXT2_DBL_IND    13
 #define EXT2_TRIP_IND   14
@@ -204,6 +219,8 @@ typedef struct ext2_inode ext2_inode_t;
 
 struct ext2_fs {
     ext2_sb_t   sb;
+    bool_t      writable;           // decided at mount time
+    bool_t      counts_dirty;       // free counts changed since ext2_sync()
     uint32_t    num_blockgroups;
     uint8_t     sectors_per_block;
     uint32_t    *bg_ent;

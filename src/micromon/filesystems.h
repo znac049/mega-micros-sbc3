@@ -156,6 +156,18 @@ int ext2_read_blocks(vmp_t *mp, uint32_t block_num, int num_blocks, uint8_t *buf
 int ext2_read_fs_block(vmp_t *mp, uint32_t block_num, uint8_t force_read);
 int ext2_write_block(vmp_t *mp, uint32_t block_num, uint8_t *buffer);
 int ext2_write_fs_block(vmp_t *mp);
+
+// ext2/e2alloc.c
+const char *ext2_check_writable(vmp_t *mp);
+
+// filesystems.c
+vmp_t *vfs_find_mount(const char *name);
+int ext2_alloc_block(vmp_t *mp, uint32_t goal, bool_t zero, uint32_t *block);
+int ext2_free_block(vmp_t *mp, uint32_t block);
+int ext2_alloc_inode(vmp_t *mp, uint32_t parent_inode, bool_t is_dir, uint32_t *inode_num);
+int ext2_free_inode(vmp_t *mp, uint32_t inode_num, bool_t is_dir);
+int ext2_put_inode(vmp_t *mp, uint32_t inode_num, ext2_inode_t *inode);
+int ext2_sync(vmp_t *mp);
 int ext2_init_block_follower(ext2_block_follower_t *bf, vmp_t *mp, uint32_t inode_num);
 void ext2_reset_block_follower(ext2_block_follower_t *bf);
 uint32_t ext2_get_next_block_num(ext2_block_follower_t *bf);

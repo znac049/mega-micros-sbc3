@@ -256,6 +256,20 @@ vmp_t *ext2_mount(vmp_t *mp) {
 
     // kprintf("ext2_mount: read and sanitized %d block group descriptor tables\n", bg1);
 
+    // Can we write to it? (Say why not, unless it's just a read-only device)
+    {
+        const char *why_not = ext2_check_writable(mp);
+
+        ext2_private_data->writable = (why_not == NULL)?YES:NO;
+        ext2_private_data->counts_dirty = NO;
+
+        mp->read_only = (why_not == NULL)?0:1;
+
+        if ((why_not != NULL) && (mp->dev_driver->write_block != NULL)) {
+            kprintf("%s: mounted read-only because %s\n", mp->dev_driver->name, why_not);
+        }
+    }
+
     mp->mounted = YES;
 
     return mp;
@@ -271,6 +285,10 @@ int ext2_umount(vmp_t *mp) {
     // kprintf("unmount ext2 filesystem on partition %d.\n", fs->part_num);
 
     ext2_private_data = (ext2_fs_t *)&mp->private.data.ext2_fs_inf;
+
+    // Write any changed free counts before letting go
+    ext2_sync(mp);
+
     free(ext2_private_data->bgdt);
 
     mp->mounted = NO;
