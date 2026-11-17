@@ -144,21 +144,27 @@ int main(int argc, char *argv[]) {
     uint32_t size, image, tramp;
     off_t end;
     int fd;
+    char *kernel = "/rom0/boot/netbsd";
 
-    if (argc != 2) {
+    if (argc > 2) {
         printf("usage: netbsd <kernel image>\n");
         return 1;
     }
 
-    fd = open(argv[1], O_RDONLY);
+    if (argc == 2) {
+        kernel = argv[1];
+    }
+
+    printf("Attempting to boot '%s'...\n", kernel);
+    fd = open(kernel, O_RDONLY);
     if (fd < 0) {
-        printf("Couldn't open '%s' (errno=%d)\n", argv[1], errno);
+        printf("Couldn't open '%s' (errno=%d)\n", kernel, errno);
         return 3;
     }
 
     end = lseek(fd, 0, SEEK_END);
     if ((end <= 0) || (lseek(fd, 0, SEEK_SET) != 0)) {
-        printf("Couldn't find the size of '%s'\n", argv[1]);
+        printf("Couldn't find the size of '%s'\n", kernel);
         close(fd);
         return 3;
     }
