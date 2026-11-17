@@ -27,14 +27,28 @@ SOFTWARE.
 #include <machine.h>
 
 #include "micromon.h"
+#include "memory.h"
 
-#define RAM_MAX ((1024*1024*8)-1)
-#define ONE_MEG (1024*1024)
-#define TWO_MEG (ONE_MEG*2)
-#define THREE_MEG (ONE_MEG*3)
-#define FOUR_MEG (ONE_MEG*4)
-#define FIVE_MEG (ONE_MEG*5)
-#define EIGHT_MEG (ONE_MEG*8)
+/*
+ * The SBC-3 has two RAM areas, each an 8MB window:
+ *
+ *   $00000000-$007FFFFF   2MB, 4MB or 8MB fitted
+ *   $01000000-$017FFFFF   nothing, 2MB or 8MB fitted
+ *
+ * The CPLD generates DTACK for the whole of a populated 8MB window, however
+ * much memory is fitted, so running off the end of the RAM doesn't cause a
+ * bus error - the memory just repeats (2MB fitted appears 4 times, 4MB
+ * twice). So we size an area by looking for that wrap-around: write one
+ * marker at a test location, another 2MB (then 4MB) above it, and see
+ * whether the second write landed on top of the first.
+ *
+ * Every location touched is saved first and put back afterwards, with
+ * interrupts masked, so this is safe to run while the monitor is using
+ * the memory (including the vectors, data and stack in the low area).
+ * Accesses go through the bus-error safe peekl()/pokel(), so an
+ * unpopulated window simply reports zero.
+ */
+
 
 static inline uint16_t check_address(volatile uint16_t *addr) {
     uint16_t orig = addr[0];
@@ -60,44 +74,6 @@ static void spin(void) {
         i = 0;
     }
 }
-
-/*
- * The SBC-3 has two RAM areas, each an 8MB window:
- *
- *   $00000000-$007FFFFF   2MB, 4MB or 8MB fitted
- *   $01000000-$017FFFFF   nothing, 2MB or 8MB fitted
- *
- * The CPLD generates DTACK for the whole of a populated 8MB window, however
- * much memory is fitted, so running off the end of the RAM doesn't cause a
- * bus error - the memory just repeats (2MB fitted appears 4 times, 4MB
- * twice). So we size an area by looking for that wrap-around: write one
- * marker at a test location, another 2MB (then 4MB) above it, and see
- * whether the second write landed on top of the first.
- *
- * Every location touched is saved first and put back afterwards, with
- * interrupts masked, so this is safe to run while the monitor is using
- * the memory (including the vectors, data and stack in the low area).
- * Accesses go through the bus-error safe peekl()/pokel(), so an
- * unpopulated window simply reports zero.
- */
-
-#define RAM_LOW_BASE        0x00000000
-#define RAM_HIGH_BASE       0x01000000
-#define RAM_AREA_MAX        EIGHT_MEG
-
-/*
- * Where in each area to test: in the low area this is vector 252, which
- * nothing uses. It must not be anywhere this code's own stack frame
- * could be.
- */
-#define RAM_PROBE_OFFSET    0x3f0
-
-#define MARK_BASE           0x5a5aa5a5U
-#define MARK_ALIAS          0xc33c3cc3U
-
-// 68030 CACR data cache bits
-#define CACR_ED             0x0100      // data cache enabled
-#define CACR_CD             0x0800      // clear data cache
 
 static uint32_t rd(volatile uint32_t *addr, int *bad) {
     int err;

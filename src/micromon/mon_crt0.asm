@@ -75,8 +75,8 @@ _start::
         move.b  d0,pit_paddr_o(a5)      ; Port A
         move.b  d0,pit_pbddr_o(a5)      ; Port B
 
-        move.b  d0,pit_padr(a5)
-        move.b  d0,pit_pbdr(a5)
+        move.b  d0,pit_padr_o(a5)
+        move.b  d0,pit_pbdr_o(a5)
 
 ; Check the ROM checksum
         lea     sum_done(pc),a6          ; Can't trust the stack yet
@@ -141,6 +141,7 @@ cpvec:
         move.l  #_data_load_start,a0    ; Where to copy from
         move.l  #_d_start,a1            ; where to copy to
         move.l  #_data_length,d0        ; Number of bytes to copy
+        lsr.l   #2,d0                   ; Number of words
         subq.l  #1,d0
 
 

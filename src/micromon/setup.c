@@ -30,13 +30,17 @@ SOFTWARE.
 #include <machine.h>
 
 #include "micromon.h"
+#include "memory.h"
 
 #define PAD_COL 45
 
 static int major = 0;
 static int minor = 6;
-static int MAGIC_BUILD_NUMBER = 12;
+static int MAGIC_BUILD_NUMBER = 23;
 
+
+uint32_t ram_low_size;
+uint32_t ram_high_size;
 
 uint32_t ram_end;
 bool_t duart_present;
@@ -76,7 +80,12 @@ static void padstr(const char *s, int cols) {
 
 static void pr_info(const char *msg, uint32_t start, uint32_t end, int print_nl) {
     padstr(msg, PAD_COL);
-    printk(" [ $%06X-$%06X ]", start, end);
+    if ((start & 0xff000000) || (end & 0xff000000)) {
+        printk(" [ $%08X-$%08X ]", start, end);
+    }
+    else {
+        printk(" [ $%06X-$%06X     ]", start, end);
+    }
     if (print_nl) {
         printk("\n");
     }
@@ -128,10 +137,23 @@ static void pr_banner(void) {
     printk("\nHardware:\n\n");
 
     // RAM
-    snprintf(tmp_str, sizeof(tmp_str), "%dMB RAM detected", (ram_end+1)/(1024*1024));
-    pr_info(tmp_str, 0, ram_end, NO);
-    // test_ram(0x00000400, ram_end);
-    printk("\n");
+    if (ram_high_size != 0) {
+        snprintf(tmp_str, sizeof(tmp_str), "%dMB RAM detected (Bank 0)", (ram_low_size)/ONE_MEG);
+    }
+    else {
+        snprintf(tmp_str, sizeof(tmp_str), "%dMB RAM detected", (ram_low_size)/ONE_MEG);
+    }
+
+    pr_info(tmp_str, RAM_LOW_BASE, RAM_LOW_BASE + ram_low_size-1, NO);
+    test_ram(RAM_LOW_BASE + 0x400, ram_low_size-1);
+    // printk("\n");
+
+    if (ram_high_size != 0) {
+        snprintf(tmp_str, sizeof(tmp_str), "%dMB RAM detected (Bank 1)", (ram_high_size)/ONE_MEG);
+        pr_info(tmp_str, RAM_HIGH_BASE, RAM_HIGH_BASE + ram_high_size-1, NO);
+        test_ram(RAM_HIGH_BASE, ram_high_size-1);
+        // printk("\n");
+    }
 
     // Duart
     snprintf(tmp_str, sizeof(tmp_str), "%s duart running at %sMHz", 
@@ -212,7 +234,12 @@ static void pr_banner(void) {
 void setup(void) {
     int is_xr;
 
-    ram_end = get_ram_end();
+    size_ram(&ram_low_size, &ram_high_size);
+    if (ram_low_size == 0) {
+        // This cannot be - we're running in something!
+        ram_low_size = FOUR_MEG;
+    }
+    ram_end = RAM_LOW_BASE + ram_low_size - 1;
 
     /*
      * Now we know how much memory we have, we can

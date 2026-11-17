@@ -80,10 +80,10 @@ extern uint32_t _bss_start, _bss_end;
 
 extern char program_name[PATH_MAX];
 
-
 extern uint32_t ram_end;
+extern uint32_t ram_low_size;
+extern uint32_t ram_high_size;
 
-extern uint32_t ram_end;
 extern bool_t duart_present;
 extern bool_t pit_present;
 extern bool_t cf_present;
