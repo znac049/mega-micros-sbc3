@@ -35,7 +35,63 @@ static kduart_port_t channel_b;
 static kduart_port_t *channels[] = {&channel_a, &channel_b};
 static kduart_t duart;
 
+// The IMR is write-only, so keep a copy of what's in it
+static uint8_t imr_shadow;
+
+#define SR_IPL_MASK     0x0700
+
+// Mask all interrupts, returning the old SR
+static inline uint16_t irq_off(void) {
+    uint16_t sr;
+
+    __asm__ volatile ("move.w %%sr,%0\n\tor.w #0x0700,%%sr" : "=d" (sr) : : "memory", "cc");
+
+    return sr;
+}
+
+static inline void irq_restore(uint16_t sr) {
+    __asm__ volatile ("move.w %0,%%sr" : : "d" (sr) : "memory", "cc");
+}
+
+// Change the IMR (call with interrupts off)
+static inline void imr_set(uint8_t bits) {
+    imr_shadow |= bits;
+    *duart_imr = imr_shadow;
+}
+
+static inline void imr_clear(uint8_t bits) {
+    imr_shadow &= ~bits;
+    *duart_imr = imr_shadow;
+}
+
+/*
+ * Feed the transmitter from the buffer for as long as it will take
+ * characters. Once the buffer is empty, stop asking for TxRDY interrupts -
+ * TxRDY stays set while the transmitter is idle, so leaving it enabled
+ * would interrupt continuously.
+ *
+ * Called from the interrupt handler, or with interrupts off.
+ */
+static void tx_service(kduart_port_t *channel) {
+    while ((channel->tx_count > 0) && (*channel->sr_csr_reg & SR_TX_READY)) {
+        *channel->data_reg = channel->tx_buff[channel->tx_remove];
+        channel->tx_remove = (channel->tx_remove + 1) & (TX_BUFFER_SIZE - 1);
+        channel->tx_count--;
+    }
+
+    if (channel->tx_count == 0) {
+        imr_clear(channel->tx_imr_bit);
+    }
+}
+
+static void tx_flush(kduart_port_t *channel);
+
 static inline void handle_channel_irq(uint8_t interrupt_status_reg, kduart_port_t *channel) {
+    /* Transmitter ready for more? (Only if we asked to be told) */
+    if ((interrupt_status_reg & ISR_TX_READY) && (imr_shadow & channel->tx_imr_bit)) {
+        tx_service(channel);
+    }
+
     /* Character received interrupt? */
     if (interrupt_status_reg & ISR_RX_READY) {
         register volatile uint8_t status = *channel->sr_csr_reg;
@@ -142,6 +198,11 @@ static int set_baud(kduart_port_t *channel, uint32_t baud) {
         return NOT_OK;
     }
 
+    // Let anything already queued go at the old speed
+    if (channel->tx_irq == YES) {
+        tx_flush(channel);
+    }
+
     if (channel != &channel_b) {
         bios_printf(1, "SB(%d): X=%d, ACR=$%02x, CSR=$%02x\n", baud, extended, acr, (table_offset<<4)|table_offset);
     }
@@ -210,6 +271,10 @@ static inline void init_duart_channel(kduart_port_t *channel) {
     channel->rx_insert = 0;
     channel->rx_remove = 0;
     channel->rx_count = 0;
+
+    channel->tx_insert = 0;
+    channel->tx_remove = 0;
+    channel->tx_count = 0;
 }
 
 static void init_duart_structures(void) {
@@ -219,6 +284,7 @@ static void init_duart_structures(void) {
     channel_a.acr_reg = duart_acr;
     channel_a.data_reg = duart_rba;
     channel_a.rts_bit = 1;
+    channel_a.tx_imr_bit = IMR_TXRDY_A;
 
     channel_b.mode_regs = duart_mr1b;
     channel_b.sr_csr_reg = duart_srb;
@@ -226,6 +292,7 @@ static void init_duart_structures(void) {
     channel_b.acr_reg = duart_acr;
     channel_b.data_reg = duart_rbb;
     channel_b.rts_bit = 2;
+    channel_b.tx_imr_bit = IMR_TXRDY_B;
 }
 
 static inline void set_counter(uint16_t val) {
@@ -287,7 +354,18 @@ void setup_duart(int is_xr) {
     init_duart_channel(&channel_b);
     init_duart_channel(&channel_a);
 
-    *duart_imr = 0x02;                  //  RX interrupts, channel A
+    {
+        uint16_t sr = irq_off();
+
+        // RX interrupts on channel A; TxRDY interrupts get turned on as needed
+        imr_shadow = IMR_RXRDY_A;
+        *duart_imr = imr_shadow;
+
+        channel_a.tx_irq = YES;
+        channel_b.tx_irq = YES;
+
+        irq_restore(sr);
+    }
 }
 
 static int buffered_rx_char(kduart_port_t *channel) {
@@ -335,8 +413,66 @@ static void polled_tx_char(int ch, kduart_port_t *channel) {
     *channel->data_reg = ch;
 }
 
-static void polled_flush(kduart_port_t *channel) {
-    // Wait for any TX operations that are already in progress to complete
+/*
+ * Queue a character for the interrupt handler to send.
+ *
+ * If the buffer is full we feed the transmitter ourselves while waiting,
+ * in case our caller is running at a level that keeps the handler out.
+ * With every interrupt masked (IPL 7 - at reset, or in a fault handler)
+ * the handler can't run at all, so send what's queued and then this
+ * character the old way, keeping everything in order.
+ */
+static void buffered_tx_char(int ch, kduart_port_t *channel) {
+    uint16_t sr = irq_off();
+
+    if ((sr & SR_IPL_MASK) == SR_IPL_MASK) {
+        while (channel->tx_count > 0) {
+            tx_service(channel);
+        }
+
+        polled_tx_char(ch, channel);
+        irq_restore(sr);
+
+        return;
+    }
+
+    while (channel->tx_count >= TX_BUFFER_SIZE) {
+        tx_service(channel);
+
+        // Let the interrupt handler in for a moment
+        irq_restore(sr);
+        sr = irq_off();
+    }
+
+    channel->tx_buff[channel->tx_insert] = (uint8_t)ch;
+    channel->tx_insert = (channel->tx_insert + 1) & (TX_BUFFER_SIZE - 1);
+    channel->tx_count++;
+
+    // Start things off if the transmitter is idle, then let TxRDY drive the rest
+    tx_service(channel);
+
+    if (channel->tx_count > 0) {
+        imr_set(channel->tx_imr_bit);
+    }
+
+    irq_restore(sr);
+}
+
+/*
+ * Wait until everything queued has been sent and the transmitter has
+ * finished with the last character.
+ */
+static void tx_flush(kduart_port_t *channel) {
+    bool_t empty;
+
+    do {
+        uint16_t sr = irq_off();
+
+        tx_service(channel);
+        empty = (channel->tx_count == 0)?YES:NO;
+
+        irq_restore(sr);
+    } while (empty == NO);
 
     while ((*channel->sr_csr_reg & SR_TX_EMPTY) != SR_TX_EMPTY) {
         ;
@@ -360,7 +496,12 @@ int bios_putchar(uint8_t port, int c) {
         return NOT_OK;
     }
     
-    polled_tx_char(c, channels[port]);
+    if (channels[port]->tx_irq == YES) {
+        buffered_tx_char(c, channels[port]);
+    }
+    else {
+        polled_tx_char(c, channels[port]);
+    }
 
     return c;
 }
@@ -482,7 +623,7 @@ int bios_flush(uint8_t port) {
         return -1;
     }
 
-    polled_flush(channels[port]);
+    tx_flush(channels[port]);
 
     return 0;
 }

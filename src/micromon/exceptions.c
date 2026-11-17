@@ -221,6 +221,9 @@ void catch_exception(exception_t *context) {
  
     printk("USP=%08lx\n", (unsigned long)context->usp);
     printk("System halted.\n");
+
+    // Output is interrupt driven: send what's queued before stopping
+    bios_flush(0);
  
     /*
      * Halt. Remove this loop for vectors you want to resume from

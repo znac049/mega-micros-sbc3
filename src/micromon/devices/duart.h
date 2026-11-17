@@ -99,10 +99,17 @@ SOFTWARE.
 #define ISR_TX_READY    0x01
 #define ISR_RX_READY    0x02
 
+/* Interrupt Mask Register (write-only, so the driver keeps a copy) */
+#define IMR_TXRDY_A     0x01
+#define IMR_RXRDY_A     0x02
+#define IMR_TXRDY_B     0x10
+#define IMR_RXRDY_B     0x20
+
 #define ACR_CK_DIV_16 0x30
 
 #define DUART_VECTOR_NUMBER 64
 #define RX_BUFFER_SIZE 16
+#define TX_BUFFER_SIZE 256          // must be a power of 2
 #define HIGH_WATER_MARK 10
 #define LOW_WATER_MARK 2
 
@@ -120,6 +127,14 @@ struct kduart_port {
     volatile uint8_t rx_remove;
     volatile uint8_t rx_count;
     volatile unsigned int rts_asserted : 1;
+
+    // Transmit buffer, emptied by the TxRDY interrupt
+    volatile uint8_t tx_buff[TX_BUFFER_SIZE];
+    volatile uint16_t tx_insert;
+    volatile uint16_t tx_remove;
+    volatile uint16_t tx_count;
+    uint8_t tx_imr_bit;             // this channel's TxRDY bit in the IMR
+    uint8_t tx_irq;                 // YES once interrupt-driven output is running
 };
 
 typedef struct kduart_port kduart_port_t;
@@ -151,6 +166,7 @@ char *bios_gets(uint8_t port, char *s);
 int bios_puts(uint8_t port, const char *s);
 int bios_printf(uint8_t port, const char *format, ...);
 int bios_set_baud(uint8_t port, uint32_t baudrate);
+int bios_flush(uint8_t port);
 
 int kio_rx_info(void);
 int duart_clock_doubled(void);
