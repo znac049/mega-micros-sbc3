@@ -150,69 +150,57 @@ static void skip_whitespace(parser_t *p) {
     }
 }
 
+/*
+ * A number: $1F or 0x1F (hex), or 31 (decimal; a leading 0 doesn't make
+ * it octal). Digits are converted here, unsigned, so all 32 bits are
+ * available: $FFFFFFFF is -1, not clamped.
+ */
 static void lex_number(parser_t *p, token_t *tok) {
     size_t start = p->pos;
+    size_t digits;
+    unsigned long value = 0;
+    unsigned base = 10;
 
     tok->pos = (int)start;
+    tok->type = TOK_NUMBER;
 
-    if ((p->src[p->pos] == '$') ||
-        ((p->src[p->pos] == '0') && ((p->pos + 1 < p->len) && (tolower((p->src[p->pos + 1]) == 'x'))))
-    ) {
-        // Hex number
-        size_t hex_start;
-        size_t n;
-        char buf[64];
-
+    if (p->src[p->pos] == '$') {
+        base = 16;
         p->pos++;
-        if (p->src[p->pos] == '0') {
-            p->pos++;
-        }
-
-        hex_start = p->pos;
-        while (p->pos < p->len && isxdigit((unsigned char)p->src[p->pos])) {
-            p->pos++;
-        }
-
-        if (p->pos == hex_start) {
-            set_error(p, EXPR_ERR_UNEXPECTED_CHAR, (int)start);
-            tok->type = TOK_NUMBER;
-            tok->number = 0;
-            return;
-        }
-
-        n = p->pos - start;
-
-        if (n >= sizeof(buf)) {
-            n = sizeof(buf) - 1;
-        }
-
-        memcpy(buf, p->src + start, n);
-        buf[n] = EOS;
-
-        tok->type = TOK_NUMBER;
-        tok->number = strtol(buf, NULL, 16);
     }
-    else {
-        // Decimal number
-        size_t n;
-        char buf[64];
-
-        while (p->pos < p->len && isdigit((unsigned char)p->src[p->pos])) {
-            p->pos++;
-        }
-
-        n = p->pos - start;
-
-        if (n >= sizeof(buf)) {
-            n = sizeof(buf) - 1;
-        }
-
-        memcpy(buf, p->src + start, n);
-        buf[n] = EOS;
-
-        tok->type = TOK_NUMBER;
-        tok->number = strtol(buf, NULL, 10);
+    else if ((p->src[p->pos] == '0') && (p->pos + 1 < p->len) &&
+             (tolower((unsigned char)p->src[p->pos + 1]) == 'x')) {
+        base = 16;
+        p->pos += 2;
     }
+
+    digits = p->pos;
+    while (p->pos < p->len) {
+        unsigned char c = (unsigned char)p->src[p->pos];
+        unsigned d;
+
+        if (isdigit(c)) {
+            d = c - '0';
+        }
+        else if ((base == 16) && isxdigit(c)) {
+            d = tolower(c) - 'a' + 10;
+        }
+        else {
+            break;
+        }
+
+        value = (value * base) + d;
+        p->pos++;
+    }
+
+    if (p->pos == digits) {
+        // "$" or "0x" with no digits after it
+        set_error(p, EXPR_ERR_UNEXPECTED_CHAR, (int)start);
+        tok->number = 0;
+        return;
+    }
+
+    tok->number = (long)value;
 }
 
 static void next_token(parser_t *p) {
