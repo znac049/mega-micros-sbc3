@@ -26,7 +26,7 @@ SOFTWARE.
 
 
 #define RAM_LOW_BASE        0x00000000
-#define RAM_HIGH_BASE       0x01000000
+#define RAM_HIGH_BASE       0x10000000      // bank 1, as decoded by the CPLD (A28)
 #define RAM_AREA_MAX        EIGHT_MEG
 
 /*

@@ -36,7 +36,7 @@ SOFTWARE.
 
 static int major = 0;
 static int minor = 6;
-static int MAGIC_BUILD_NUMBER = 23;
+static int MAGIC_BUILD_NUMBER = 28;
 
 
 uint32_t ram_low_size;
@@ -151,7 +151,7 @@ static void pr_banner(void) {
     if (ram_high_size != 0) {
         snprintf(tmp_str, sizeof(tmp_str), "%dMB RAM detected (Bank 1)", (ram_high_size)/ONE_MEG);
         pr_info(tmp_str, RAM_HIGH_BASE, RAM_HIGH_BASE + ram_high_size-1, NO);
-        test_ram(RAM_HIGH_BASE, ram_high_size-1);
+        test_ram(RAM_HIGH_BASE, RAM_HIGH_BASE + ram_high_size-1);
         // printk("\n");
     }
 

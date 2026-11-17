@@ -180,7 +180,7 @@ static inline void write_cacr(uint32_t cacr) {
 }
 
 /*
- * Size the RAM area starting at base ($00000000 or $01000000). Returns the
+ * Size the RAM area starting at base ($00000000 or $10000000). Returns the
  * number of bytes fitted (2MB, 4MB or 8MB), or 0 if none.
  */
 uint32_t size_ram_area(uint32_t base) {
@@ -209,6 +209,44 @@ uint32_t size_ram_area(uint32_t base) {
 }
 
 /*
+ * Is the area at base just the low area seen again? That happens when the
+ * glue logic ignores the upper address lines: the original CPLD, or ours
+ * built with 2MB banks. Write a marker through base and see if it turns
+ * up in the low area.
+ */
+static int is_alias_of_low(uint32_t base) {
+    volatile uint32_t *low = (volatile uint32_t *)(RAM_LOW_BASE + RAM_PROBE_OFFSET);
+    volatile uint32_t *high = (volatile uint32_t *)(base + RAM_PROBE_OFFSET);
+    uint16_t sr = mask_irqs();
+    uint32_t cacr = get_cacr();
+    uint32_t save_low, save_high, seen;
+    int bad = NO;
+
+    if (cacr & CACR_ED) {
+        write_cacr((cacr & ~CACR_ED) | CACR_CD);
+    }
+
+    save_low = rd(low, &bad);
+    save_high = rd(high, &bad);
+
+    wr(low, MARK_BASE, &bad);
+    wr(high, MARK_ALIAS, &bad);
+    seen = rd(low, &bad);
+
+    // High first: if they're the same cell, the low restore wins
+    wr(high, save_high, &bad);
+    wr(low, save_low, &bad);
+
+    if (cacr & CACR_ED) {
+        write_cacr(cacr | CACR_CD);
+    }
+
+    restore_sr(sr);
+
+    return (bad || (seen == MARK_ALIAS)) ? YES : NO;
+}
+
+/*
  * Size both RAM areas. Either pointer may be NULL.
  */
 void size_ram(uint32_t *low_size, uint32_t *high_size) {
@@ -218,6 +256,11 @@ void size_ram(uint32_t *low_size, uint32_t *high_size) {
 
     if (high_size != NULL) {
         *high_size = size_ram_area(RAM_HIGH_BASE);
+
+        // Don't count bank 0 twice if the high area is just a repeat of it
+        if ((*high_size != 0) && is_alias_of_low(RAM_HIGH_BASE)) {
+            *high_size = 0;
+        }
     }
 }
 
@@ -239,11 +282,9 @@ int test_ram(uint32_t start_addr, uint32_t end_addr) {
     int i = 0;
     uint8_t aborted = NO;
 
-    if (start_addr & 3)
-        start_addr++;
-    
-    if (end_addr && 3) 
-        end_addr--;
+    // Test whole longwords from start_addr up to and including end_addr
+    start_addr = (start_addr + 3) & ~3U;
+    end_addr = (end_addr + 1) & ~3U;
 
     printk(" Testing......");
     for (uint32_t *addr=(uint32_t *)start_addr; addr<(uint32_t *)end_addr; addr++) {
