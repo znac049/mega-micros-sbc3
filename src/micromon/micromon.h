@@ -209,6 +209,8 @@ void *bios_malloc(size_t size, pid_t pid);
 void clean_heap(pid_t pid);
 bool_t heap_range_in_use(uint32_t start, uint32_t end);
 void init_heap(void);
+void heap_add_region(uint32_t start, uint32_t end);
+int heap_free_region(int n, uint32_t *start, uint32_t *end);
 // void _heap_print_free(void);
 
 

@@ -40,7 +40,6 @@ SOFTWARE.
 uint32_t heap_start;
 
 struct heap_info {
-    uint32_t biggest_payload;
     int num_free_items;
     int num_allocated_items;
 };
@@ -93,39 +92,85 @@ void dump_heap(void) {
 }
 
 void init_heap(void) {
-    free_items = (list_item_t *) get_heap_start();
+    free_items = NULL;
+    allocated_items = NULL;
 
-    /*
-     * Create free_items list with just a single entry - all
-     * of the free memory in Bank0
-     */
-    free_items->signature = ITEM_SIG;
-    free_items->payload_size = ram_end - get_heap_start() - sizeof(list_item_t);
-    free_items->owner = 0;
-    free_items->next = NULL;
-    free_items->prev = NULL;
-
-    heap_info.biggest_payload = free_items->payload_size;
-    heap_info.num_free_items = 1;
+    heap_info.num_free_items = 0;
     heap_info.num_allocated_items = 0;
 
     /*
-     * If Bank 1 is populated, add a new item to the free
-     * list with all of Bank 1
+     * All of the free memory in Bank 0, from the end of the .bss. Bank 1
+     * is added later, with heap_add_region(), once the boot-time RAM test
+     * has passed it.
      */
-    if (ram_high_size != 0) {
-        list_item_t *bank1 = (list_item_t *)RAM_HIGH_BASE;
-
-        bank1->signature = ITEM_SIG;
-        bank1->payload_size = ram_high_size - sizeof(list_item_t);
-        bank1->owner = 0;
-        bank1->next = NULL;
-        bank1->prev = free_items;
-        free_items->next = bank1;
-    }
+    heap_add_region(get_heap_start(), ram_end);
 
     // printk("init_heap: ");
     // dump_heap();
+}
+
+/*
+ * Add start..end (inclusive) to the heap as one free block, keeping the
+ * free list in address order. The memory must not overlap anything
+ * already in the heap.
+ */
+void heap_add_region(uint32_t start, uint32_t end) {
+    list_item_t *item;
+    list_item_t *prev = NULL;
+    list_item_t *next = free_items;
+
+    start = (start + 3) & ~3U;
+    if ((end < start) || ((end - start + 1) < sizeof(list_item_t) + SMALLEST_PAYLOAD)) {
+        return;
+    }
+
+    item = (list_item_t *)start;
+    item->signature = ITEM_SIG;
+    item->payload_size = ((end + 1 - start) & ~3U) - sizeof(list_item_t);
+    item->owner = 0;
+
+    while ((next != NULL) && (next < item)) {
+        prev = next;
+        next = next->next;
+    }
+
+    item->prev = prev;
+    item->next = next;
+
+    if (prev == NULL) {
+        free_items = item;
+    }
+    else {
+        prev->next = item;
+    }
+
+    if (next != NULL) {
+        next->prev = item;
+    }
+
+    heap_info.num_free_items++;
+}
+
+/*
+ * The payload of the n'th free block (0 = lowest), for the memtest
+ * command: the memory in it isn't in use, though its header is.
+ * Returns OK, or NOT_OK if there aren't that many free blocks.
+ */
+int heap_free_region(int n, uint32_t *start, uint32_t *end) {
+    list_item_t *item = free_items;
+
+    while ((item != NULL) && (n-- > 0)) {
+        item = item->next;
+    }
+
+    if (item == NULL) {
+        return NOT_OK;
+    }
+
+    *start = (uint32_t)item + sizeof(list_item_t);
+    *end = *start + item->payload_size - 1;
+
+    return OK;
 }
 
 static int is_valid_item(list_item_t *item) {
@@ -174,7 +219,9 @@ static void insert_in_allocated(list_item_t *item) {
 
      item->prev = NULL;
      item->next = allocated_items;
-     allocated_items->prev = item;
+     if (allocated_items != NULL) {
+        allocated_items->prev = item;
+     }
 
      allocated_items = item;
 
@@ -294,6 +341,13 @@ static inline int free_item(list_item_t *item) {
 
     /* We have to tack it on the end of the free list */
 
+    if (can_merge(prev, item) == YES) {
+        /* It follows on from the last free item: just make that bigger */
+        prev->payload_size += item->payload_size + sizeof(list_item_t);
+
+        return OK;
+    }
+
     item->prev = prev;
     prev->next = item;
     heap_info.num_free_items++;
@@ -328,13 +382,31 @@ void *bios_malloc(size_t nbytes, pid_t pid) {
         return NULL;
     }
 
-    if (nbytes > heap_info.biggest_payload) {
+    /*
+     * Keep every block a whole number of longwords, so the headers and
+     * payloads that follow stay longword aligned.
+     */
+    if (nbytes > 0x7ffffff0U) {
         errno = ENOMEM;
         return NULL;
     }
+    nbytes = (nbytes + 3) & ~3U;
 
-    /* Attempt to find a chunk with enough space */
-    for (list_item_t *item=free_items; item != NULL; item=item->next) {
+    /*
+     * Find a chunk with enough space, starting from the highest one and
+     * taking memory from its top end. That keeps allocations away from
+     * the bottom of bank 0, where the monitor's stack is (the first free
+     * block starts just after the .bss, below the stack) and where
+     * programs are loaded ($40000 up), until memory runs short. With
+     * bank 1 fitted, it's used first.
+     */
+    list_item_t *last = free_items;
+
+    while ((last != NULL) && (last->next != NULL)) {
+        last = last->next;
+    }
+
+    for (list_item_t *item=last; item != NULL; item=item->prev) {
         /*
          * Check each item in the list has a valid signature. 
          * Yes, it's an overhead for each malloc, but if there
@@ -349,38 +421,30 @@ void *bios_malloc(size_t nbytes, pid_t pid) {
 
         /* Is this item big enough? */
         if (item->payload_size >= nbytes) {
-            item->owner = pid;
+            list_item_t *taken;
 
-            /*
-             * If the item has enough
-             * space then split it into two items and put the 
-             * surplus item back in the free list
-             */
+            if (item->payload_size >= (nbytes + sizeof(list_item_t) + SMALLEST_PAYLOAD)) {
+                /*
+                 * There's room to split it: the top of the payload
+                 * becomes the new block, and the free block just gets
+                 * smaller, keeping its place in the free list.
+                 */
+                item->payload_size -= nbytes + sizeof(list_item_t);
 
-             if (item->payload_size >= (nbytes + sizeof(list_item_t) + SMALLEST_PAYLOAD)) {
-                /* There's room to split it */
-                list_item_t *surplus = (list_item_t *)(CP(item) + nbytes + sizeof(list_item_t));
+                taken = (list_item_t *)(CP(item) + sizeof(list_item_t) + item->payload_size);
+                taken->signature = ITEM_SIG;
+                taken->payload_size = nbytes;
+            }
+            else {
+                // Take the whole block
+                remove_from_free(item);
+                taken = item;
+            }
 
-                surplus->signature = ITEM_SIG;
-                surplus->payload_size = item->payload_size - nbytes - sizeof(list_item_t);
-                surplus->owner = 0;
+            taken->owner = pid;
+            insert_in_allocated(taken);
 
-                item->payload_size = nbytes;
-
-                surplus->prev = item;
-                surplus->next = item->next;
-
-                item->next = surplus;
-                heap_info.num_free_items++;
-
-                // insert_in_free(surplus);
-             }
-
-            remove_from_free(item);
-            insert_in_allocated(item);
-
-
-             return CP(item) + sizeof(list_item_t);
+            return CP(taken) + sizeof(list_item_t);
         }
     }
 
@@ -430,4 +494,5 @@ void clean_heap(pid_t pid) {
         }
     }
 }
+
 

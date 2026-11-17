@@ -36,12 +36,15 @@ SOFTWARE.
  *
  * Soak-test RAM: each pass runs the quick test (data bus, byte lanes,
  * address bus, own-address fills) and then March C- over six data
- * backgrounds. With no range it tests all the RAM the monitor isn't
- * using. The test is destructive, so a range must be free: not the
- * monitor's own area, and not anything allocated from the heap. Programs
- * loaded with 'load' aren't known to the heap, so don't test over one
- * you still want. Any key stops it.
+ * backgrounds. With no range it tests all the free heap space above the
+ * monitor's stack, in both banks. The test is destructive, so a range
+ * must be free: not the monitor's own area, not anything allocated from
+ * the heap, and not the header of a free heap block. Programs loaded
+ * with 'load' aren't known to the heap, so don't test over one you still
+ * want. Any key stops it.
  */
+
+#define MAX_RANGES  16
 
 typedef struct {
     uint32_t start;
@@ -103,7 +106,7 @@ static int test_range(const mt_range_t *range) {
 }
 
 void handle_memtest_command(int argc, char *argv[]) {
-    mt_range_t ranges[2];
+    mt_range_t ranges[MAX_RANGES];
     int num_ranges = 0;
     long passes = 1;
     long val;
@@ -114,19 +117,27 @@ void handle_memtest_command(int argc, char *argv[]) {
     }
 
     if (argc == 1) {
-        // Everything that's free
-        mt_range_t low = { ram_test_start(), RAM_LOW_BASE + ram_low_size - 1 };
+        /*
+         * The free heap blocks' payloads, above the monitor's stack (the
+         * bottom of bank 0's free block shares its space with the stack).
+         * The block headers are left alone.
+         */
+        uint32_t start, end;
 
-        if (heap_range_in_use(low.start, low.end)) {
-            printk("Bank 0 above $%08X is in use; give a range to test part of it\n", low.start);
-        }
-        else {
-            ranges[num_ranges++] = low;
+        for (int n = 0; (heap_free_region(n, &start, &end) == OK) && (num_ranges < MAX_RANGES); n++) {
+            if (start < ram_test_start()) {
+                start = ram_test_start();
+            }
+
+            if ((end >= start) && (end - start >= 15)) {
+                ranges[num_ranges].start = start;
+                ranges[num_ranges].end = end;
+                num_ranges++;
+            }
         }
 
-        if (ram_high_size != 0) {
-            mt_range_t high = { RAM_HIGH_BASE, RAM_HIGH_BASE + ram_high_size - 1 };
-            ranges[num_ranges++] = high;
+        if (num_ranges == 0) {
+            printk("No free memory to test\n");
         }
     }
     else {
@@ -164,7 +175,7 @@ void handle_memtest_command(int argc, char *argv[]) {
         }
 
         if (heap_range_in_use(range.start, range.end)) {
-            printk("$%08X-$%08X is in use\n", range.start, range.end);
+            printk("$%08X-$%08X is in use (memtest with no range tests all the free space)\n", range.start, range.end);
             return;
         }
 

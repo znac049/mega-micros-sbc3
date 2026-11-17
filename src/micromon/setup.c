@@ -40,6 +40,7 @@ static int MAGIC_BUILD_NUMBER = 33;
 
 
 uint32_t ram_low_size;
+static int bank1_test = NOT_OK;     // result of bank 1's boot-time test
 uint32_t ram_high_size;
 
 uint32_t ram_end;
@@ -152,7 +153,7 @@ static void pr_banner(void) {
     if (ram_high_size != 0) {
         snprintf(tmp_str, sizeof(tmp_str), "%dMB RAM detected (Bank 1)", (ram_high_size)/ONE_MEG);
         pr_info(tmp_str, RAM_HIGH_BASE, RAM_HIGH_BASE + ram_high_size-1, NO);
-        test_ram(RAM_HIGH_BASE, RAM_HIGH_BASE + ram_high_size-1);
+        bank1_test = test_ram(RAM_HIGH_BASE, RAM_HIGH_BASE + ram_high_size-1);
         // printk("\n");
     }
 
@@ -316,6 +317,19 @@ void setup(void) {
      * Tell the world about the hardware and firmware
      */
     pr_banner();
+
+    /*
+     * Bank 1 joins the heap now, after the boot test (which can't test
+     * memory the heap is using), and only if it passed.
+     */
+    if (ram_high_size != 0) {
+        if (bank1_test == OK) {
+            heap_add_region(RAM_HIGH_BASE, RAM_HIGH_BASE + ram_high_size - 1);
+        }
+        else {
+            printk("Bank 1 failed its test: not using it\n");
+        }
+    }
 
     /* Activate any block devices */
     printk("\nActivating block devices\n");
