@@ -29,6 +29,7 @@ SOFTWARE.
 #include <errno.h>
 
 #include "micromon.h"
+#include "memory.h"
 
 #define ITEM_SIG 0xfac3b00b
 #define SMALLEST_PAYLOAD 32
@@ -94,6 +95,10 @@ void dump_heap(void) {
 void init_heap(void) {
     free_items = (list_item_t *) get_heap_start();
 
+    /*
+     * Create free_items list with just a single entry - all
+     * of the free memory in Bank0
+     */
     free_items->signature = ITEM_SIG;
     free_items->payload_size = ram_end - get_heap_start() - sizeof(list_item_t);
     free_items->owner = 0;
@@ -103,6 +108,21 @@ void init_heap(void) {
     heap_info.biggest_payload = free_items->payload_size;
     heap_info.num_free_items = 1;
     heap_info.num_allocated_items = 0;
+
+    /*
+     * If Bank 1 is populated, add a new item to the free
+     * list with all of Bank 1
+     */
+    if (ram_high_size != 0) {
+        list_item_t *bank1 = (list_item_t *)RAM_HIGH_BASE;
+
+        bank1->signature = ITEM_SIG;
+        bank1->payload_size = ram_high_size - sizeof(list_item_t);
+        bank1->owner = 0;
+        bank1->next = NULL;
+        bank1->prev = free_items;
+        free_items->next = bank1;
+    }
 
     // printk("init_heap: ");
     // dump_heap();
