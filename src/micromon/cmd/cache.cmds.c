@@ -65,12 +65,11 @@ void handle_icache_cmd(int argc, char *argv[]) {
     }
 
     if (target == YES) {
-        /* We want to enable the cache */
-        cacr &= CA_EI;
-    }
+        /* We want to enable the cache, starting with it empty */
+        cacr |= CA_EI | CA_CI;    }
     else {
         /* we want to disable the cache */
-        cacr |= ~CA_EI;     /* Disable */
+        cacr &= ~CA_EI;     /* Disable */
         cacr |= CA_CI;      /* Clear */
     }
 
@@ -99,12 +98,12 @@ void handle_dcache_cmd(int argc, char *argv[]) {
     }
 
     if (target == YES) {
-        /* We want to enable the cache */
+        /* We want to enable the cache, starting with it empty */
         cacr &= CA_ED;
     }
     else {
         /* we want to disable the cache */
-        cacr |= ~CA_ED;     /* Disable */
+        cacr &= ~CA_ED;     /* Disable */
         cacr |= CA_CD;      /* Clear */
     }
 
