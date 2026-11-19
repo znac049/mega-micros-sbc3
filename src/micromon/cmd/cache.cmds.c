@@ -66,7 +66,8 @@ void handle_icache_cmd(int argc, char *argv[]) {
 
     if (target == YES) {
         /* We want to enable the cache, starting with it empty */
-        cacr |= CA_EI | CA_CI;    }
+        cacr |= CA_EI | CA_CI;
+    }
     else {
         /* we want to disable the cache */
         cacr &= ~CA_EI;     /* Disable */
