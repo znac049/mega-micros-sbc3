@@ -1,0 +1,37 @@
+Name     IC15;
+PartNo   IC15;
+Date     19/11/2026;
+Revision 01;
+Designer Bob Green;
+Company  None;
+Assembly SBC3 CF mods;
+Location IC15;
+Device   g22v10;
+
+/*
+ * Splits the CompactFlash chip select into the two ATA register
+ * blocks, using CPU A4:
+ *
+ *   $AE0000-$AE000E  A4 = 0  /CS0  command block (data .. status/command)
+ *   $AE0010-$AE001E  A4 = 1  /CS1  control block (alternate status/drive address)
+ *
+ * /CS from IC10 pin 17 still does the address decode (and IC10 still
+ * generates /DTACK); this GAL only steers it to /CS0 or /CS1.  Both
+ * outputs are purely combinational and are never low together.
+ */
+
+/* Inputs */
+PIN 2  = !CF_SEL;       /* /CS from IC10 pin 17 (active low) */
+PIN 3  = A4;            /* CPU A4 */
+
+PIN 5  = INTRQ;         /* Interrupt request line from CF */
+
+/* Outputs */
+PIN 22 = !CFIRQ;
+
+PIN 21 = !CF_CS0;       /* /CS0 to CF interface pin 37 (active low) */
+PIN 20 = !CF_CS1;       /* /CS1 to CF interface pin 38 (active low) */
+
+/* Logic */
+CF_CS0 = CF_SEL & !A4;
+CF_CS1 = CF_SEL &  A4;
