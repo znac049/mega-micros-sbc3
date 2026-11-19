@@ -51,7 +51,7 @@ static void flush_icache(void) {
     uint32_t cacr = get_cacr();
 
     if (cacr & CACR_EI) {
-        __asm__ volatile ("movec %0,%%cacr" : : "d" (cacr | CACR_CI) : "memory");
+        set_cacr(cacr | CACR_CI);
     }
 }
 

@@ -89,9 +89,7 @@ sum_done:
         move.b  d0,pit_pbdr_o(a5)       ; Light some LEDs
 
         move.l  #$31002000,HEX_DISPLAY_BASE
-stop:        
-        stop    #$2700
-        bra     stop
+        bra     halt
 
 sum_ok:
 
@@ -172,7 +170,7 @@ ibdone:
 exit::
     	move.l  4(sp),d0
 done:
-        bra     stop                           ; Don't know what else to do!
+        bra     halt                           ; Don't know what else to do!
 
 
 get_heap_start::
@@ -226,6 +224,11 @@ _bus_err_exception::
         rte
 
 
+; Roll over and die
+halt::  stop    #$2700
+        bra     halt
+
+
 ; Cache control
 get_cacr::
         movec   cacr,d0
@@ -233,8 +236,8 @@ get_cacr::
 
 
 set_cacr::
-;        move.l  4(sp),d0
-;        movec   d0,cacr
+        move.l  4(sp),d0
+        movec   d0,cacr
         rts
 
 

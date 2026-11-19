@@ -178,10 +178,6 @@ static inline void restore_sr(uint16_t sr) {
     __asm__ volatile ("move.w %0,%%sr" : : "d" (sr) : "memory", "cc");
 }
 
-static inline void write_cacr(uint32_t cacr) {
-    __asm__ volatile ("movec %0,%%cacr" : : "d" (cacr) : "memory");
-}
-
 /*
  * Size the RAM area starting at base ($00000000 or $10000000). Returns the
  * number of bytes fitted (2MB, 4MB or 8MB), or 0 if none.
@@ -197,13 +193,13 @@ uint32_t size_ram_area(uint32_t base) {
      * while we look (only touching the CACR if it's on).
      */
     if (cacr & CACR_ED) {
-        write_cacr((cacr & ~CACR_ED) | CACR_CD);
+        set_cacr((cacr & ~CACR_ED) | CACR_CD);
     }
 
     size = probe_area(base);
 
     if (cacr & CACR_ED) {
-        write_cacr(cacr | CACR_CD);     // back on, without stale lines
+        set_cacr(cacr | CACR_CD);     // back on, without stale lines
     }
 
     restore_sr(sr);
@@ -226,7 +222,7 @@ static int is_alias_of_low(uint32_t base) {
     int bad = NO;
 
     if (cacr & CACR_ED) {
-        write_cacr((cacr & ~CACR_ED) | CACR_CD);
+        set_cacr((cacr & ~CACR_ED) | CACR_CD);
     }
 
     save_low = rd(low, &bad);
@@ -241,7 +237,7 @@ static int is_alias_of_low(uint32_t base) {
     wr(low, save_low, &bad);
 
     if (cacr & CACR_ED) {
-        write_cacr(cacr | CACR_CD);
+        set_cacr(cacr | CACR_CD);
     }
 
     restore_sr(sr);
@@ -378,7 +374,7 @@ static uint32_t dcache_off(void) {
     uint32_t cacr = get_cacr();
 
     if (cacr & CACR_ED) {
-        write_cacr((cacr & ~CACR_ED) | CACR_CD);
+        set_cacr((cacr & ~CACR_ED) | CACR_CD);
     }
 
     return cacr;
@@ -386,7 +382,7 @@ static uint32_t dcache_off(void) {
 
 static void dcache_restore(uint32_t cacr) {
     if (cacr & CACR_ED) {
-        write_cacr(cacr | CACR_CD);
+        set_cacr(cacr | CACR_CD);
     }
 }
 
