@@ -99,7 +99,7 @@ void handle_dcache_cmd(int argc, char *argv[]) {
 
     if (target == YES) {
         /* We want to enable the cache, starting with it empty */
-        cacr &= CA_ED;
+        cacr |= CA_ED | CA_CD;
     }
     else {
         /* we want to disable the cache */
