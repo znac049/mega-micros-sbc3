@@ -326,6 +326,9 @@ static int is_clock_doubled(void) {
     x = *duart_stop_counter;
     count = (uint16_t)0xffff - get_counter();
 
+    // DIAGNOSTIC: about $5A for a 3.6864MHz clock, $B4 if doubled
+    // HEXB3(count >> 8);
+
     return (count > 44000)?YES:NO; 
 }
 
@@ -361,8 +364,8 @@ void setup_duart(int is_xr) {
         imr_shadow = IMR_RXRDY_A;
         *duart_imr = imr_shadow;
 
-        channel_a.tx_irq = YES;
-        channel_b.tx_irq = YES;
+        channel_a.tx_irq = DUART_TX_INTERRUPTS?YES:NO;
+        channel_b.tx_irq = DUART_TX_INTERRUPTS?YES:NO;
 
         irq_restore(sr);
     }

@@ -91,7 +91,7 @@ int ds1307_write(int addr, uint8_t *buf, size_t num_bytes) {
     }
 
     /*
-     * Check that we are noty trying to write too many bytes as bytes > 63
+     * Check that we are not trying to write too many bytes as bytes > 63
      * will wrap around and overwrite time/date data!
      */
     if (addr + num_bytes > 64) {

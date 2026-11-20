@@ -220,17 +220,35 @@ void catch_exception(exception_t *context) {
     }
  
     printk("USP=%08lx\n", (unsigned long)context->usp);
+
+    /*
+     * The interrupted code's stack, just above the exception frame. After
+     * a call through a bad pointer, the caller's return address is here;
+     * anything pointing into the ROM's code is marked.
+     */
+    if (size) {
+        const uint32_t *sp = (const uint32_t *)((uintptr_t)f + size);
+
+        printk("Stack:");
+        for (i = 0; i < 12; i++) {
+            uint32_t v = sp[i];
+            bool_t code = ((v >= (uint32_t)&_code_start) && (v < (uint32_t)&_code_end))?YES:NO;
+
+            printk("%s%08lx%c", (i % 6 == 0)?"\n  ":" ", (unsigned long)v, code?'*':' ');
+        }
+        printk("\n  (* = an address in the monitor's code)\n");
+    }
+
     printk("System halted.\n");
 
     // Output is interrupt driven: send what's queued before stopping
     bios_flush(0);
  
     /*
-     * Halt. Remove this loop for vectors you want to resume from
+     * Halt. Remove this call for vectors you want to resume from
      * (e.g. TRAP, trace); the wrapper will then RTE normally.
      * Don't resume bus/address errors without fixing the cause,
      * or the faulting access will just repeat.
      */
-    for (;;)
-        __asm__ volatile("stop #0x2700");
+    die();
 }

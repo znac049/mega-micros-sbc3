@@ -110,6 +110,9 @@ SOFTWARE.
 #define DUART_VECTOR_NUMBER 64
 #define RX_BUFFER_SIZE 16
 #define TX_BUFFER_SIZE 256          // must be a power of 2
+
+// Set to 0 to send output by polling, as before interrupt-driven output
+#define DUART_TX_INTERRUPTS 1
 #define HIGH_WATER_MARK 10
 #define LOW_WATER_MARK 2
 

@@ -36,7 +36,7 @@ SOFTWARE.
 
 static int major = 0;
 static int minor = 6;
-static int MAGIC_BUILD_NUMBER = 36;
+static int MAGIC_BUILD_NUMBER = 43;
 
 
 uint32_t ram_low_size;
@@ -157,13 +157,6 @@ static void pr_banner(void) {
         // printk("\n");
     }
 
-    // Duart
-    snprintf(tmp_str, sizeof(tmp_str), "%s duart running at %sMHz", 
-            (jumpers & 0x04)?"xr68c681":"generic mc68681",
-            duart_clock_doubled()?"7.3728":"3.6864"
-        );
-    pr_info(tmp_str, (uint32_t)duart_base, (uint32_t)duart_opr_reset, YES);
-
     // PI/T
     if (pit_present) {
         pr_info("68230 PI/T detected", (uint32_t)pit_base, (uint32_t)pit_tsr, YES);
@@ -173,6 +166,13 @@ static void pr_banner(void) {
     if (cf_present) {
         pr_info("Compact Flash hardware detected", (uint32_t)cf_base, (uint32_t)cf_reg_command, YES);
     }
+
+    // Duart
+    snprintf(tmp_str, sizeof(tmp_str), "%s duart running at %sMHz", 
+            (jumpers & 0x04)?"xr68c681":"generic mc68681",
+            duart_clock_doubled()?"7.3728":"3.6864"
+        );
+    pr_info(tmp_str, (uint32_t)duart_base, (uint32_t)duart_opr_reset, YES);
 
     // Hex Display
     if (hex_display_present) {
@@ -292,6 +292,9 @@ void setup(void) {
 
     /* Take a look at the jumper settings */
     jumpers = (~(*duart_ip)) & 0x3f;
+
+    // DIAGNOSTIC: show the jumper bits as read (XR_EN is $04)
+    // HEXB2(jumpers);
     
     /* Jumper to select XR version of the 68681 duart */
     is_xr = (jumpers & 0x04)?YES:NO;

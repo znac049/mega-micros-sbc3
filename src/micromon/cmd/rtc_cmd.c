@@ -32,6 +32,8 @@ SOFTWARE.
 #include "micromon.h"
 #include "expr.h"
 
+#define NUM_NVRAM_BYTES 56
+
 static const char *day_names[8] = {"?", "Sunday", "Monday", "Tuesday", "Wednesday","Thursday", "Friday", "Saturday"};
 
 static long do_eval(char *exp) {
@@ -195,30 +197,30 @@ static void do_time_command(int argc, char *argv[]) {
 
 static void do_nvram_command(int argc, char *argv[]) {
     if (!argc) {
-        uint8_t nvram[56];
+        uint8_t nvram[NUM_NVRAM_BYTES];
 
-        if (ds1307_read_nvram(0, nvram, 56) != 56) {
+        if (ds1307_read_nvram(0, nvram, NUM_NVRAM_BYTES) != NUM_NVRAM_BYTES) {
             printk("Failed to read RTC nvram!\n");
             return;
         }
 
-        dump(nvram, BYTE, 56, YES, "RTC nvram", NO);
+        dump(nvram, BYTE, NUM_NVRAM_BYTES, YES, "RTC nvram", NO);
     }
     else if ((argc == 1) && is_command(argv[0], "erase", 2, ANY) == YES) {
-        uint8_t ram[56];
+        uint8_t ram[NUM_NVRAM_BYTES];
         int res;
 
-        memset(ram, 0xff, 56);
+        memset(ram, 0xff, NUM_NVRAM_BYTES);
         ram[0] = 0xb0;
         ram[1] = 0xba;
 
         printk("Erasing rtc nvram...");
 
-        res = ds1307_write_nvram(0, ram, 56);
+        res = ds1307_write_nvram(0, ram, NUM_NVRAM_BYTES);
 
         printk("\n");
 
-        if (res != 56) {
+        if (res != NUM_NVRAM_BYTES) {
             printk("ERROR! Erase failed.\n");
         } 
         else {
@@ -250,37 +252,3 @@ void handle_rtc_command(int argc, char *argv[]) {
         printk("'%s' is not a valid sub-command.\n", argv[1]);
     }
 }
-
-#if 0
-void handle_rtc_subcommand(int argc, char *argv[]) {
-    ds1307_time_t t;
-    int status;
- 
-    if ((argc < 1) || (argc > 2)) {
-        printk("usage: show rtc [nvram]\n");
-        return;
-    }
-
-    if ((argc > 1) && (is_command(argv[1], "help", 2) == YES)) {
-        printk("show rtc accepts the following arguments and sub-commands:\n");
-        printk("  <no arg>              read and print the time.\n");
-        printk("  nvram                 dump the contents of the nvram (56 bytes)\n");
-    }
-    else if (argc == 1) {
-        // Display the date and time
-        status = ds1307_read_time(&t);
-        if (status < 0) {
-            printk("DS1307: no ACK from device -- check address/wiring/pull-ups\n");
-        }
-    
-        printk("DS1307 date and time: %s 20%02u-%02u-%02u %02u:%02u:%02u\n",
-            day_names[t.day], t.year, t.month, t.date,
-            t.hours, t.minutes, t.seconds);
-    
-        if (status == 1)
-            printk("Warning: clock-halt (CH) bit is set -- oscillator is "
-                "stopped, time above is not advancing until the clock "
-                "is (re)started.\n");
-    }
-}
-#endif
