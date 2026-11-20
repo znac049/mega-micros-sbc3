@@ -36,7 +36,7 @@ SOFTWARE.
 
 static int major = 0;
 static int minor = 6;
-static int MAGIC_BUILD_NUMBER = 43;
+static int MAGIC_BUILD_NUMBER = 46;
 
 
 uint32_t ram_low_size;
@@ -168,7 +168,7 @@ static void pr_banner(void) {
     }
 
     // Duart
-    snprintf(tmp_str, sizeof(tmp_str), "%s duart running at %sMHz", 
+    snprintf(tmp_str, sizeof(tmp_str), "%s duart running at %sMHz",
             (jumpers & 0x04)?"xr68c681":"generic mc68681",
             duart_clock_doubled()?"7.3728":"3.6864"
         );

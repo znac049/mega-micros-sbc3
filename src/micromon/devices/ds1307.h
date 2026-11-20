@@ -26,6 +26,8 @@ SOFTWARE.
 
 #define DS1307_ADDR   0x68
 
+#define NUM_NVRAM_BYTES 56
+
 struct ds1307_time {
     uint8_t seconds;   /* 0-59 */
     uint8_t minutes;   /* 0-59 */

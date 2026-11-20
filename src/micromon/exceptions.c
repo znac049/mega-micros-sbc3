@@ -241,7 +241,7 @@ void catch_exception(exception_t *context) {
 
     printk("System halted.\n");
 
-    // Output is interrupt driven: send what's queued before stopping
+    // Output may be interrupt driven: send what's queued before stopping
     bios_flush(0);
  
     /*

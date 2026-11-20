@@ -45,7 +45,7 @@ typedef unsigned char bool_t;
 
 typedef unsigned int pid_t;
 
-typedef unsigned int * uintptr_t;
+typedef unsigned int uintptr_t;
 
 #define TRUE 1
 #define FALSE 0

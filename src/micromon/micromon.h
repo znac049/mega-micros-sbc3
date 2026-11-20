@@ -98,7 +98,7 @@ extern vmp_t mounts[MAX_MOUNTS];
 // mon_crt0.asm
 uint32_t get_cacr(void);
 uint32_t set_cacr(uint32_t cacr);
-void die(void);
+void die(void) __attribute__((noreturn));
 
 // bios_calls.c
 int bios_exit(int exit_code, pid_t pid);

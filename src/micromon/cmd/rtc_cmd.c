@@ -32,8 +32,6 @@ SOFTWARE.
 #include "micromon.h"
 #include "expr.h"
 
-#define NUM_NVRAM_BYTES 56
-
 static const char *day_names[8] = {"?", "Sunday", "Monday", "Tuesday", "Wednesday","Thursday", "Friday", "Saturday"};
 
 static long do_eval(char *exp) {
