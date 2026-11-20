@@ -40,19 +40,6 @@ static uint8_t imr_shadow;
 
 #define SR_IPL_MASK     0x0700
 
-// Mask all interrupts, returning the old SR
-static inline uint16_t irq_off(void) {
-    uint16_t sr;
-
-    __asm__ volatile ("move.w %%sr,%0\n\tor.w #0x0700,%%sr" : "=d" (sr) : : "memory", "cc");
-
-    return sr;
-}
-
-static inline void irq_restore(uint16_t sr) {
-    __asm__ volatile ("move.w %0,%%sr" : : "d" (sr) : "memory", "cc");
-}
-
 // Change the IMR (call with interrupts off)
 static inline void imr_set(uint8_t bits) {
     imr_shadow |= bits;
@@ -358,7 +345,9 @@ void setup_duart(int is_xr) {
     init_duart_channel(&channel_a);
 
     {
-        uint16_t sr = irq_off();
+        lock_state_t sr;
+
+        LOCK(sr);
 
         // RX interrupts on channel A; TxRDY interrupts get turned on as needed
         imr_shadow = IMR_RXRDY_A;
@@ -367,12 +356,12 @@ void setup_duart(int is_xr) {
         channel_a.tx_irq = DUART_TX_INTERRUPTS?YES:NO;
         channel_b.tx_irq = DUART_TX_INTERRUPTS?YES:NO;
 
-        irq_restore(sr);
+        UNLOCK(sr);
     }
 }
 
 static int buffered_rx_char(kduart_port_t *channel) {
-    uint16_t sr;
+    lock_state_t sr;
     int ch;
 
     // Wait for a character to appear in the buffer
@@ -426,7 +415,9 @@ static void polled_tx_char(int ch, kduart_port_t *channel) {
  * character the old way, keeping everything in order.
  */
 static void buffered_tx_char(int ch, kduart_port_t *channel) {
-    uint16_t sr = irq_off();
+    lock_state_t sr;
+
+    LOCK(sr);
 
     if ((sr & SR_IPL_MASK) == SR_IPL_MASK) {
         while (channel->tx_count > 0) {
@@ -434,7 +425,7 @@ static void buffered_tx_char(int ch, kduart_port_t *channel) {
         }
 
         polled_tx_char(ch, channel);
-        irq_restore(sr);
+        UNLOCK(sr);
 
         return;
     }
@@ -443,8 +434,8 @@ static void buffered_tx_char(int ch, kduart_port_t *channel) {
         tx_service(channel);
 
         // Let the interrupt handler in for a moment
-        irq_restore(sr);
-        sr = irq_off();
+        UNLOCK(sr);
+        LOCK(sr);
     }
 
     channel->tx_buff[channel->tx_insert] = (uint8_t)ch;
@@ -458,7 +449,7 @@ static void buffered_tx_char(int ch, kduart_port_t *channel) {
         imr_set(channel->tx_imr_bit);
     }
 
-    irq_restore(sr);
+    UNLOCK(sr);
 }
 
 /*
@@ -469,12 +460,13 @@ static void tx_flush(kduart_port_t *channel) {
     bool_t empty;
 
     do {
-        uint16_t sr = irq_off();
+        lock_state_t sr;
 
+        LOCK(sr);
         tx_service(channel);
         empty = (channel->tx_count == 0)?YES:NO;
 
-        irq_restore(sr);
+        UNLOCK(sr);
     } while (empty == NO);
 
     while ((*channel->sr_csr_reg & SR_TX_EMPTY) != SR_TX_EMPTY) {

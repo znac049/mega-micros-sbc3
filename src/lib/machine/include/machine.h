@@ -31,26 +31,33 @@ typedef short lock_state_t;
 
 #define HALT()			    __asm volatile("stop #0x2700\n")
 
-#define DISABLE_IRQS()		__asm volatile("or.w	#0x0700, %sr");
-#define ENABLE_IRQS()		__asm volatile("and.w	#0xF8FF, %sr");
+/*
+ * Every macro that writes SR is volatile and clobbers "memory", so the
+ * compiler can't move loads or stores across it: an interrupt can't see
+ * a half-finished update made inside LOCK()/UNLOCK().
+ */
+#define DISABLE_IRQS()      __asm__ volatile("or.w\t#0x0700,%%sr" : : : "memory", "cc")
+#define ENABLE_IRQS()       __asm__ volatile("and.w\t#0xF8FF,%%sr" : : : "memory", "cc")
 
-#define TRACE_ON()		    __asm volatile("or.w	#0x8000, %sr");
-#define TRACE_OFF()		    __asm volatile("and.w	#0x7FFF, %sr");
+#define TRACE_ON()          __asm__ volatile("or.w\t#0x8000,%%sr" : : : "memory", "cc")
+#define TRACE_OFF()         __asm__ volatile("and.w\t#0x7FFF,%%sr" : : : "memory", "cc")
 
 #define NOP()               __asm volatile("nop\n")
 
-#define SAVE_STATUS(saved) {				\
-	__asm("move.w	%%sr, %0\n" : "=dm" ((saved)));	\
-}
+#define SAVE_STATUS(saved) do {                                        \
+    __asm__ volatile("move.w\t%%sr,%0" : "=dm" (saved) : : "memory");   \
+} while (0)
 
-#define LOCK(saved) {					\
-	__asm("move.w	%%sr, %0\n" : "=dm" ((saved)));	\
-	DISABLE_IRQS();					\
-}
+// Save SR in saved (a lock_state_t), then mask all interrupts
+#define LOCK(saved) do {                                               \
+    __asm__ volatile("move.w\t%%sr,%0\n\tor.w\t#0x0700,%%sr"           \
+                     : "=dm" (saved) : : "memory", "cc");              \
+} while (0)
 
-#define UNLOCK(saved) {						\
-	__asm("move.w	%0, %%sr\n" : : "dm" ((saved)) :);	\
-}
+// Put SR back as LOCK() found it
+#define UNLOCK(saved) do {                                             \
+    __asm__ volatile("move.w\t%0,%%sr" : : "dm" (saved) : "memory", "cc"); \
+} while (0)
 
 #define ISR void __attribute((interrupt))
 
