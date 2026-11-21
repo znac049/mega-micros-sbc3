@@ -24,6 +24,8 @@ SOFTWARE.
 
 #pragma once
 
+#include <ctype.h>
+
 struct bitmap {
     int size;
     uint8_t *map;
@@ -31,7 +33,7 @@ struct bitmap {
 
 typedef struct bitmap bitmap_t;
 
-bitmap_t *new_bitmap(int size_in_bits)
-bitmap_t *free_bitmap(bitmap_t *map);
+bitmap_t *new_bitmap(int size_in_bits);
+void free_bitmap(bitmap_t *map);
 int bitmap_get(bitmap_t *map, int bit_num);
 int bitmap_set(bitmap_t *map, int bit_num, int val);

@@ -24,8 +24,9 @@ SOFTWARE.
 
 #include <ctype.h>
 #include <stddef.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "bitmap.h"
 
@@ -57,9 +58,10 @@ bitmap_t *new_bitmap(int size_in_bits) {
     return map;
 }
 
-bitmap_t *free_bitmap(bitmap_t *map) {
+void free_bitmap(bitmap_t *map) {
     map->size = 0;
-    return free(map);
+    
+    free(map);
 }
 
 int bitmap_get(bitmap_t *map, int bit_num) {
