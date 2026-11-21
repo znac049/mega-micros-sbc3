@@ -51,7 +51,7 @@ static int grow(ptr_array_t *arr, uint16_t new_size) {
 
     // Copy the old array over to the new
     old_data = arr->data;
-    memcpy(new_data, old_data, arr->num_current_slots * sizeof(void *));
+    memcpy(new_data, old_data, arr->num_current_slots * sizeof(uintptr_t));
 
     arr->data = new_data;
     arr->num_current_slots = new_size;
@@ -131,9 +131,11 @@ ptr_array_t *new_ptr_array(uint16_t min, uint16_t max) {
 }
 
 void free_ptr_array(ptr_array_t *arr) {
-    free_bitmap(arr->bm);
-    free(arr->data);
-    free(arr);
+    if (arr != NULL) {
+        free_bitmap(arr->bm);
+        free(arr->data);
+        free(arr);
+    }
 }
 
 uintptr_t get_array_item(ptr_array_t *arr, uint16_t slot) {
