@@ -61,9 +61,9 @@ bitmap_t *new_bitmap(int size_in_bits) {
 }
 
 void free_bitmap(bitmap_t *map) {
-    map->size = 0;
-
     if (map != NULL) {
+        map->size = 0;
+
         free(map);
     }
 }
@@ -91,6 +91,6 @@ int bitmap_set(bitmap_t *map, int bit_num, int val) {
     else {
         map->map[bit_num >> 3] &= (uint8_t)~mask;
     }
-    
+
     return OK;
 }
