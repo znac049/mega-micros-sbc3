@@ -32,10 +32,13 @@ SOFTWARE.
 
 bitmap_t *new_bitmap(int size_in_bits) {
     bitmap_t *map;
-    int size_in_bytes = ((size_in_bits-1) >> 3) + 1;
-    uint8_t *bm;
+    int size_in_bytes;
 
-    printf("new_bitmap(); %d bits needs %d bytes\n", size_in_bits, size_in_bytes);
+    if (size_in_bits <= 0) {
+        return NULL;
+    }
+
+    size_in_bytes = (size_in_bits + 7) >> 3;
 
     /*
      * by allocating enough memory for the struct and the bitmap
@@ -48,50 +51,46 @@ bitmap_t *new_bitmap(int size_in_bits) {
         return NULL;
     }
 
-    // Zero the memory (and thus mark all bits as free)
-    memset(map, 0, size_in_bytes);
-    bm = ((uint8_t *)map) + sizeof(bitmap_t);
-
     map->size = size_in_bits;
-    map->map = bm;
+    map->map = ((uint8_t *)map) + sizeof(bitmap_t);
+
+    // Zero the bitmap (and thus mark all bits as free)
+    memset(map->map, 0, size_in_bytes);
 
     return map;
 }
 
 void free_bitmap(bitmap_t *map) {
     map->size = 0;
-    
-    free(map);
+
+    if (map != NULL) {
+        free(map);
+    }
 }
 
 int bitmap_get(bitmap_t *map, int bit_num) {
-    int byte_num = ((bit_num-1) >> 3) + 1;
-    int bit_mask = 1 << (bit_num & 0x03);
-
     if ((bit_num < 0) || (bit_num >= map->size)) {
         return NO;
     }
 
-    printf("bitmap_get(): bit number %d lives in byte %d, mask 0x%02x\n", 
-        bit_num, byte_num, bit_mask);
-
-    return (map->map[byte_num]&bit_mask)?YES:NO;
+    return (map->map[bit_num >> 3] & (1 << (bit_num & 7)))?YES:NO;
 }
 
 int bitmap_set(bitmap_t *map, int bit_num, int val) {
-    int byte_num = ((bit_num-1) >> 3) + 1;
-    int bit_mask = 1 << (bit_num & 0x03);
-    uint8_t ent;
+    uint8_t mask;
 
     if ((bit_num < 0) || (bit_num >= map->size)) {
         return NOT_OK;
     }
 
-    printf("bitmap_get(): bit number %d lives in byte %d, mask 0x%02x\n", 
-        bit_num, byte_num, bit_mask);
+    mask = (uint8_t)(1 << (bit_num & 7));
 
-    ent = map->map[byte_num];
-    map->map[byte_num] = (val)? ent | bit_mask : ent & (~bit_mask); 
-
+    if (val) {
+        map->map[bit_num >> 3] |= mask;
+    }
+    else {
+        map->map[bit_num >> 3] &= (uint8_t)~mask;
+    }
+    
     return OK;
 }

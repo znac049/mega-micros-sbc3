@@ -27,7 +27,7 @@ SOFTWARE.
 #include <ctype.h>
 
 struct bitmap {
-    int size;
+    int size;           // in bits
     uint8_t *map;
 };
 
