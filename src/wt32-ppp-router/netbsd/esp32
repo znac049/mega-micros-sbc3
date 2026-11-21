@@ -1,0 +1,31 @@
+# /etc/ppp/peers/esp32  -- start with:  pppd call esp32
+#
+# Change the device to whichever serial port the WT32-ETH01 is on.
+/dev/tty01
+115200
+
+# Direct wire, no modem: ignore DCD and don't hang up on it.
+local
+
+# Use crtscts only if you wired RTS/CTS and set PPP_USE_RTSCTS=1 in the firmware.
+nocrtscts
+
+# The ESP32 is a trusted direct link and doesn't authenticate.
+noauth
+
+# Accept whatever address the ESP32 hands us (10.42.0.2).
+noipdefault
+defaultroute
+usepeerdns
+
+# No compression support on the lwIP side; skip the CCP negotiation noise.
+noccp
+
+# Reconnect if the ESP32 resets, and notice when it disappears.
+persist
+holdoff 5
+lcp-echo-interval 10
+lcp-echo-failure 3
+
+# Remove "debug" once it's working; output goes to syslog.
+debug

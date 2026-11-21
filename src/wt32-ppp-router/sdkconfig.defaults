@@ -1,0 +1,10 @@
+# PPP server over serial
+CONFIG_LWIP_PPP_SUPPORT=y
+CONFIG_LWIP_PPP_SERVER_SUPPORT=y
+
+# Route + NAT between the PPP link and Ethernet
+CONFIG_LWIP_IP_FORWARD=y
+CONFIG_LWIP_IPV4_NAPT=y
+
+# Console/logging stays on UART0 (the programming header)
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
