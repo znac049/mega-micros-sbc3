@@ -39,6 +39,7 @@ typedef struct ptr_array ptr_array_t;
 
 
 ptr_array_t *new_ptr_array(uint16_t min, uint16_t max);
+void free_ptr_array(ptr_array_t *arr);
 uintptr_t get_array_item(ptr_array_t *arr, uint16_t slot);
 int add_array_item(ptr_array_t *arr, uintptr_t val);
 int free_array_item(ptr_array_t *arr, uint16_t slot);

@@ -24,7 +24,7 @@ SOFTWARE.
 
 #include <ctype.h>
 #include <stddef.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 
@@ -40,19 +40,19 @@ static int grow(ptr_array_t *arr, uint16_t new_size) {
     }
 
     if (new_size < arr->num_current_slots) {
-        return NO;
+        return NOT_OK;
     }
 
-    new_data = malloc(new_size * sizeof(void *));
+    new_data = malloc(new_size * sizeof(uintptr_t));
     if (new_data == NULL) {
         // out of memory
-        return NO;
+        return NOT_OK;
     }
 
     // Copy the old array over to the new
     old_data = arr->data;
     memcpy(new_data, old_data, arr->num_current_slots * sizeof(void *));
- 
+
     arr->data = new_data;
     arr->num_current_slots = new_size;
 
@@ -104,14 +104,14 @@ ptr_array_t *new_ptr_array(uint16_t min, uint16_t max) {
     ptr_array_t *arr = malloc(sizeof(ptr_array_t));
     bitmap_t *bm = new_bitmap(max);
     uintptr_t *data;
-    uint16_t size = min;
-    
-    if (min < 4) {
-        size = 4;
+    uint16_t size = (min < 4) ? 4 : min;
+
+    if (size > max) {
+        size = max;
     }
 
     data = malloc(size * sizeof(uintptr_t));
-    
+
     if ((arr == NULL) || (bm == NULL) || (data == NULL)) {
         // It's safe to pass NULL to free().
         free(arr);
@@ -130,8 +130,14 @@ ptr_array_t *new_ptr_array(uint16_t min, uint16_t max) {
     return arr;
 }
 
+void free_ptr_array(ptr_array_t *arr) {
+    free_bitmap(arr->bm);
+    free(arr->data);
+    free(arr);
+}
+
 uintptr_t get_array_item(ptr_array_t *arr, uint16_t slot) {
-    if (slot > arr->num_current_slots) {
+    if (slot >= arr->num_current_slots) {
         errno = ERANGE;
         return (uintptr_t)NULL;
     }
