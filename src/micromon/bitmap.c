@@ -68,7 +68,7 @@ void free_bitmap(bitmap_t *map) {
     }
 }
 
-int bitmap_get(bitmap_t *map, int bit_num) {
+int bitmap_fetch(bitmap_t *map, int bit_num) {
     if ((bit_num < 0) || (bit_num >= map->size)) {
         return NO;
     }
