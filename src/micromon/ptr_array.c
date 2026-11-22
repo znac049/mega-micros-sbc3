@@ -100,20 +100,6 @@ static int find_free_array_slot(ptr_array_t *arr) {
     return free_slot;
 }
 
-int array_has_free_slot(ptr_array_t *arr) {
-    if (arr->num_current_slots < arr->max_slots) {
-        return YES;
-    }
-
-    for (int i=0; i<arr->max_slots; i++) {
-        if (bitmap_fetch(arr->bm, i) == NO) {
-            return YES;
-        }
-    }
-
-    return NO;
-}
-
 ptr_array_t *new_ptr_array(uint16_t min, uint16_t max) {
     ptr_array_t *arr = malloc(sizeof(ptr_array_t));
     bitmap_t *bm = new_bitmap(max);
