@@ -25,6 +25,7 @@ SOFTWARE.
 #include <stddef.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdlib.h>
 #include <libgen.h>
 #include <dirent.h>
 #include <machine.h>
@@ -34,13 +35,20 @@ SOFTWARE.
 #include <sys/stat.h>
 
 #include "micromon.h"
+#include "ptr_array.h"
 
 static vfile_t cwd;
 
+// Note files include directories
+#if 0
+static vfile_t vfs_files[MAX_FILES];
+#endif
+static ptr_array_t *vfs_files_array;
+
+// Filesystems table
 static vfs_fs_t filesystems[MAX_VIRTUAL_FILESYSTEMS];
 
-// Note files include directories
-static vfile_t vfs_files[MAX_FILES];
+// Mounts table
 vmp_t mounts[MAX_MOUNTS];
 
 static vmp_t *find_free_vmp(void) {
@@ -63,6 +71,7 @@ static vfs_fs_t *find_free_fs(void) {
     return NULL;
 }
 
+#if 0
 static int find_free_file(void) {
     for (int i=0; i<MAX_FILES; i++) {
         if (vfs_files[i].open == NO) {
@@ -72,6 +81,7 @@ static int find_free_file(void) {
 
     return NOT_OK;
 }
+#endif
 
 static vmp_t *find_mount_by_name(const char *name, size_t len) {
     if (len == 0) {
@@ -269,10 +279,18 @@ static vmp_t *attempt_to_mount(block_device_t *dev) {
     return NULL;
 }
 
-static void init_structures(void) {
+static int init_structures(void) {
+    vfs_files_array = new_ptr_array(3, MAX_FILES);
+
+    if (vfs_files_array == NULL) {
+        return NOT_OK;
+    }
+
+#if 0
     for (int i=0; i<MAX_FILES; i++) {
         vfs_files[i].open = NO;
     }
+#endif
 
     for (int i=0; i<MAX_MOUNTS; i++) {
         mounts[i].mounted = NO;
@@ -281,6 +299,8 @@ static void init_structures(void) {
     for (int i=0; i<MAX_VIRTUAL_FILESYSTEMS; i++) {
         filesystems[i].type = VFS_TYPE_NONE;
     }
+
+    return OK;
 }
 
 int vfs_init(void) {
@@ -290,7 +310,11 @@ int vfs_init(void) {
     cwd.open = NO;
     strcpy(cwd.path, "/");
 
-    init_structures();
+    // Allocate and initialise filesystem structures.
+    if (init_structures() == NOT_OK) {
+        printk("Failed to initialise filesystem structures.\n");
+        return NOT_OK;
+    }
 
     // Register a handler for the two serial ports
     res = setup_vfs_duart_handler(find_free_fs());
@@ -346,13 +370,7 @@ int vfs_init(void) {
 
 int vfs_shutdown(void) {
     // Close any open files...
-
-    for (int i=0; i<MAX_FILES; i++) {
-        if (vfs_files[i].open == YES) {
-            bios_close(i);
-        }
-    }
-
+    vfs_close_all();
 
     // unomunt everything
     for (int i=0; i<MAX_MOUNTS; i++) {
@@ -442,6 +460,7 @@ static int do_open(const char *pathname, int flags, mode_t mode) {
         return NOT_OK;
     }
 
+#if 0
     fd = find_free_file();
     if (fd == NOT_OK) {
         errno = EMFILE;
@@ -449,6 +468,18 @@ static int do_open(const char *pathname, int flags, mode_t mode) {
     }
 
     file = &vfs_files[fd];
+#endif
+
+    if (array_has_free_slot(vfs_files_array) == NO) {
+        printk("No space in the file descriptor table\n");
+        return NOT_OK;
+    }
+
+    file = malloc(sizeof(vfile_t));
+    if (file == NULL) {
+        printk("Failed to allocate a vfile_t item\n");
+        return NOT_OK;
+    }
 
     file->mp = mp;
     file->open = NO;
@@ -468,20 +499,28 @@ static int do_open(const char *pathname, int flags, mode_t mode) {
             // The fs fills in size, mode and file_type
             if (mp->fs_driver->api.fs.open(file, fs_path, flags, &cwd) == NOT_OK) {
                 // errno has been set by the filesystem
+#if 0
                 file->mp = NULL;
+#endif
+                free(file);
                 return NOT_OK;
             }
             break;
 
         default:
             printk("bios_open: can't open on fs type %d\n", mp->fs_driver->type);
+#if 0
             file->mp = NULL;
+#endif
+            free(file);
             errno = ENODEV;
             return NOT_OK;
     }
 
     file->open = YES;
     strcpy(file->path, fs_path);
+
+    fd = add_array_item(vfs_files_array, (uintptr_t)file);
 
     return fd;
 }
@@ -499,12 +538,25 @@ int bios_close(int fd) {
     vfile_t *file;
     int res = OK;
 
+#if 0
     if ((fd < 0) || (fd >= MAX_FILES) || (vfs_files[fd].open == NO) || (vfs_files[fd].mp == NULL)) {
+#else
+    if ((fd < 0) || (fd >= MAX_FILES)) {
+#endif
         errno = EBADF;
         return NOT_OK;
     }
 
+#if 0
     file = &vfs_files[fd];
+#else
+    file = (vfile_t *)get_array_item(vfs_files_array, fd);
+    if (file == NULL) {
+        errno = EBADF;
+        return NOT_OK;
+    }
+#endif
+
 
     // invoke the filesystem specific close function
     switch (file->mp->fs_driver->type) {
@@ -534,6 +586,8 @@ int bios_close(int fd) {
 
     file->file_type = VFS_FT_UNKNOWN;    
 
+    free(file);
+
     return res;
 }
 
@@ -542,12 +596,24 @@ int bios_read(int fd, char *buff, size_t num_bytes) {
     size_t available;
     int num_read = 0;
 
+#if 0
     if ((fd < 0) || (fd >= MAX_FILES) || (vfs_files[fd].open == NO) || (vfs_files[fd].mp == NULL)) {
+#else
+    if ((fd < 0) || (fd >= MAX_FILES)) {
+#endif
         errno = EBADF;
         return NOT_OK;
     }
 
+#if 0
     file = &vfs_files[fd];
+#else
+    file = (vfile_t *)get_array_item(vfs_files_array, fd);
+    if (file == NULL) {
+        errno = EBADF;
+        return NOT_OK;
+    }
+#endif
 
     if (file->file_type == VFS_FT_DIR) {
         // Use getdents() to read a directory
@@ -638,7 +704,15 @@ size_t bios_write(int fd, const char *buff, size_t num_bytes) {
         return NOT_OK;
     }
 
+#if 0
     file = &vfs_files[fd];
+#else
+    file = (vfile_t *)get_array_item(vfs_files_array, fd);
+    if (file == NULL) {
+        errno = EBADF;
+        return NOT_OK;
+    }
+#endif
 
     if ((file->open == NO) || (file->mp == NULL)) {
         // stdout and stderr aren't opened as files: send them to the console
@@ -691,7 +765,12 @@ size_t bios_write(int fd, const char *buff, size_t num_bytes) {
 // Close every open file (e.g. when a program finishes, to flush its writes)
 void vfs_close_all(void) {
     for (int i=0; i<MAX_FILES; i++) {
+        vfile_t *file = (vfile_t *)get_array_item(vfs_files_array, i);
+#if 0
         if (vfs_files[i].open == YES) {
+#else
+        if ((file != NULL) && (file->open == YES)) {
+#endif
             bios_close(i);
         }
     }
@@ -709,12 +788,24 @@ ssize_t bios_getdents(int fd, void *dirp, size_t count) {
     int max_ents;
     int n;
 
+#if 0
     if ((fd < 0) || (fd >= MAX_FILES) || (vfs_files[fd].open == NO) || (vfs_files[fd].mp == NULL)) {
+#else
+    if ((fd < 0) || (fd >= MAX_FILES)) {
+#endif
         errno = EBADF;
         return NOT_OK;
     }
 
+#if 0
     file = &vfs_files[fd];
+#else
+    file = (vfile_t *)get_array_item(vfs_files_array, fd);
+    if (file == NULL) {
+        errno = EBADF;
+        return NOT_OK;
+    }
+#endif
 
     if ((file->mp->fs_driver->type != VFS_TYPE_FS) || (file->file_type != VFS_FT_DIR)) {
         errno = ENOTDIR;
@@ -744,12 +835,24 @@ off_t bios_seek(int fd, off_t offset, int whence) {
     vfile_t *file;
     off_t where;
 
+#if 0
     if ((fd < 0) || (fd >= MAX_FILES) || (vfs_files[fd].open == NO) || (vfs_files[fd].mp == NULL)) {
+#else
+    if ((fd < 0) || (fd >= MAX_FILES)) {
+#endif
         errno = EBADF;
         return NOT_OK;
     }
 
+#if 0
     file = &vfs_files[fd];
+#else
+    file = (vfile_t *)get_array_item(vfs_files_array, fd);
+    if (file == NULL) {
+        errno = EBADF;
+        return NOT_OK;
+    }
+#endif
 
     // printk("\nbios_seek: file pos=%d, size=%d. offset=%d, whence=%d\n",
     //         file->position, file->size, offset, whence);
@@ -804,7 +907,11 @@ static void fill_stat(vfile_t *file, struct stat *st) {
 int bios_fstat(int fd, struct stat *st) {
     vfile_t *file;
 
+#if 0
     if ((fd < 0) || (fd >= MAX_FILES) || (vfs_files[fd].open == NO) || (vfs_files[fd].mp == NULL)) {
+#else
+    if ((fd < 0) || (fd >= MAX_FILES)) {
+#endif
         errno = EBADF;
         return NOT_OK;
     }
@@ -814,7 +921,15 @@ int bios_fstat(int fd, struct stat *st) {
         return NOT_OK;
     }
 
+#if 0
     file = &vfs_files[fd];
+#else
+    file = (vfile_t *)get_array_item(vfs_files_array, fd);
+    if (file == NULL) {
+        errno = EBADF;
+        return NOT_OK;
+    }
+#endif
 
     if (file->mp->fs_driver->type == VFS_TYPE_CHAR) {
         memset(st, 0, sizeof(*st));
@@ -879,7 +994,15 @@ int bios_isatty(int fd) {
         return NOT_OK;
     }
 
+#if 0
     file = &vfs_files[fd];
+#else
+    file = (vfile_t *)get_array_item(vfs_files_array, fd);
+    if (file == NULL) {
+        errno = EBADF;
+        return NOT_OK;
+    }
+#endif
 
     if (file->mp->fs_driver->type != VFS_TYPE_CHAR) {
         errno = ENOTTY;

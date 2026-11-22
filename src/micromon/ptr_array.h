@@ -43,3 +43,4 @@ void free_ptr_array(ptr_array_t *arr);
 uintptr_t get_array_item(ptr_array_t *arr, uint16_t slot);
 int add_array_item(ptr_array_t *arr, uintptr_t val);
 int free_array_item(ptr_array_t *arr, uint16_t slot);
+int array_has_free_slot(ptr_array_t *arr);
