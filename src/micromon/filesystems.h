@@ -87,7 +87,7 @@ struct vmp {
 
 union vfs {
     struct {
-        int (*open)(vfile_t *pwd, const char *fname);
+        int (*open)(vfile_t *file, const char *fname);    // sets file->minor
         int (*putchar)(uint8_t minor, int ch);
         int (*getchar)(uint8_t minor);
         int (*char_available)(uint8_t minor);
@@ -131,7 +131,9 @@ struct vfile_private {
 struct vfile {
     char path[PATH_MAX];
     bool_t open;
-    vmp_t *mp;
+    vmp_t *mp;                      // NULL for a character device
+    vfs_fs_t *fs;                   // the driver: mp->fs_driver for files
+    uint8_t minor;                  // which device, for a character device
 
     char buffer[BLOCK_DEVICE_BLOCK_SIZE];
     int index;

@@ -27,6 +27,11 @@ SOFTWARE.
 #include <bios.h>
 
 int putchar(int c) {
+    // The console wants "\r\n" at the end of a line
+    if (c == '\n') {
+        syscall(BIOS_PUTCHAR, 0, '\r', 0);
+    }
+
     syscall(BIOS_PUTCHAR, 0, c, 0);
 
     return c;

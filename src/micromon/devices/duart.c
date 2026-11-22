@@ -25,6 +25,7 @@ SOFTWARE.
 #include <ctype.h>
 #include <stddef.h>
 #include <string.h>
+#include <errno.h>
 #include <machine.h>
 #include <extras.h>
 
@@ -623,6 +624,22 @@ int bios_flush(uint8_t port) {
     return 0;
 }
 
+// Work out which port a path names
+static int duart_open(vfile_t *file, const char *pathname) {
+    if (strcasecmp(pathname, "//ser1") == 0) {
+        file->minor = 0;
+    }
+    else if (strcasecmp(pathname, "//ser2") == 0) {
+        file->minor = 1;
+    }
+    else {
+        errno = ENOENT;
+        return NOT_OK;
+    }
+
+    return OK;
+}
+
 static int handles_path(const char *pathname) {
     if ((strcasecmp(pathname, "//ser1") == 0) || (strcasecmp(pathname, "//ser2") == 0)) {
         return YES;
@@ -648,6 +665,7 @@ int setup_vfs_duart_handler(vfs_fs_t *vfs) {
     vfs->handles_path = handles_path;
     vfs->name = "68681 duart";
 
+    vfs->api.chardev.open = duart_open;
     vfs->api.chardev.putchar = bios_putchar;
     vfs->api.chardev.getchar = bios_getchar;
     vfs->api.chardev.char_available = bios_char_available;

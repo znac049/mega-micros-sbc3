@@ -68,6 +68,21 @@ static vfs_fs_t *find_free_fs(void) {
     return NULL;
 }
 
+// Is the path a character device ("//ser1", ...)? Returns its driver if so.
+static vfs_fs_t *find_char_device(const char *pathname) {
+    for (int i=0; i<MAX_VIRTUAL_FILESYSTEMS; i++) {
+        vfs_fs_t *fs = &filesystems[i];
+
+        if ((fs->type == VFS_TYPE_CHAR) &&
+            (fs->handles_path != NULL) &&
+            (fs->handles_path(pathname) == YES)) {
+            return fs;
+        }
+    }
+
+    return NULL;
+}
+
 static vmp_t *find_mount_by_name(const char *name, size_t len) {
     if (len == 0) {
         return NULL;
@@ -264,6 +279,42 @@ static vmp_t *attempt_to_mount(block_device_t *dev) {
     return NULL;
 }
 
+/*
+ * Make sure fds 0, 1 and 2 are stdin, stdout and stderr. New files always
+ * get the lowest free fd, so opening in order fills any gaps.
+ */
+static int open_console(void) {
+    static const struct {
+        const char *path;
+        int flags;
+    } console[3] = {
+        { "//ser1", O_RDONLY },     // stdin
+        { "//ser1", O_WRONLY },     // stdout
+        { "//ser2", O_WRONLY },     // stderr
+    };
+    int res = OK;
+
+    for (int i=0; i<3; i++) {
+        int fd;
+
+        if (get_array_item(vfs_files_array, i) != 0) {
+            continue;
+        }
+
+        fd = bios_open(console[i].path, console[i].flags);
+        if (fd != i) {
+            printk("open_console: %s opened as fd %d, not %d\n", console[i].path, fd, i);
+            if (fd >= 0) {
+                bios_close(fd);
+            }
+
+            res = NOT_OK;
+        }
+    }
+
+    return res;
+}
+
 static int init_structures(void) {
     vfs_files_array = new_ptr_array(3, MAX_FILES);
 
@@ -284,7 +335,6 @@ static int init_structures(void) {
 
 int vfs_init(void) {
     int res = OK;
-    int fd;
 
     cwd.open = NO;
     strcpy(cwd.path, "/");
@@ -324,17 +374,8 @@ int vfs_init(void) {
     }
 
     // Open stdin/out/err
-    // printk("vfs_init: open stdin/out/err...\n");
-    if ((fd = bios_open("//ser1", O_RDONLY)) < 0) {
-        res = fd;
-    }
-
-    if ((fd = bios_open("//ser1", O_WRONLY)) < 0) {
-        res = fd;
-    }
-
-    if ((fd = bios_open("//ser2", O_WRONLY)) < 0) {
-        res = fd;
+    if (open_console() == NOT_OK) {
+        res = NOT_OK;
     }
 
     // printk("vfs_init: Calling chdir()...\n");
@@ -388,6 +429,7 @@ int bios_chdir(const char *path) {
     }
 
     new_dir.mp = mp;
+    new_dir.fs = mp->fs_driver;
     new_dir.open = NO;
     new_dir.index = new_dir.count = 0;
     new_dir.position = 0;
@@ -429,14 +471,29 @@ int bios_getcwd(char*buff, size_t size) {
  */
 static int do_open(const char *pathname, int flags, mode_t mode) {
     char fs_path[PATH_MAX];
-    vmp_t *mp;
+    vmp_t *mp = NULL;
+    vfs_fs_t *fs;
     vfile_t *file;
     int fd;
 
     // printk("open('%s')\n", pathname);
 
-    if (resolve_path(pathname, &mp, fs_path) == NOT_OK) {
-        return NOT_OK;
+    // A character device, or a file on a mounted filesystem?
+    fs = find_char_device(pathname);
+    if (fs != NULL) {
+        if (strlen(pathname) >= sizeof(fs_path)) {
+            errno = ENAMETOOLONG;
+            return NOT_OK;
+        }
+
+        strcpy(fs_path, pathname);
+    }
+    else {
+        if (resolve_path(pathname, &mp, fs_path) == NOT_OK) {
+            return NOT_OK;
+        }
+
+        fs = mp->fs_driver;
     }
 
     file = malloc(sizeof(vfile_t));
@@ -454,6 +511,8 @@ static int do_open(const char *pathname, int flags, mode_t mode) {
     }
 
     file->mp = mp;
+    file->fs = fs;
+    file->minor = 0;
     file->open = NO;
     file->index = file->count = 0;
     file->position = 0;
@@ -466,10 +525,21 @@ static int do_open(const char *pathname, int flags, mode_t mode) {
     file->append = (flags & O_APPEND)?YES:NO;
 
     // invoke the filesystem specific open function
-    switch (mp->fs_driver->type) {
+    switch (fs->type) {
+        case VFS_TYPE_CHAR:
+            // The driver works out which device (file->minor) from the path
+            if ((fs->api.chardev.open != NULL) &&
+                (fs->api.chardev.open(file, fs_path) == NOT_OK)) {
+                // errno has been set by the driver
+                free_array_item(vfs_files_array, fd);
+                free(file);
+                return NOT_OK;
+            }
+            break;
+
         case VFS_TYPE_FS:
             // The fs fills in size, mode and file_type
-            if (mp->fs_driver->api.fs.open(file, fs_path, flags, &cwd) == NOT_OK) {
+            if (fs->api.fs.open(file, fs_path, flags, &cwd) == NOT_OK) {
                 // errno has been set by the filesystem
                 free_array_item(vfs_files_array, fd);
                 free(file);
@@ -478,7 +548,7 @@ static int do_open(const char *pathname, int flags, mode_t mode) {
             break;
 
         default:
-            printk("bios_open: can't open on fs type %d\n", mp->fs_driver->type);
+            printk("bios_open: can't open on fs type %d\n", fs->type);
             free_array_item(vfs_files_array, fd);
             free(file);
             errno = ENODEV;
@@ -517,14 +587,17 @@ int bios_close(int fd) {
 
 
     // invoke the filesystem specific close function
-    switch (file->mp->fs_driver->type) {
+    switch (file->fs->type) {
         case VFS_TYPE_CHAR:
-            printk("bios_close: closing char device - not coded yet!\n");
+            // Make sure everything written has gone
+            if ((file->writeable == YES) && (file->fs->api.chardev.flush != NULL)) {
+                file->fs->api.chardev.flush(file->minor);
+            }
             break;
 
         case VFS_TYPE_FS:
             // printk("bios_close: closing file on a filesystem\n");
-            if (file->mp->fs_driver->api.fs.close(file) == NOT_OK) {
+            if (file->fs->api.fs.close(file) == NOT_OK) {
                 printk("bios_close(): failed to close fd %d ('%s')\n", fd, file->path);
             }
 
@@ -538,16 +611,59 @@ int bios_close(int fd) {
 
     file->open = NO;
     file->mp = NULL;
+    file->fs = NULL;
 
     file->index = file->count = 0;
     file->position = 0;
 
-    file->file_type = VFS_FT_UNKNOWN;    
+    file->file_type = VFS_FT_UNKNOWN;
 
     free_array_item(vfs_files_array, fd);
     free(file);
 
     return res;
+}
+
+/*
+ * Read from a character device: wait for the first character, then take
+ * whatever else has already arrived, up to num_bytes. Characters are passed
+ * through untouched.
+ */
+static int char_read(vfile_t *file, char *buff, size_t num_bytes) {
+    vfs_fs_t *fs = file->fs;
+    size_t n = 0;
+    int ch;
+
+    if (num_bytes == 0) {
+        return 0;
+    }
+
+    do {
+        ch = fs->api.chardev.getchar(file->minor);
+        if (ch < 0) {
+            errno = EIO;
+            return (n > 0)?(int)n:NOT_OK;
+        }
+
+        buff[n++] = (char)ch;
+    } while ((n < num_bytes) && (fs->api.chardev.char_available(file->minor) == YES));
+
+    return (int)n;
+}
+
+// Write to a character device, sending "\r\n" for each '\n'
+static size_t char_write(vfile_t *file, const char *buff, size_t num_bytes) {
+    vfs_fs_t *fs = file->fs;
+
+    for (size_t i=0; i<num_bytes; i++) {
+        if (buff[i] == '\n') {
+            fs->api.chardev.putchar(file->minor, '\r');
+        }
+
+        fs->api.chardev.putchar(file->minor, buff[i]);
+    }
+
+    return num_bytes;
 }
 
 int bios_read(int fd, char *buff, size_t num_bytes) {
@@ -564,6 +680,10 @@ int bios_read(int fd, char *buff, size_t num_bytes) {
     if (file == NULL) {
         errno = EBADF;
         return NOT_OK;
+    }
+
+    if (file->fs->type == VFS_TYPE_CHAR) {
+        return char_read(file, buff, num_bytes);
     }
 
     if (file->file_type == VFS_FT_DIR) {
@@ -584,15 +704,10 @@ int bios_read(int fd, char *buff, size_t num_bytes) {
 
         // printk("bios_read: asking for more data\n");
 
-        switch (file->mp->fs_driver->type) {
-            case VFS_TYPE_CHAR:
-                printk("bios_read: reading char device - not coded yet!\n");
-
-                break;
-
+        switch (file->fs->type) {
             case VFS_TYPE_FS:
                 {
-                    num_read = file->mp->fs_driver->api.fs.read(file, file->buffer, BLOCK_DEVICE_BLOCK_SIZE);
+                    num_read = file->fs->api.fs.read(file, file->buffer, BLOCK_DEVICE_BLOCK_SIZE);
 
                     if (num_read == NOT_OK) {
                         printk("bios_read(): failed to read up to '%d' bytes\n", sizeof(file->buffer));
@@ -657,20 +772,7 @@ size_t bios_write(int fd, const char *buff, size_t num_bytes) {
         return NOT_OK;
     }
 
-    if ((file->open == NO) || (file->mp == NULL)) {
-        // stdout and stderr aren't opened as files: send them to the console
-        if ((fd == 1) || (fd == 2)) {
-            for (size_t i=0; i<num_bytes; i++) {
-                if (buff[i] == '\n') {
-                    bios_putchar(0, '\r');
-                }
-
-                bios_putchar(0, buff[i]);
-            }
-
-            return num_bytes;
-        }
-
+    if (file->open == NO) {
         errno = EBADF;
         return NOT_OK;
     }
@@ -684,7 +786,10 @@ size_t bios_write(int fd, const char *buff, size_t num_bytes) {
         return 0;
     }
 
-    switch (file->mp->fs_driver->type) {
+    switch (file->fs->type) {
+        case VFS_TYPE_CHAR:
+            return char_write(file, buff, num_bytes);
+
         case VFS_TYPE_FS:
             if (file->file_type == VFS_FT_DIR) {
                 errno = EISDIR;
@@ -692,12 +797,12 @@ size_t bios_write(int fd, const char *buff, size_t num_bytes) {
             }
 
             if ((file->append == YES) &&
-                (file->mp->fs_driver->api.fs.seek(file, 0, SEEK_END) == NOT_OK)) {
+                (file->fs->api.fs.seek(file, 0, SEEK_END) == NOT_OK)) {
                 return NOT_OK;
             }
 
             // Returns the number of bytes written, or NOT_OK with errno set
-            return file->mp->fs_driver->api.fs.write(file, buff, num_bytes);
+            return file->fs->api.fs.write(file, buff, num_bytes);
 
         default:
             errno = ENODEV;
@@ -707,13 +812,23 @@ size_t bios_write(int fd, const char *buff, size_t num_bytes) {
 
 // Close every open file (e.g. when a program finishes, to flush its writes)
 void vfs_close_all(void) {
-    // fds 0-2 are the console, opened by vfs_init(): leave them alone
-    for (int i=3; i<MAX_FILES; i++) {
+    for (int i=0; i<MAX_FILES; i++) {
         vfile_t *file = (vfile_t *)get_array_item(vfs_files_array, i);
-        if ((file != NULL) && (file->open == YES)) {
-            bios_close(i);
+
+        if ((file == NULL) || (file->open == NO)) {
+            continue;
         }
+
+        // Leave the console alone, but not a file a program put in its place
+        if ((i <= 2) && (file->fs->type == VFS_TYPE_CHAR)) {
+            continue;
+        }
+
+        bios_close(i);
     }
+
+    // Put back any of stdin/out/err the program closed
+    open_console();
 }
 
 /*
@@ -739,12 +854,12 @@ ssize_t bios_getdents(int fd, void *dirp, size_t count) {
         return NOT_OK;
     }
 
-    if ((file->mp->fs_driver->type != VFS_TYPE_FS) || (file->file_type != VFS_FT_DIR)) {
+    if ((file->fs->type != VFS_TYPE_FS) || (file->file_type != VFS_FT_DIR)) {
         errno = ENOTDIR;
         return NOT_OK;
     }
 
-    if (file->mp->fs_driver->api.fs.getdents == NULL) {
+    if (file->fs->api.fs.getdents == NULL) {
         errno = ENOSYS;
         return NOT_OK;
     }
@@ -755,7 +870,7 @@ ssize_t bios_getdents(int fd, void *dirp, size_t count) {
         return NOT_OK;
     }
 
-    n = file->mp->fs_driver->api.fs.getdents(file, (struct dirent *)dirp, max_ents);
+    n = file->fs->api.fs.getdents(file, (struct dirent *)dirp, max_ents);
     if (n == NOT_OK) {
         return NOT_OK;
     }
@@ -778,13 +893,13 @@ off_t bios_seek(int fd, off_t offset, int whence) {
         return NOT_OK;
     }
 
-    switch (file->mp->fs_driver->type) {
+    switch (file->fs->type) {
     case VFS_TYPE_CHAR:
         errno = ESPIPE;
         return NOT_OK;
 
     case VFS_TYPE_FS:
-        where = file->mp->fs_driver->api.fs.seek(file, offset, whence);
+        where = file->fs->api.fs.seek(file, offset, whence);
         if (where == NOT_OK) {
             // errno set by the filesystem
             return NOT_OK;
@@ -820,8 +935,8 @@ static void fill_stat(vfile_t *file, struct stat *st) {
     st->st_blksize = BLOCK_DEVICE_BLOCK_SIZE;
     st->st_blocks = (file->size + 511) / 512;
 
-    if (file->mp->fs_driver->api.fs.stat != NULL) {
-        file->mp->fs_driver->api.fs.stat(file, st);
+    if (file->fs->api.fs.stat != NULL) {
+        file->fs->api.fs.stat(file, st);
     }
 }
 
@@ -844,7 +959,7 @@ int bios_fstat(int fd, struct stat *st) {
         return NOT_OK;
     }
 
-    if (file->mp->fs_driver->type == VFS_TYPE_CHAR) {
+    if (file->fs->type == VFS_TYPE_CHAR) {
         memset(st, 0, sizeof(*st));
         st->st_mode = S_IFCHR | 0666;
         st->st_nlink = 1;
@@ -882,6 +997,7 @@ int bios_stat(const char *pathname, struct stat *st) {
 
     memset(&file, 0, sizeof(file));
     file.mp = mp;
+    file.fs = mp->fs_driver;
     file.file_type = VFS_FT_UNKNOWN;
 
     if (mp->fs_driver->api.fs.open(&file, fs_path, O_RDONLY, &cwd) == NOT_OK) {
@@ -913,12 +1029,12 @@ int bios_isatty(int fd) {
         return NOT_OK;
     }
 
-    if (file->mp->fs_driver->type != VFS_TYPE_CHAR) {
+    if (file->fs->type != VFS_TYPE_CHAR) {
         errno = ENOTTY;
         return NO;
     }
 
-    res = file->mp->fs_driver->api.chardev.isatty(fd);
+    res = file->fs->api.chardev.isatty(file->minor);
 
     if (res != YES) {
         errno = ENOTTY;
