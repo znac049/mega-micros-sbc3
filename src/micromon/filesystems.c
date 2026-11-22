@@ -442,6 +442,7 @@ static int do_open(const char *pathname, int flags, mode_t mode) {
     file = malloc(sizeof(vfile_t));
     if (file == NULL) {
         printk("Failed to allocate a vfile_t item\n");
+        errno = ENOMEM;
         return NOT_OK;
     }
 
@@ -542,7 +543,7 @@ int bios_close(int fd) {
     file->position = 0;
 
     file->file_type = VFS_FT_UNKNOWN;    
-    
+
     free_array_item(vfs_files_array, fd);
     free(file);
 
