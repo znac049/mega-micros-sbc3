@@ -35,7 +35,7 @@ struct dirent;      // from <dirent.h>
 struct stat;        // from <sys/stat.h>
 
 // Max number of file descriptors
-#define MAX_FILES 20
+#define MAX_FILES 32
 #define MAX_VIRTUAL_FILESYSTEMS 6
 #define MAX_MOUNTS 12
 

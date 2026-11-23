@@ -36,7 +36,7 @@ SOFTWARE.
 
 static int major = 0;
 static int minor = 6;
-static int MAGIC_BUILD_NUMBER = 47;
+static int MAGIC_BUILD_NUMBER = 48;
 
 
 uint32_t ram_low_size;
@@ -96,7 +96,7 @@ static void pr_i2c(const char *msg, uint8_t addr) {
     uint8_t mask = 0x40;
 
     padstr(msg, PAD_COL);
-    printk(" [ DEV ID:");
+    printk(" [ Device ID:");
 
     while (mask) {
         if (addr & mask) {
@@ -107,7 +107,7 @@ static void pr_i2c(const char *msg, uint8_t addr) {
         }
         mask = mask >> 1;
     }
-    printk("x ]\n");
+    printk("x  ]\n");
 }
 
 static void pr_jumpers(uint8_t jumpers) {
@@ -206,7 +206,7 @@ static void pr_banner(void) {
     pr_section("init",    &_pretext_start, &_postinit_end);
     pr_section("code",    &_code_start,    &_code_end);
     pr_section("ro data", &_rodata_start,  &_rodata_end);
-    printk   ("%-8s $%06X-$%06X               <-- relocated from $%08X\n", "rw data", (uint32_t)&_d_start, (uint32_t)&_d_start + (uint32_t)&_data_length, (uint32_t)&_data_load_start);
+    printk   ("%-8s $%06X-$%06X   %d          <-- relocated from $%08X\n", "rw data", (uint32_t)&_d_start, (uint32_t)&_d_start + (uint32_t)&_data_length, (uint32_t)&_data_length, (uint32_t)&_data_load_start);
     pr_section("bss",     &_bss_start,     &_bss_end);
 
     if (rtc_present) {

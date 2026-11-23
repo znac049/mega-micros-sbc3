@@ -46,17 +46,7 @@ static ptr_array_t *vfs_files_array;
 static vfs_fs_t filesystems[MAX_VIRTUAL_FILESYSTEMS];
 
 // Mounts table
-vmp_t mounts[MAX_MOUNTS];
-
-static vmp_t *find_free_vmp(void) {
-    for (int i=0; i<MAX_MOUNTS; i++) {
-        if (mounts[i].mounted == NO) {
-            return &mounts[i];
-        }
-    }
-
-    return NULL;
-}
+static ptr_array_t *vfs_mounts_array;
 
 static vfs_fs_t *find_free_fs(void) {
     for (int i=0; i<MAX_VIRTUAL_FILESYSTEMS; i++) {
@@ -89,10 +79,13 @@ static vmp_t *find_mount_by_name(const char *name, size_t len) {
     }
 
     for (int i=0; i<MAX_MOUNTS; i++) {
-        if ((mounts[i].mounted == YES) &&
-            (strlen(mounts[i].name) == len) &&
-            (strncasecmp(name, mounts[i].name, len) == 0)) {
-            return &mounts[i];
+        vmp_t *mp = (vmp_t *)get_array_item(vfs_mounts_array, i);
+
+        if ((mp != NULL) &&
+            (mp->mounted == YES) &&
+            (strlen(mp->name) == len) &&
+            (strncasecmp(name, mp->name, len) == 0)) {
+            return mp;
         }
     }
 
@@ -240,11 +233,11 @@ static int resolve_path(const char *path, vmp_t **mpp, char *fs_path) {
 }
 
 static vmp_t *attempt_to_mount(block_device_t *dev) {
-    vmp_t *vmp = find_free_vmp();
+    vmp_t *vmp = malloc(sizeof(vmp));
     vmp_t *res;
 
     if (vmp == NULL) {
-        // printk("NULL vmp passed in!\n");
+        errno = ENOMEM;
         return NULL;
     }
 
@@ -317,13 +310,12 @@ static int open_console(void) {
 
 static int init_structures(void) {
     vfs_files_array = new_ptr_array(3, MAX_FILES);
+    vfs_mounts_array = new_ptr_array(1, MAX_MOUNTS);
 
-    if (vfs_files_array == NULL) {
+    if ((vfs_files_array == NULL) || (vfs_mounts_array == NULL)) {
+        free(vfs_files_array);
+        free(vfs_mounts_array);
         return NOT_OK;
-    }
-
-    for (int i=0; i<MAX_MOUNTS; i++) {
-        mounts[i].mounted = NO;
     }
 
     for (int i=0; i<MAX_VIRTUAL_FILESYSTEMS; i++) {
@@ -368,6 +360,11 @@ int vfs_init(void) {
                 printk("vfs_init: %s not mounted\n", dev->name);
             }
             else {
+                if (add_array_item(vfs_mounts_array, (uintptr_t)mp) == NOT_OK) {
+                    printk("No space for mount in mount table\n");
+                    free(mp);
+                    return NOT_OK;
+                }
                 printk("%s: mounted as %s\n", mp->dev_driver->name, mp->fs_driver->name);
             }
         }
@@ -378,7 +375,6 @@ int vfs_init(void) {
         res = NOT_OK;
     }
 
-    // printk("vfs_init: Calling chdir()...\n");
     if (bios_chdir("/rom0") == NOT_OK) {
         printk("chdir() failed|||\n");
 
@@ -394,15 +390,17 @@ int vfs_shutdown(void) {
 
     // unomunt everything
     for (int i=0; i<MAX_MOUNTS; i++) {
-        vmp_t *mp = &mounts[i];
+        vmp_t *mp = (vmp_t *)get_array_item(vfs_mounts_array, i);
 
-        if (mp->mounted == YES) {
+        if ((mp != NULL) && (mp->mounted == YES)) {
             mp->fs_driver->api.fs.unmount(mp);
             mp->mounted = NO;
             mp->dev_driver = NULL;
             mp->fs_driver = NULL;
             mp->name[0] = EOS;
-            // mp->subdev = 0;
+
+            free_array_item(vfs_mounts_array, i);
+            free(mp);
         }
     }
 
