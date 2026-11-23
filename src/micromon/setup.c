@@ -36,7 +36,7 @@ SOFTWARE.
 
 static int major = 0;
 static int minor = 6;
-static int MAGIC_BUILD_NUMBER = 48;
+static int MAGIC_BUILD_NUMBER = 56;
 
 
 uint32_t ram_low_size;
