@@ -168,18 +168,36 @@ static command_t *find_command(char *cmd) {
 static int find_command_on_disk(char *cmdline) {
     char *argv[MAX_ARGS];
     int argc = split_str(cmdline, ' ', argv, MAX_ARGS);
+    char name[PATH_MAX];
+    char pwd[PATH_MAX];
+    struct stat sb;
 
-    (void)argc;
+    if (argc == 0) {
+        return NOT_OK;
+    }
 
     /*
-     * Keep is simple, so look in /bin on every mountpoint,
-     * in the order they were mounted
+     * Keep is simple, so look 
+     * - in the current directory
+     * - in /bin on every mountpoint, in mount
+     *   table order
      */
 
-   for (int i=0; i<MAX_MOUNTS; i++) {
+    if (getcwd(pwd, sizeof(name)) != NULL) {
+        snprintf(name, sizeof(name), "/%s/%s", pwd, argv[0]);
+
+        if (stat(name, &sb) == OK) {
+            // Something found. Check it's a file
+            if (S_ISREG(sb.st_mode)) {
+                int fd = open(name, O_RDONLY);
+
+                return fd;
+            }
+        }
+    }
+
+    for (int i=0; i<MAX_MOUNTS; i++) {
         vmp_t *mp = vfs_get_mount(i);
-        char name[PATH_MAX];
-        struct stat sb;
 
         if ((mp != NULL) && (mp->mounted == YES)) {
             snprintf(name, sizeof(name), "/%s/bin/%s", mp->name, argv[0]);
@@ -293,7 +311,6 @@ void main(void) {
     char cmdline[MAX_LINE];
     char cwd[PATH_MAX];
 
-    HEXB1(0x42);
     setup();
 
     printk("Ready.\n");
