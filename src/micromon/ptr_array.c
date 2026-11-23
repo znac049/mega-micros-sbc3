@@ -140,7 +140,8 @@ void free_ptr_array(ptr_array_t *arr) {
 
 uintptr_t get_array_item(ptr_array_t *arr, uint16_t slot) {
     if (arr == NULL) {
-        return NOT_OK;
+        errno = EINVAL;
+        return (uintptr_t)NULL;
     }
     
     if (slot >= arr->num_current_slots) {
@@ -161,6 +162,7 @@ int add_array_item(ptr_array_t *arr, uintptr_t val) {
     int slot;
 
     if (arr == NULL) {
+        errno = EINVAL;
         return NOT_OK;
     }
     
@@ -176,6 +178,7 @@ int add_array_item(ptr_array_t *arr, uintptr_t val) {
 
 int free_array_item(ptr_array_t *arr, uint16_t slot) {
     if (arr == NULL) {
+        errno = EINVAL;
         return NOT_OK;
     }
     
