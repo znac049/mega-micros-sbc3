@@ -177,11 +177,11 @@ static int find_command_on_disk(char *cmdline) {
      */
 
    for (int i=0; i<MAX_MOUNTS; i++) {
-        vmp_t *mp = &mounts[i];
+        vmp_t *mp = vfs_get_mount(i);
         char name[PATH_MAX];
         struct stat sb;
 
-        if (mp->mounted == YES) {
+        if ((mp != NULL) && (mp->mounted == YES)) {
             snprintf(name, sizeof(name), "/%s/bin/%s", mp->name, argv[0]);
 
             if (stat(name, &sb) == OK) {

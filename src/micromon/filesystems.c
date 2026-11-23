@@ -233,13 +233,15 @@ static int resolve_path(const char *path, vmp_t **mpp, char *fs_path) {
 }
 
 static vmp_t *attempt_to_mount(block_device_t *dev) {
-    vmp_t *vmp = malloc(sizeof(vmp));
+    vmp_t *vmp = malloc(sizeof(vmp_t));
     vmp_t *res;
 
     if (vmp == NULL) {
         errno = ENOMEM;
         return NULL;
     }
+
+    memset(vmp, 0, sizeof(vmp_t));
 
     vmp->dev_driver = dev;
     vmp->read_only = YES;
@@ -269,7 +271,13 @@ static vmp_t *attempt_to_mount(block_device_t *dev) {
         }
     }
 
+    free(vmp);
+
     return NULL;
+}
+
+vmp_t *vfs_get_mount(int i) {
+    return (vmp_t *)get_array_item(vfs_mounts_array, i);
 }
 
 /*
@@ -313,8 +321,8 @@ static int init_structures(void) {
     vfs_mounts_array = new_ptr_array(1, MAX_MOUNTS);
 
     if ((vfs_files_array == NULL) || (vfs_mounts_array == NULL)) {
-        free(vfs_files_array);
-        free(vfs_mounts_array);
+        free_ptr_array(vfs_files_array);
+        free_ptr_array(vfs_mounts_array);
         return NOT_OK;
     }
 
@@ -334,38 +342,44 @@ int vfs_init(void) {
     // Allocate and initialise filesystem structures.
     if (init_structures() == NOT_OK) {
         printk("Failed to initialise filesystem structures.\n");
-        return NOT_OK;
+        res = NOT_OK;
     }
+    else {
+        // Register a handler for the two serial ports
+        res = setup_vfs_duart_handler(find_free_fs());
 
-    // Register a handler for the two serial ports
-    res = setup_vfs_duart_handler(find_free_fs());
+        // Register a handler for ext2 filesystems
+        res = setup_vfs_ext2_handler(find_free_fs());
 
-    // Register a handler for ext2 filesystems
-    res = setup_vfs_ext2_handler(find_free_fs());
+        // Register a handler for fat filesystems
+        res = setup_vfs_fat_handler(find_free_fs());
 
-    // Register a handler for fat filesystems
-    res = setup_vfs_fat_handler(find_free_fs());
+        // Anything we can mount?
+        // printk("vfs_init: what can we mount?\n");
+        for (int bd=0; bd<MAX_BLOCK_DEVICES; bd++) { 
+            block_device_t *dev = &block_devices[bd];
 
-    // Anything we can mount?
-    // printk("vfs_init: what can we mount?\n");
-    for (int bd=0; bd<MAX_BLOCK_DEVICES; bd++) { 
-        block_device_t *dev = &block_devices[bd];
+            if (dev->active == YES) {
+                vmp_t *mp;
 
-        if (dev->active == YES) {
-            vmp_t *mp;
+                // printk("Looking at blockdev '%s'\n", dev->name);
 
-            // printk("Looking at blockdev '%s'\n", dev->name);
-
-            if ((mp = attempt_to_mount(dev)) == NULL) {
-                printk("vfs_init: %s not mounted\n", dev->name);
-            }
-            else {
-                if (add_array_item(vfs_mounts_array, (uintptr_t)mp) == NOT_OK) {
-                    printk("No space for mount in mount table\n");
-                    free(mp);
-                    return NOT_OK;
+                if ((mp = attempt_to_mount(dev)) == NULL) {
+                    printk("vfs_init: %s not mounted\n", dev->name);
                 }
-                printk("%s: mounted as %s\n", mp->dev_driver->name, mp->fs_driver->name);
+                else {
+                    int slot = add_array_item(vfs_mounts_array, (uintptr_t)mp);
+
+                    if (slot == NOT_OK) {
+                        printk("No space for mount in mount table\n");
+                        free(mp);
+                        res = NOT_OK;
+                    }
+                    else {
+                        mp->index = slot;
+                        printk("%s: mounted as %s\n", mp->dev_driver->name, mp->fs_driver->name);
+                    }
+                }
             }
         }
     }
@@ -378,7 +392,7 @@ int vfs_init(void) {
     if (bios_chdir("/rom0") == NOT_OK) {
         printk("chdir() failed|||\n");
 
-        return NOT_OK;
+        res = NOT_OK;
     }
 
     return res;
@@ -403,7 +417,6 @@ int vfs_shutdown(void) {
             free(mp);
         }
     }
-
 
     return OK;
 }
@@ -926,7 +939,7 @@ off_t bios_seek(int fd, off_t offset, int whence) {
 static void fill_stat(vfile_t *file, struct stat *st) {
     memset(st, 0, sizeof(*st));
 
-    st->st_dev = file->mp - mounts;
+    st->st_dev = file->mp->index;
     st->st_mode = file->mode;
     st->st_size = file->size;
     st->st_nlink = 1;

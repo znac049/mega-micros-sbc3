@@ -93,8 +93,6 @@ extern bool_t rtc_present;
 extern bool_t oled_present;
 extern bool_t experimental;
 
-extern vmp_t mounts[MAX_MOUNTS];
-
 // mon_crt0.asm
 uint32_t get_cacr(void);
 uint32_t set_cacr(uint32_t cacr);
@@ -184,6 +182,7 @@ void handle_eval_command(char *cmdline);
 // filesystems.c
 int vfs_init(void);
 int vfs_shutdown(void);
+vmp_t *vfs_get_mount(int i);
 
 int bios_chdir(const char *path);
 int bios_getcwd(char*buff, size_t size);

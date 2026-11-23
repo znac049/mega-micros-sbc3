@@ -40,9 +40,9 @@ void handle_showmount_command(int argc, char *argv[]) {
     printk("Path                  FS Type      Driver\n");
     printk("--------------------------------------------\n");
     for (int i=0; i<MAX_MOUNTS; i++) {
-        vmp_t *mp = &mounts[i];
+        vmp_t *mp = vfs_get_mount(i);
 
-        if (mp->mounted == YES) {
+        if ((mp != NULL) && (mp->mounted == YES)) {
             printk("/%-20s %-12s %-12s\n", mp->name, mp->fs_driver->name, mp->dev_driver->name);
         }
     }
