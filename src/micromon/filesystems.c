@@ -323,6 +323,7 @@ static int init_structures(void) {
     if ((vfs_files_array == NULL) || (vfs_mounts_array == NULL)) {
         free_ptr_array(vfs_files_array);
         free_ptr_array(vfs_mounts_array);
+        vfs_files_array = vfs_mounts_array = NULL;
         return NOT_OK;
     }
 
@@ -342,7 +343,7 @@ int vfs_init(void) {
     // Allocate and initialise filesystem structures.
     if (init_structures() == NOT_OK) {
         printk("Failed to initialise filesystem structures.\n");
-        res = NOT_OK;
+        return NOT_OK;
     }
     else {
         // Register a handler for the two serial ports

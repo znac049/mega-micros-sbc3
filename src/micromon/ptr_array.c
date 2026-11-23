@@ -139,6 +139,10 @@ void free_ptr_array(ptr_array_t *arr) {
 }
 
 uintptr_t get_array_item(ptr_array_t *arr, uint16_t slot) {
+    if (arr == NULL) {
+        return NOT_OK;
+    }
+    
     if (slot >= arr->num_current_slots) {
         errno = ERANGE;
         return (uintptr_t)NULL;
@@ -154,8 +158,13 @@ uintptr_t get_array_item(ptr_array_t *arr, uint16_t slot) {
 }
 
 int add_array_item(ptr_array_t *arr, uintptr_t val) {
-    int slot = find_free_array_slot(arr);
+    int slot;
 
+    if (arr == NULL) {
+        return NOT_OK;
+    }
+    
+    slot = find_free_array_slot(arr);
     if (slot >= 0) {
         arr->data[slot] = val;
         bitmap_set(arr->bm, slot, YES);
@@ -166,6 +175,10 @@ int add_array_item(ptr_array_t *arr, uintptr_t val) {
 }
 
 int free_array_item(ptr_array_t *arr, uint16_t slot) {
+    if (arr == NULL) {
+        return NOT_OK;
+    }
+    
     if (slot < arr->num_current_slots) {
         bitmap_set(arr->bm, slot, NO);
         arr->data[slot] = (uintptr_t)NULL;
