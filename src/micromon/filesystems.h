@@ -80,7 +80,7 @@ struct vmp {
     unsigned int read_only : 1;
 
     int index;      // Slot in the mount table - used as st_dev
-    
+
     // This data depends on the specific filesystem type
     vmp_private_t private;
 };

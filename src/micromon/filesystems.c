@@ -357,7 +357,7 @@ int vfs_init(void) {
 
         // Anything we can mount?
         // printk("vfs_init: what can we mount?\n");
-        for (int bd=0; bd<MAX_BLOCK_DEVICES; bd++) { 
+        for (int bd=0; bd<MAX_BLOCK_DEVICES; bd++) {
             block_device_t *dev = &block_devices[bd];
 
             if (dev->active == YES) {
