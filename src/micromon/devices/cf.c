@@ -47,7 +47,7 @@ int cf_init(void) {
         return NOT_OK;
     }
 
-	*cf_reg_feature = CF_FEATURE_8BIT;
+	*cf_reg_feature = CF_FEATURE_16BIT;
     *cf_reg_command = CF_CMD_SET_FEATURE;
 
       /*
@@ -72,7 +72,7 @@ int cf_init(void) {
      */
     status = *cf_reg_status;
     if (status & CF_ST_ERROR) {
-        printk("CF: SET FEATURES (8-bit) rejected (status=$%02X, error=$%02X)\n",
+        printk("CF: SET FEATURES (16-bit) rejected (status=$%02X, error=$%02X)\n",
             status, *cf_reg_error);
      }
 
@@ -97,6 +97,24 @@ static int cf_wait_drq(void) {
     }
 
     return NOT_OK;
+}
+
+// Read a sector's worth of data, 16 bits at a time
+static void cf_read_data(uint8_t *buffer) {
+    for (int i = 0; i < CF_WORDS_PER_SECTOR; i++) {
+        uint16_t word = *cf_reg_data;
+
+        *buffer++ = (uint8_t)(word >> 8);
+        *buffer++ = (uint8_t)word;
+    }
+}
+
+// Write a sector's worth of data, 16 bits at a time
+static void cf_write_data(const uint8_t *buffer) {
+    for (int i = 0; i < CF_WORDS_PER_SECTOR; i++) {
+        *cf_reg_data = (uint16_t)((buffer[0] << 8) | buffer[1]);
+        buffer += 2;
+    }
 }
 
 static void cf_set_lba(uint8_t drive_num, uint32_t sector) {
@@ -139,10 +157,7 @@ int cf_read(uint8_t drive_num, uint32_t sector, uint8_t *buffer) {
         return NOT_OK;
     }
 
-	for (int i = 0; i < CF_SECTOR_SIZE; i++) {
-		buffer[i] = *cf_reg_data_byte;
-		//_cf_wait_busy();
-	}
+    cf_read_data(buffer);
 
 	return OK;
 }
@@ -177,9 +192,7 @@ int cf_write(uint8_t drive_num, uint32_t sector, const uint8_t *buffer) {
         return NOT_OK;
     }
 
-    for (int i = 0; i < CF_SECTOR_SIZE; i++) {
-        *cf_reg_data_byte = buffer[i];
-    }
+    cf_write_data(buffer);
 
     // The card goes busy while it stores the sector
     CF_DELAY_400NS();
@@ -258,14 +271,12 @@ int cf_identify(uint8_t drive_num, cf_info_t *info) {
     *cf_reg_command = CF_CMD_IDENTIFY;
     _cf_wait_busy();
 
-	for (int i=0; i<512; i++) {
-		uint8_t status = *cf_reg_status;
+    // DRQ is set once, for the whole sector
+    if (cf_wait_drq() == NOT_OK) {
+        return -1;
+    }
 
-        while (!(status & 0x08)) {
-			status = *cf_reg_status;
-		}
-		buf[i] = *cf_reg_data_byte;
-	}
+    cf_read_data(buf);
 
     // Endianness!
     info->signature = __builtin_bswap16(inf->signature);

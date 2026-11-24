@@ -94,7 +94,7 @@ static int has_gpt_sig(uint8_t drive_num) {
         return YES;
     }
 
-    printk("GPT Signature not found. Got '%s' instead\n", buff);
+    // printk("GPT Signature not found. Got '%s' instead\n", buff);
 
     return NO;
 }
@@ -112,7 +112,7 @@ int has_partition_table(uint8_t drive_num) {
         return YES;
     }
     
-    printk("No partition table found\n");
+    // printk("No partition table found\n");
 
     return NO;
 }

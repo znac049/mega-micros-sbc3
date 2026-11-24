@@ -49,7 +49,10 @@ SOFTWARE.
 #define CF_CMD_IDENTIFY	        0xEC
 #define CF_CMD_SET_FEATURE	    0xEF
 
-#define CF_FEATURE_8BIT         1
+#define CF_FEATURE_8BIT         0x01    // enable 8-bit data transfers
+#define CF_FEATURE_16BIT        0x81    // disable them: back to 16-bit
+
+#define CF_WORDS_PER_SECTOR     (CF_SECTOR_SIZE / 2)
 
 #define CF_ST_ERROR		        0x01
 #define CF_ST_CORR				0x04
