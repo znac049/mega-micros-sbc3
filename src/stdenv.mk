@@ -155,14 +155,16 @@ all: $(BINARY) $(SREC) $(DISASM)
 
 rom: $(ROM_ELF) $(ROM_SREC) $(ROM_DISASM)
 
-$(ELF) : $(OBJECTS) $(ROM_OBJ)
-	$(LD) $(LDFLAGS) $(GCC_LIBS) $^ $(LIBS) -o $(ELF)
+# Relink when the installed library changes, too (it's linked with -lmega,
+# so it's filtered back out of the object list)
+$(ELF) : $(OBJECTS) $(ROM_OBJ) $(SYSLIBDIR)/libmega.a
+	$(LD) $(LDFLAGS) $(GCC_LIBS) $(filter-out %.a,$^) $(LIBS) -o $(ELF)
 	$(NM) --numeric-sort $(ELF) >$(SYM)
 	$(SIZE) $(ELF)
 	-chmod a-x $(ELF)
 
-$(ROM_ELF) : $(OBJECTS) $(ROM_OBJ)
-	$(LD) $(ROM_LDFLAGS) $(GCC_LIBS) $^ $(LIBS) -o $(ROM_ELF)
+$(ROM_ELF) : $(OBJECTS) $(ROM_OBJ) $(SYSLIBDIR)/libmega.a
+	$(LD) $(ROM_LDFLAGS) $(GCC_LIBS) $(filter-out %.a,$^) $(LIBS) -o $(ROM_ELF)
 	$(NM) --numeric-sort $(ROM_ELF) >$(ROM_SYM)
 	$(SIZE) $(ROM_ELF)
 	-chmod a-x $(ROM_ELF)

@@ -33,7 +33,7 @@ VASM=vasmm68k_mot
 RM_F=rm -f
 RM_RF=$(RM_F) -r
 MKDIR_P=mkdir -p
-CP_R=cp -r
+CP_R=cp -rp		# -p: keep timestamps, so installing headers doesn't force rebuilds
 
 ifeq ($(BAREMETAL),true)
 INSTALL_LIB=$(INSTALL_DIR)/lib/bare
@@ -83,11 +83,15 @@ ALL_OBJS += $(addprefix $(OBJ_DIR),$(OBJECTS))
 CRT0_OBJS = $(addprefix $(OBJ_DIR),$(CRT0_OBJECTS))
 MANPAGES = $(addsuffix .md,$(basename $(OBJECTS)))
 
+# -MMD -MP: write a .d file of the headers each object uses, so changing a
+# header rebuilds whatever includes it
+DEPFLAGS=-MMD -MP
+
 $(OBJ_DIR)%.o : %.c
-	$(CC) -c $(CFLAGS) $(EXTRA_CFLAGS) -o $@ $<
+	$(CC) -c $(CFLAGS) $(DEPFLAGS) $(EXTRA_CFLAGS) -o $@ $<
 
 $(OBJ_DIR)%.o : %.cpp
-	$(CXX) -c $(CXXFLAGS) $(EXTRA_CXXFLAGS) -o $@ $<
+	$(CXX) -c $(CXXFLAGS) $(DEPFLAGS) $(EXTRA_CXXFLAGS) -o $@ $<
 
 $(OBJ_DIR)%.o : %.S
 	$(AS) $(ASFLAGS) -o $@ $<
@@ -140,5 +144,7 @@ clean:
 	make actual_clean BAREMETAL=true
 	make actual_clean BAREMETAL=false
 
-actual_clean: 
-	$(RM_F) $(ALL_OBJS) $(CRT0_OBJS) $(USERLIB)
+actual_clean:
+	$(RM_F) $(ALL_OBJS) $(CRT0_OBJS) $(USERLIB) $(ALL_OBJS:.o=.d) $(CRT0_OBJS:.o=.d)
+
+-include $(ALL_OBJS:.o=.d) $(CRT0_OBJS:.o=.d)
