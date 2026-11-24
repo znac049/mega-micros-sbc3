@@ -101,6 +101,7 @@ void die(void) __attribute__((noreturn));
 // bios_calls.c
 int bios_exit(int exit_code, pid_t pid);
 int bios_test(int p1, int p2, int p3);
+int bios_ram_bank(int bank, uint32_t *base, uint32_t *size);
 
 
 // block_devices.c

@@ -44,8 +44,10 @@ SOFTWARE.
 #define BIOS_ISATTY         18
 #define BIOS_STAT           19
 #define BIOS_FSTAT          20
+#define BIOS_FLUSH          21     // wait until a serial port has sent its output
+#define BIOS_RAM_BANK       22     // base and size of a RAM bank (0 or 1)
 
-#define NUM_BIOS_CALLS	    21
+#define NUM_BIOS_CALLS	    23
 
 
 

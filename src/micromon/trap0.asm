@@ -88,6 +88,8 @@ trap0_call_table::
         dc.l    bios_isatty
         dc.l    bios_stat
         dc.l    bios_fstat
+        dc.l    bios_flush
+        dc.l    bios_ram_bank
 t0ct_end     
 
         end

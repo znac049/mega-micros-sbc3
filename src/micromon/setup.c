@@ -27,6 +27,7 @@ SOFTWARE.
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 #include <machine.h>
 
 #include "micromon.h"
@@ -36,7 +37,7 @@ SOFTWARE.
 
 static int major = 0;
 static int minor = 6;
-static int MAGIC_BUILD_NUMBER = 56;
+static int MAGIC_BUILD_NUMBER = 72;
 
 
 uint32_t ram_low_size;
@@ -230,6 +231,29 @@ static void pr_banner(void) {
         sh1107_clear();
         sh1107_pstr(0, 0, "SBC-3\n\nser1@230400\nser2@230400", NULL);
         sh1107_display();
+    }
+}
+
+/*
+ * BIOS_RAM_BANK: where a RAM bank is and how much usable RAM it has, as
+ * found at boot. A bank that isn't fitted, or failed its boot-time test,
+ * has a size of 0.
+ */
+int bios_ram_bank(int bank, uint32_t *base, uint32_t *size) {
+    switch (bank) {
+        case 0:
+            *base = RAM_LOW_BASE;
+            *size = ram_low_size;
+            return OK;
+
+        case 1:
+            *base = RAM_HIGH_BASE;
+            *size = (bank1_test == OK)?ram_high_size:0;
+            return OK;
+
+        default:
+            errno = EINVAL;
+            return NOT_OK;
     }
 }
 

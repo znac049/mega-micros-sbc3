@@ -25,10 +25,18 @@ SOFTWARE.
 #include <stdio.h>
 #include <stddef.h>
 #include <fcntl.h>
-#include <errno.h>
+#include <unistd.h>
+#include <bios.h>
 
+/*
+ * File writes aren't buffered, but console output is: the monitor queues it
+ * and sends it under interrupts. Flushing waits until the console (port 0)
+ * has sent everything.
+ */
 int fflush(FILE *stream) {
-    errno = EBADF;
+    (void)stream;
+
+    syscall(BIOS_FLUSH, 0, 0, 0);
 
     return OK;
 }
