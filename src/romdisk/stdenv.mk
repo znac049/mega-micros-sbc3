@@ -92,13 +92,16 @@ SOURCES=$(CSOURCES) $(ASMSOURCES)
 
 # Assume each source files makes an object file
 OBJECTS=$(addsuffix .o,$(basename $(SOURCES)))
+DEPS=$(OBJECTS:.o=.d)
 
-TO_CLEAN=$(OBJECTS) $(ELF) $(SYM) 
+TO_CLEAN=$(OBJECTS) $(ELF) $(SYM) $(DEPS)
 
 all: $(ELF)
 
-$(ELF) : $(OBJECTS)
-	$(LD) $(LDFLAGS) $(GCC_LIBS) $^ $(LIBS) -o $(ELF)
+# Relink when the installed library changes, too (it's linked with -lmega,
+# so it's filtered back out of the object list)
+$(ELF) : $(OBJECTS) $(SYSLIBDIR)/libmega.a
+	$(LD) $(LDFLAGS) $(GCC_LIBS) $(filter-out %.a,$^) $(LIBS) -o $(ELF)
 	$(NM) --numeric-sort $(ELF) >$(SYM)
 	$(SIZE) $(ELF)
 
@@ -107,11 +110,15 @@ $(DISASM) : $(ELF)
 
 $(OBJECTS): Makefile
 
+# -MMD -MP: write a .d file of the headers each object uses (including the
+# library's, in $(SYSINCDIR)), so changing a header rebuilds what uses it
+DEPFLAGS=-MMD -MP
+
 %.o : %.c $(CINCLUDES)
-	$(CC) -c $(CFLAGS) $(EXTRA_CFLAGS) -o $@ $<
+	$(CC) -c $(CFLAGS) $(DEPFLAGS) $(EXTRA_CFLAGS) -o $@ $<
 
 %.o : %.cpp
-	$(CXX) -c $(CXXFLAGS) $(EXTRA_CXXFLAGS) -o $@ $<
+	$(CXX) -c $(CXXFLAGS) $(DEPFLAGS) $(EXTRA_CXXFLAGS) -o $@ $<
 
 %.o : %.S
 	$(AS) $(ASFLAGS) -o $@ $<
@@ -130,3 +137,5 @@ install: all
 
 # Makefile magic (for "phony" targets that are not real files)
 .PHONY: all clean install
+
+-include $(DEPS)
