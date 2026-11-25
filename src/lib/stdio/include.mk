@@ -1,4 +1,7 @@
-LIBOBJECTS=fclose.o \
+LIBOBJECTS=clearerr.o \
+			fclose.o \
+			feof.o \
+			ferror.o \
 			fflush.o \
 			fgetc.o \
 			fgets.o \
@@ -15,11 +18,14 @@ LIBOBJECTS=fclose.o \
 			printf.o \
 			putchar.o \
 			puts.o \
+			remove.o \
 			rewind.o \
 			snprintf.o \
+			sprintf.o \
 			sscanf.o \
 			vfprintf.o \
 			vsnprintf.o \
+			vsprintf.o \
 			vsscanf.o
 
 
