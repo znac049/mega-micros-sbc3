@@ -27,6 +27,7 @@ SOFTWARE.
 #include <unistd.h>
 #include <limits.h>
 #include <errno.h>
+#include <string.h>
 
 #include "micromon.h"
 #include "memory.h"
@@ -450,6 +451,53 @@ void *bios_malloc(size_t nbytes, pid_t pid) {
 
     errno = ENOMEM;
     return NULL;
+}
+
+/*
+ * BIOS_REALLOC: resize a block, keeping its contents up to the smaller of
+ * the old and new sizes. A NULL block is a plain malloc(); a size of 0
+ * frees the block. If there isn't enough memory, the old block is left as
+ * it was and NULL is returned.
+ */
+void *bios_realloc(void *mem, size_t nbytes, pid_t pid) {
+    list_item_t *item;
+    void *new_mem;
+
+    if (mem == NULL) {
+        // (bios_malloc(0) dumps the heap, so don't pass it on)
+        return (nbytes == 0)?NULL:bios_malloc(nbytes, pid);
+    }
+
+    if (nbytes == 0) {
+        bios_free(mem, pid);
+        return NULL;
+    }
+
+    item = (list_item_t *)(CP(mem) - sizeof(list_item_t));
+    if (is_valid_item(item) == NO) {
+        errno = EINVAL;
+        return NULL;
+    }
+
+    if (item->owner != pid) {
+        errno = EPERM;
+        return NULL;
+    }
+
+    // Already big enough (shrinking keeps the block as it is)
+    if (item->payload_size >= nbytes) {
+        return mem;
+    }
+
+    new_mem = bios_malloc(nbytes, pid);
+    if (new_mem == NULL) {
+        return NULL;
+    }
+
+    memcpy(new_mem, mem, item->payload_size);
+    free_item(item);
+
+    return new_mem;
 }
 
 /*
