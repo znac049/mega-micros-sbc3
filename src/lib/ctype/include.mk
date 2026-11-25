@@ -2,6 +2,8 @@ LIBOBJECTS=isalnum.o \
 			isalpha.o \
 			isblank.o \
 			isdigit.o \
+			isgraph.o \
+			isprint.o \
 			isspace.o \
 			isxdigit.o \
 			tolower.o \
