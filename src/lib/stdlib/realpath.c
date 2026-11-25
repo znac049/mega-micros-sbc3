@@ -31,60 +31,78 @@ SOFTWARE.
 #include <extras.h>
 #include <machine.h>
 
-static int find_slashes(char *path, int *indexes, int max_indexes) {
-    int index = 0;
-
-    for (int i=0; path[i] != EOS; i++) {
-        if (path[i] == '/') {
-            indexes[index++] = i;
-
-            if (index >= max_indexes) {
-                return NOT_OK;
-            }
-        }
-    }
-
-    return index;
-}
-
-static int remove_bytes(char *str, int start, int len) {
-    char *s = &str[start+len];
-    char *d = &str[start];
-    int l = strlen(str);
-
-    if (start+len > l) {
-        return NOT_OK;
-    }
-
+/*
+ * Append the path's components to out (which holds out_len bytes, and is
+ * either "" or "/..." with no trailing slash), dropping empty and "."
+ * components and backing up over "..". ".." at the root stays at the root.
+ */
+static int add_components(char *out, size_t *out_len, const char *s) {
     while (*s) {
-        *d++ = *s++;
-    }
+        const char *start;
+        size_t len;
 
-    *d = EOS;
+        while (*s == '/') {
+            s++;
+        }
+
+        start = s;
+        while ((*s != EOS) && (*s != '/')) {
+            s++;
+        }
+
+        len = s - start;
+
+        if ((len == 0) || ((len == 1) && (start[0] == '.'))) {
+            continue;
+        }
+
+        if ((len == 2) && (start[0] == '.') && (start[1] == '.')) {
+            // Back up over the last component, and the slash before it
+            while ((*out_len > 0) && (out[*out_len - 1] != '/')) {
+                (*out_len)--;
+            }
+
+            if (*out_len > 0) {
+                (*out_len)--;
+            }
+
+            out[*out_len] = EOS;
+            continue;
+        }
+
+        if (*out_len + 1 + len >= PATH_MAX) {
+            return NOT_OK;
+        }
+
+        out[(*out_len)++] = '/';
+        memcpy(&out[*out_len], start, len);
+        *out_len += len;
+        out[*out_len] = EOS;
+    }
 
     return OK;
 }
 
+/*
+ * Make a path absolute and tidy it up: "/rom0//bin/./../etc/" becomes
+ * "/rom0/etc", and anything that leads back to the root becomes "/".
+ * It works on the text alone: there are no symbolic links to follow.
+ */
 char *realpath(const char *path, char *resolved_path) {
-    int slashes[MAX_DIR_DEPTH];
-    int num_slashes;
-    char tmp_path[PATH_MAX*2];
-    int len;
+    char out[PATH_MAX];
+    size_t out_len = 0;
 
     if (path == NULL) {
         errno = EINVAL;
         return NULL;
     }
 
-    // Don't like this, but it's part of the function's defined bahaviour
-    if (resolved_path == NULL) {
-        resolved_path = malloc(PATH_MAX);
-
-        if (resolved_path == NULL) {
-            errno = ENOMEM;
-            return NULL;
-        }
+    if (path[0] == EOS) {
+        errno = ENOENT;
+        return NULL;
     }
+
+    out[0] = EOS;
 
     if (path[0] != '/') {
         // It's relative to the current directory
@@ -95,73 +113,33 @@ char *realpath(const char *path, char *resolved_path) {
             return NULL;
         }
 
-        snprintf(tmp_path, sizeof(tmp_path), "%s/%s", cwd, path);
-    }
-    else {
-        strncpy(tmp_path, path, sizeof(tmp_path));
-    }
-
-    num_slashes = find_slashes(tmp_path, slashes, MAX_DIR_DEPTH);
-    // printf("%d slashes found at:\n", num_slashes);
-    // for (int i=0; i<num_slashes; i++) {
-    //     printf("%d: %d\n", i, slashes[i]);
-    // }
-
-    for (int i=0; i<num_slashes-1;) {
-        int distance = slashes[i+1] - slashes[i];
-
-        // printf("i=%d, distance=%d (%d - %d): '%s'\n", i, distance, slashes[i+1], slashes[i], tmp_path);
-
-        // pair of adjacent slashes
-        if (distance == 1) {
-            remove_bytes(tmp_path, slashes[i+1], 1);
-            num_slashes--;
-            for (int j=i+1; j<num_slashes; j++) {
-                slashes[j] = slashes[j+1]-1;
-            }
-        }
-        else if ((distance == 2) && tmp_path[slashes[i]+1] == '.') {
-            remove_bytes(tmp_path, slashes[i]+1, 2);
-            num_slashes--;
-            for (int j=i+1; j<num_slashes; j++) {
-                slashes[j] = slashes[j+1]-2;
-            }
-        }
-        else if ((distance == 3) && tmp_path[slashes[i]+1] == '.' && tmp_path[slashes[i]+2] == '.') {
-            int num_to_remove = slashes[i+1] - slashes[i-1];
-
-            remove_bytes(tmp_path, slashes[i-1]+1, num_to_remove);
-            num_slashes = num_slashes-2;
-            for (int j=i-1; j<num_slashes; j++) {
-                slashes[j] = slashes[j+2]-num_to_remove;
-            }
-        }
-        else {
-            // printf("Moving on from %d\n", i);
-            i++;
+        if (add_components(out, &out_len, cwd) == NOT_OK) {
+            errno = ENAMETOOLONG;
+            return NULL;
         }
     }
 
-    // Trailing slash?
-    len = strlen(tmp_path);
-    if (tmp_path[len-1] == '/') {
-        len--;
-        tmp_path[len] = EOS;
-        num_slashes--;
-    }
-
-    // printf("%d final slashes found at:\n", num_slashes);
-    // for (int i=0; i<num_slashes; i++) {
-    //     printf("%d: %d\n", i, slashes[i]);
-    // }
-
-    if (len >= PATH_MAX) {
+    if (add_components(out, &out_len, path) == NOT_OK) {
         errno = ENAMETOOLONG;
-        tmp_path[0] = EOS;
         return NULL;
     }
 
-    strcpy(resolved_path, tmp_path);
+    // Everything cancelled out: that's the root
+    if (out_len == 0) {
+        strcpy(out, "/");
+    }
+
+    // Don't like this, but it's part of the function's defined behaviour
+    if (resolved_path == NULL) {
+        resolved_path = malloc(PATH_MAX);
+
+        if (resolved_path == NULL) {
+            errno = ENOMEM;
+            return NULL;
+        }
+    }
+
+    strcpy(resolved_path, out);
 
     return resolved_path;
 }

@@ -73,6 +73,146 @@ static vfs_fs_t *find_char_device(const char *pathname) {
     return NULL;
 }
 
+/*
+ * The root directory, "/". It isn't a filesystem on a device: it's a
+ * read-only directory whose entries are the mounted filesystems, so
+ * "cd /" then "dir" lists them. It isn't in the mount table, so the code
+ * that walks the table (showmount, the command search path) doesn't see it.
+ */
+static vfs_fs_t root_fs;
+static vmp_t root_mount;
+
+static int root_open(vfile_t *file, const char *fname, int flags, vfile_t *dir) {
+    (void)dir;
+
+    // Paths below "/" belong to the mounts, so only "/" itself gets here
+    if (fname[0] != EOS) {
+        errno = ENOENT;
+        return NOT_OK;
+    }
+
+    if (flags & (O_WRONLY | O_CREAT | O_TRUNC | O_APPEND)) {
+        errno = EISDIR;
+        return NOT_OK;
+    }
+
+    file->file_type = VFS_FT_DIR;
+    file->mode = S_IFDIR | 0555;
+    file->size = 0;
+    file->position = 0;             // the next entry getdents() returns
+
+    return OK;
+}
+
+static int root_close(vfile_t *file) {
+    (void)file;
+
+    return OK;
+}
+
+static int root_read(vfile_t *file, char *buf, size_t n_bytes) {
+    (void)file;
+    (void)buf;
+    (void)n_bytes;
+
+    errno = EISDIR;
+    return NOT_OK;
+}
+
+static int root_write(vfile_t *file, const char *buf, size_t n_bytes) {
+    (void)file;
+    (void)buf;
+    (void)n_bytes;
+
+    errno = EISDIR;
+    return NOT_OK;
+}
+
+// Only rewinding, or going back to a d_off from getdents(), makes sense
+static int root_seek(vfile_t *file, off_t offset, int whence) {
+    if ((whence != SEEK_SET) || (offset < 0)) {
+        errno = EINVAL;
+        return NOT_OK;
+    }
+
+    file->position = offset;
+
+    return offset;
+}
+
+/*
+ * Entry 0 is ".", entry 1 is "..", and entry n (n >= 2) is mount table
+ * slot n - 2, skipping empty slots. file->position is the next entry.
+ */
+static int root_getdents(vfile_t *dir, struct dirent *out, int max_ents) {
+    int saved_errno = errno;        // vfs_get_mount() sets ERANGE past the end
+    int n = 0;
+
+    while ((n < max_ents) && (dir->position < 2 + MAX_MOUNTS)) {
+        off_t entry = dir->position++;
+        const char *name;
+
+        if (entry < 2) {
+            name = (entry == 0)?".":"..";
+            out->d_ino = 1;
+        }
+        else {
+            vmp_t *mp = vfs_get_mount(entry - 2);
+
+            if ((mp == NULL) || (mp->mounted == NO)) {
+                continue;
+            }
+
+            name = mp->name;
+            out->d_ino = entry;
+        }
+
+        out->d_off = dir->position;
+        out->d_reclen = sizeof(struct dirent);
+        out->d_type = DT_DIR;
+        strcpy(out->d_name, name);
+
+        out++;
+        n++;
+    }
+
+    errno = saved_errno;
+
+    return n;
+}
+
+static int root_stat(vfile_t *file, struct stat *st) {
+    (void)file;
+
+    st->st_ino = 1;
+    st->st_mode = S_IFDIR | 0555;
+    st->st_size = 0;
+    st->st_blocks = 0;
+
+    return OK;
+}
+
+static void setup_root(void) {
+    memset(&root_fs, 0, sizeof(root_fs));
+    root_fs.type = VFS_TYPE_FS;
+    root_fs.name = "root";
+    root_fs.api.fs.open = root_open;
+    root_fs.api.fs.close = root_close;
+    root_fs.api.fs.read = root_read;
+    root_fs.api.fs.write = root_write;
+    root_fs.api.fs.seek = root_seek;
+    root_fs.api.fs.getdents = root_getdents;
+    root_fs.api.fs.stat = root_stat;
+
+    memset(&root_mount, 0, sizeof(root_mount));
+    root_mount.name[0] = EOS;
+    root_mount.fs_driver = &root_fs;
+    root_mount.dev_driver = NULL;
+    root_mount.mounted = YES;
+    root_mount.read_only = YES;
+    root_mount.index = MAX_MOUNTS;  // its st_dev: not a mount table slot
+}
+
 static vmp_t *find_mount_by_name(const char *name, size_t len) {
     if (len == 0) {
         return NULL;
@@ -215,6 +355,13 @@ static int resolve_path(const char *path, vmp_t **mpp, char *fs_path) {
 
     normalise_path(abs_path);
 
+    // Nothing left: it's the root directory
+    if (abs_path[0] == EOS) {
+        fs_path[0] = EOS;
+        *mpp = &root_mount;
+        return OK;
+    }
+
     // The first component names the mount, the rest is the path within it
     rest = strchr(abs_path, '/');
     mount_len = (rest == NULL)?strlen(abs_path):(size_t)(rest - abs_path);
@@ -339,6 +486,8 @@ int vfs_init(void) {
 
     cwd.open = NO;
     strcpy(cwd.path, "/");
+
+    setup_root();
 
     // Allocate and initialise filesystem structures.
     if (init_structures() == NOT_OK) {
@@ -474,7 +623,12 @@ int bios_getcwd(char*buff, size_t size) {
         return (int)buff;
     }
 
-    snprintf(buff, size, "/%s/%s", cwd.mp->dev_driver->name, cwd.path);
+    if (cwd.mp == &root_mount) {
+        snprintf(buff, size, "/");
+    }
+    else {
+        snprintf(buff, size, "/%s/%s", cwd.mp->name, cwd.path);
+    }
 
     return (int)buff;
 }
