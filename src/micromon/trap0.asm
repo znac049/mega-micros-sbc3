@@ -90,6 +90,8 @@ trap0_call_table::
         dc.l    bios_fstat
         dc.l    bios_flush
         dc.l    bios_ram_bank
+        dc.l    bios_realloc
+        dc.l    bios_time
 t0ct_end     
 
         end

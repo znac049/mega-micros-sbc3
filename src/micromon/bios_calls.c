@@ -32,6 +32,21 @@ SOFTWARE.
 
 #include "micromon.h"
 
+/*
+ * BIOS_TIME: seconds since 1 January 1970, from the RTC; 0 if there isn't
+ * one (or it doesn't hold a sensible time). Also stored in *t if t isn't
+ * NULL, as time() does.
+ */
+time_t bios_time(time_t *t) {
+    time_t now = (time_t)ext2_now();
+
+    if (t != NULL) {
+        *t = now;
+    }
+
+    return now;
+}
+
 int bios_exit(int exit_code, pid_t pid) {
     // Free up any malloc'd items currently on the heap
     clean_heap(pid);
