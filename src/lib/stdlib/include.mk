@@ -7,14 +7,17 @@ LIBOBJECTS=atoi.o \
 			getenv.o \
 			itoa.o \
 			malloc.o \
+			qsort.o \
 			printf.o \
 			putchar.o \
 			puts.o \
 			rand.o \
 			read.o \
+			realloc.o \
 			realpath.o \
 			snprintf.o \
 			srand.o \
+			strtod.o \
 			strtol.o
 
 LIBINCLUDES=$(DIR)/include
