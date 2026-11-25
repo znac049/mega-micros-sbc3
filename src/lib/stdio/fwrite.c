@@ -1,4 +1,4 @@
-/* 
+/*
 MIT License
 
 Copyright (c) 2026 Bob Green
@@ -23,7 +23,35 @@ SOFTWARE.
 */
 
 #include <stdio.h>
+#include <stddef.h>
+#include <unistd.h>
+#include <errno.h>
 
-size_t fwrite(void *ptr, size_t size, size_t nmemb, FILE *stream) {
-  return 0;
+size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream) {
+    const char *p = ptr;
+    size_t total, done = 0;
+
+    if ((stream == NULL) || (stream->is_open == 0)) {
+        errno = EBADF;
+        return 0;
+    }
+
+    if ((size == 0) || (nmemb == 0)) {
+        return 0;
+    }
+
+    total = size * nmemb;
+
+    while (done < total) {
+        ssize_t n = write(stream->fd, (void *)(p + done), total - done);
+
+        if (n <= 0) {
+            stream->error = YES;
+            break;
+        }
+
+        done += n;
+    }
+
+    return done / size;
 }

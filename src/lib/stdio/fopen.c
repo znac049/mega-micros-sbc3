@@ -1,4 +1,4 @@
-/* 
+/*
 MIT License
 
 Copyright (c) 2026 Bob Green
@@ -30,7 +30,19 @@ SOFTWARE.
 #include <dirent.h>
 #include <machine.h>
 
-FILE _stream_table[STREAM_TABLE_SIZE];
+/*
+ * The streams. The first three are stdin, stdout and stderr, on the
+ * monitor's fds 0, 1 and 2, which are always open.
+ */
+FILE _stream_table[STREAM_TABLE_SIZE] = {
+    { .fd = 0, .is_open = YES },
+    { .fd = 1, .is_open = YES },
+    { .fd = 2, .is_open = YES },
+};
+
+FILE *stdin = &_stream_table[0];
+FILE *stdout = &_stream_table[1];
+FILE *stderr = &_stream_table[2];
 
 static FILE *find_free_slot(void) {
 	for (int i=0; i<STREAM_TABLE_SIZE; i++) {
@@ -41,37 +53,38 @@ static FILE *find_free_slot(void) {
 	return NULL;
 }
 
+/*
+ * Modes: "r", "w" or "a", optionally followed by "+", with a "b" allowed
+ * anywhere after the first letter ("rb", "r+b", "rb+"). Binary and text
+ * are the same here.
+ */
 FILE *fopen(const char *pathname, const char *mode) {
 	int flags = 0;
+	int plus = NO;
 	int fd;
 	FILE *stream;
-	int len = strlen(mode);
 
-	if ((len > 2) || ((len == 2) && (mode[1] != '+'))) {
-		errno = EINVAL;
-		return NULL;
+	for (const char *m = mode + 1; *m != EOS; m++) {
+		if (*m == '+') {
+			plus = YES;
+		}
+		else if (*m != 'b') {
+			errno = EINVAL;
+			return NULL;
+		}
 	}
 
 	switch (mode[0]) {
 		case 'r':
-			if (mode[1] == '+')
-				flags = O_RDWR;
-			else
-				flags = O_RDONLY; 
+			flags = plus?O_RDWR:O_RDONLY;
 			break;
 
 		case 'w':
-			if (mode[1] == '+') 
-				flags = O_RDWR | O_CREAT;
-			else
-				flags = O_WRONLY;
+			flags = (plus?O_RDWR:O_WRONLY) | O_CREAT | O_TRUNC;
 			break;
 
 		case 'a':
-			if (mode[1] == '+')
-				flags = O_RDWR | O_CREAT | O_APPEND;
-			else
-				flags = O_WRONLY | O_CREAT | O_APPEND;
+			flags = (plus?O_RDWR:O_WRONLY) | O_CREAT | O_APPEND;
 			break;
 
 		default:
@@ -81,7 +94,7 @@ FILE *fopen(const char *pathname, const char *mode) {
 
 	stream = find_free_slot();
 	if (stream == NULL) {
-		errno = ENOMEM;
+		errno = EMFILE;
 		return stream;
 	}
 
@@ -93,6 +106,8 @@ FILE *fopen(const char *pathname, const char *mode) {
 
 	stream->is_open = YES;
 	stream->fd = fd;
+	stream->eof = NO;
+	stream->error = NO;
 
 	return stream;
 }

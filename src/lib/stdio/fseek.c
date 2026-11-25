@@ -1,4 +1,4 @@
-/* 
+/*
 MIT License
 
 Copyright (c) 2026 Bob Green
@@ -24,15 +24,21 @@ SOFTWARE.
 
 #include <stdio.h>
 #include <stddef.h>
-#include <errno.h>
 #include <unistd.h>
+#include <errno.h>
 
+// Returns 0 on success, -1 on failure
 int fseek(FILE *file, long offset, int whence) {
-    if ((file != NULL) && (file->is_open == 0)) {
+    if ((file == NULL) || (file->is_open == 0)) {
         errno = EBADF;
-
-        return 0;
+        return -1;
     }
 
-    return lseek(file->fd, (off_t)offset, whence);
+    if (lseek(file->fd, (off_t)offset, whence) == NOT_OK) {
+        return -1;
+    }
+
+    file->eof = NO;
+
+    return 0;
 }

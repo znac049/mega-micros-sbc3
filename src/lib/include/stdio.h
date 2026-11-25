@@ -32,6 +32,8 @@ SOFTWARE.
 typedef struct file {
     int fd;
     uint8_t is_open;
+    uint8_t eof;            // a read hit the end of the file (feof)
+    uint8_t error;          // a read or write failed (ferror)
 } FILE;
 
 #define STREAM_TABLE_SIZE 16
@@ -42,7 +44,10 @@ extern FILE *stdin;
 extern FILE *stdout;
 extern FILE *stderr;
 
+void clearerr(FILE *stream);
 int fclose(FILE *stream);
+int feof(FILE *stream);
+int ferror(FILE *stream);
 int fflush(FILE *stream);
 int fgetc(FILE *stream);
 char *fgets(char *s, int size, FILE *stream);
@@ -53,15 +58,18 @@ int fputs(const char *s, FILE *stream);
 size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
 int fseek(FILE *file, long offset, int whence);
 long ftell(FILE *file);
-size_t fwrite(void *ptr, size_t size, size_t nmemb, FILE *stream);
+size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream);
 int getchar(void);
 char *gets(char *s);
 int printf(const char *format, ...);
 int putchar(int c);
 int puts(const char *s);
+int remove(const char *pathname);
 void rewind(FILE *file);
 int snprintf(char *buffer, size_t n, const char *fmt, ...);
+int sprintf(char *str, const char *format, ...);
 int sscanf(const char *str, const char *format, ...);
 int vfprintf(FILE *stream, const char *format, va_list ap);
 int vsnprintf(char *str, size_t size, const char *format, va_list ap);
+int vsprintf(char *str, const char *format, va_list ap);
 int vsscanf(const char *str, const char *format, va_list ap);

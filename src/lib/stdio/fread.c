@@ -1,4 +1,4 @@
-/* 
+/*
 MIT License
 
 Copyright (c) 2026 Bob Green
@@ -24,30 +24,39 @@ SOFTWARE.
 
 #include <stdio.h>
 #include <stddef.h>
-#include <errno.h>
 #include <unistd.h>
+#include <errno.h>
 
 size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream) {
-    int num;
-    int total = 0;
-    int target = size * nmemb;
+    char *p = ptr;
+    size_t total, done = 0;
 
-    if ((stream != NULL) && (stream->is_open == 0)) {
+    if ((stream == NULL) || (stream->is_open == 0)) {
         errno = EBADF;
-
         return 0;
     }
 
-    while (total != target) {
-        int remaining = target - total;
-
-        num = read(stream->fd, ptr, remaining);
-        if (num == NOT_OK) {
-            return total / size;
-        }
-
-        total += num;
+    if ((size == 0) || (nmemb == 0)) {
+        return 0;
     }
 
-    return nmemb;
+    total = size * nmemb;
+
+    while (done < total) {
+        ssize_t n = read(stream->fd, p + done, total - done);
+
+        if (n < 0) {
+            stream->error = YES;
+            break;
+        }
+
+        if (n == 0) {
+            stream->eof = YES;
+            break;
+        }
+
+        done += n;
+    }
+
+    return done / size;
 }

@@ -1,4 +1,4 @@
-/* 
+/*
 MIT License
 
 Copyright (c) 2026 Bob Green
@@ -31,15 +31,22 @@ int fgetc(FILE *stream) {
     uint8_t ch;
     int res;
 
-    if ((stream != NULL) && (stream->is_open == 0)) {
+    if ((stream == NULL) || (stream->is_open == 0)) {
         errno = EBADF;
-
         return EOF;
     }
 
     res = read(stream->fd, &ch, 1);
-    if (res != 1)
+    if (res != 1) {
+        if (res == 0) {
+            stream->eof = YES;
+        }
+        else {
+            stream->error = YES;
+        }
+
         return EOF;
+    }
 
     return (int) ch;
 }

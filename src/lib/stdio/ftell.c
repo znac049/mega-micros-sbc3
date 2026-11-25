@@ -1,4 +1,4 @@
-/* 
+/*
 MIT License
 
 Copyright (c) 2026 Bob Green
@@ -24,14 +24,13 @@ SOFTWARE.
 
 #include <stdio.h>
 #include <stddef.h>
-#include <errno.h>
 #include <unistd.h>
+#include <errno.h>
 
 long ftell(FILE *file) {
-    if ((file != NULL) && (file->is_open == 0)) {
+    if ((file == NULL) || (file->is_open == 0)) {
         errno = EBADF;
-
-        return 0;
+        return -1;
     }
 
     return lseek(file->fd, 0, SEEK_CUR);
