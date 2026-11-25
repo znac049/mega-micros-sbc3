@@ -44,6 +44,10 @@ SOFTWARE.
 #define cf_reg_status			((volatile uint8_t *)  cf_base+14)
 #define cf_reg_command			((volatile uint8_t *)  cf_base+14)
 
+#define cf_reg_dev_ctrl         ((volatile uint8_t *)  cf_base+0x1c)  // write
+#define cf_reg_alt_status       ((volatile uint8_t *)  cf_base+0x1c)  // read
+
+
 #define CF_CMD_READ_SECTORS	    0x20
 #define CF_CMD_WRITE_SECTORS	0x30
 #define CF_CMD_IDENTIFY	        0xEC
@@ -61,6 +65,10 @@ SOFTWARE.
 #define CF_ST_DWF				0x20
 #define CF_ST_RDY				0x40
 #define CF_ST_BUSY		        0x80
+
+#define CF_CTRL_NIEN            0x02    // 1 = INTRQ disabled
+#define CF_CTRL_SRST            0x04    // software reset
+
 
 #define CF_DRIVE_MASTER			0
 #define CF_DRIVE_SLAVE			1

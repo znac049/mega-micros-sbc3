@@ -42,6 +42,13 @@ int cf_init(void) {
     *cf_reg_lba3 = 0xe0;
     CF_DELAY_400NS();
 
+    /*
+     * Diable IRQs - harmless on boards that don't have
+     * /CS2 connected - it will write cf_reg_lba3
+     * instead
+     */
+    *cf_reg_dev_ctrl = CF_CTRL_NIEN;
+
     if (_cf_wait_busy() == NOT_OK) {
         printk("CF: timed out waiting for card (status=$%02X)\n", *cf_reg_status);
         return NOT_OK;

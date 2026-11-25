@@ -20,17 +20,10 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 ; SOFTWARE.
 
-                section .text,code
+                include "../machine_defs.inc"
 
-cf_reg_base         equ $ae0000
-cf_reg_data_byte    equ cf_reg_base
-cf_reg_sector_count equ cf_reg_base+4
-cf_reg_lba0         equ cf_reg_base+6
-cf_reg_lba1         equ cf_reg_base+8
-cf_reg_lba2         equ cf_reg_base+10
-cf_reg_lba3         equ cf_reg_base+12
-cf_reg_command      equ cf_reg_base+14
-cf_reg_status       equ cf_reg_base+14
+
+                section .text,code
 
 CF_CMD_READ_SECTORS equ $20
 

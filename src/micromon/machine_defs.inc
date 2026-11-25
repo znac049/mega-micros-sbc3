@@ -143,6 +143,33 @@ duart_opr_set::         equ		DUART_BASE+28
 duart_stop_counter::    equ		DUART_BASE+30
 duart_opr_reset::       equ		DUART_BASE+30
 
+CF_BASE::               equ     $AE0000
+
+cf_reg_data_byte_o::    equ     0
+cf_reg_sector_count_o:: equ     4
+cf_reg_lba0_o::         equ     6
+cf_reg_lba1_o::         equ     8
+cf_reg_lba2_o::         equ     10
+cf_reg_lba3_o::         equ     12
+cf_reg_command_o::      equ     14
+cf_reg_status_o::       equ     14
+
+cf_reg_data_byte::      equ     CF_BASE
+cf_reg_sector_count::   equ     CF_BASE+4
+cf_reg_lba0::           equ     CF_BASE+6
+cf_reg_lba1::           equ     CF_BASE+8
+cf_reg_lba2::           equ     CF_BASE+10
+cf_reg_lba3::           equ     CF_BASE+12
+cf_reg_command::        equ     CF_BASE+14
+cf_reg_status::         equ     CF_BASE+14
+
+cf_reg_dev_ctr_o::      equ     28
+cf_reg_alt_status_o::   equ     28
+
+cf_reg_dev_ctrl::       equ     CF_BASE+28
+cf_reg_alt_status::     equ     CF_BASE+28
+
+
 ROM_BASE                equ     $00C00000
 ROM_SIZE                equ     $00400000
 
