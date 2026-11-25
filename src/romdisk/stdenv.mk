@@ -77,8 +77,10 @@ ifneq ($(LD_SUPPORT_MMU),true)
 LDFLAGS+=-z max-page-size=16 -z common-page-size=16
 endif
 
-# Output config (assume name of directory)
-PROGRAM_BASENAME=$(shell basename $(CURDIR))
+# Output config (assume name of directory). A program's Makefile can set
+# PROGRAM_BASENAME, CSOURCES, CINCLUDES and ASMSOURCES before including
+# this file, to override the defaults.
+PROGRAM_BASENAME?=$(shell basename $(CURDIR))
 
 # Everything the build makes goes in here, so it can be ignored by git
 # (and cleaned) as one directory
@@ -90,9 +92,9 @@ SYM=$(OBJ_DIR)/$(PROGRAM_BASENAME).sym
 DISASM=$(OBJ_DIR)/$(PROGRAM_BASENAME).dis
 
 # Assume source files in Makefile directory are source files for project
-CSOURCES=$(wildcard *.c)
-CINCLUDES=$(wildcard *.h)
-ASMSOURCES=$(wildcard *.asm)
+CSOURCES?=$(wildcard *.c)
+CINCLUDES?=$(wildcard *.h)
+ASMSOURCES?=$(wildcard *.asm)
 SOURCES=$(CSOURCES) $(ASMSOURCES)
 
 # Assume each source files makes an object file

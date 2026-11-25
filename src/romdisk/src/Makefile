@@ -37,7 +37,10 @@ $(error ERROR: MEGA_MICROS_DIR not set)
 endif
 
 # Every subdirectory with a Makefile is a program
-PROGRAMS := $(sort $(patsubst %/Makefile,%,$(wildcard */Makefile)))
+# Programs not to build, if any (e.g. "make SKIP_PROGRAMS=vasm")
+SKIP_PROGRAMS ?=
+
+PROGRAMS := $(filter-out $(SKIP_PROGRAMS),$(sort $(patsubst %/Makefile,%,$(wildcard */Makefile))))
 
 INSTALL_TARGETS := $(addprefix install-,$(PROGRAMS))
 CLEAN_TARGETS   := $(addprefix clean-,$(PROGRAMS))
