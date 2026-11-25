@@ -23,3 +23,8 @@ src/romdisk/sayhi/sayhi
 src/micromon/romdisk/passwd
 src/elftools/ed
 src/elftools/sayhi
+
+*.patch
+
+# Build output of the romdisk programs
+src/romdisk/src/*/obj/
