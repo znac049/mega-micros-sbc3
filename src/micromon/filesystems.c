@@ -345,41 +345,49 @@ int vfs_init(void) {
         printk("Failed to initialise filesystem structures.\n");
         return NOT_OK;
     }
-    else {
-        // Register a handler for the two serial ports
-        res = setup_vfs_duart_handler(find_free_fs());
 
-        // Register a handler for ext2 filesystems
-        res = setup_vfs_ext2_handler(find_free_fs());
+    // Register a handler for the two serial ports
+    if (setup_vfs_duart_handler(find_free_fs()) == NOT_OK) {
+        printk("Failed to setup the duart handler");
+        res = NOT_OK;
+    }
 
-        // Register a handler for fat filesystems
-        res = setup_vfs_fat_handler(find_free_fs());
+    // Register a handler for ext2 filesystems
+    if (setup_vfs_ext2_handler(find_free_fs())) {
+        printk("Failed to setup the ext2 handler");
+        res = NOT_OK;
+    }
 
-        // Anything we can mount?
-        // printk("vfs_init: what can we mount?\n");
-        for (int bd=0; bd<MAX_BLOCK_DEVICES; bd++) {
-            block_device_t *dev = &block_devices[bd];
+    // Register a handler for fat filesystems
+    if (setup_vfs_fat_handler(find_free_fs()) == NOT_OK) {
+        printk("Failed to setup the fat handler");
+        res = NOT_OK;
+    }
 
-            if (dev->active == YES) {
-                vmp_t *mp;
+    // Anything we can mount?
+    // printk("vfs_init: what can we mount?\n");
+    for (int bd=0; bd<MAX_BLOCK_DEVICES; bd++) {
+        block_device_t *dev = &block_devices[bd];
 
-                // printk("Looking at blockdev '%s'\n", dev->name);
+        if (dev->active == YES) {
+            vmp_t *mp;
 
-                if ((mp = attempt_to_mount(dev)) == NULL) {
-                    printk("vfs_init: %s not mounted\n", dev->name);
+            // printk("Looking at blockdev '%s'\n", dev->name);
+
+            if ((mp = attempt_to_mount(dev)) == NULL) {
+                printk("vfs_init: %s not mounted\n", dev->name);
+            }
+            else {
+                int slot = add_array_item(vfs_mounts_array, (uintptr_t)mp);
+
+                if (slot == NOT_OK) {
+                    printk("No space for mount in mount table\n");
+                    free(mp);
+                    res = NOT_OK;
                 }
                 else {
-                    int slot = add_array_item(vfs_mounts_array, (uintptr_t)mp);
-
-                    if (slot == NOT_OK) {
-                        printk("No space for mount in mount table\n");
-                        free(mp);
-                        res = NOT_OK;
-                    }
-                    else {
-                        mp->index = slot;
-                        printk("%s: mounted as %s\n", mp->dev_driver->name, mp->fs_driver->name);
-                    }
+                    mp->index = slot;
+                    printk("%s: mounted as %s\n", mp->dev_driver->name, mp->fs_driver->name);
                 }
             }
         }
