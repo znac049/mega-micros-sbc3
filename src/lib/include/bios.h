@@ -46,8 +46,10 @@ SOFTWARE.
 #define BIOS_FSTAT          20
 #define BIOS_FLUSH          21     // wait until a serial port has sent its output
 #define BIOS_RAM_BANK       22     // base and size of a RAM bank (0 or 1)
+#define BIOS_REALLOC        23     // resize a malloc()ed block
+#define BIOS_TIME           24     // seconds since 1970, from the RTC
 
-#define NUM_BIOS_CALLS	    23
+#define NUM_BIOS_CALLS	    25
 
 
 

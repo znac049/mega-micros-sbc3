@@ -39,10 +39,11 @@ ibdone:
 	move.l	4(sp),d0		; pass argc, argv to main()
 	move.l	8(sp),d1
 	movem.l	d0-d1,-(sp)
-	bsr	    main
+	jsr	    main			; jsr, not bsr: a big program puts main
+					; more than 32K away
 
 ; Calling exit() takes care of any housekeeping.
-	bsr		exit			; passes control back to the monitor
+	jsr		exit			; passes control back to the monitor
 
 	
 

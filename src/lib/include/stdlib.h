@@ -27,6 +27,9 @@ SOFTWARE.
 #include <ctype.h>
 #include <stddef.h>
 
+#define EXIT_SUCCESS    0
+#define EXIT_FAILURE    1
+
 int atoi(const char *nptr);
 long atol(const char *nptr);
 void *calloc(size_t nmemb, size_t size);
@@ -36,7 +39,10 @@ void _init_heap(void);
 char *itoa_padded(unsigned int value, char *string, int base, char width, char zeropad, char is_signed, char ten_char);
 void *malloc(size_t size);
 void free(void *ptr);
+void qsort(void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *));
 int rand(void);
+void *realloc(void *ptr, size_t size);
 char *realpath(const char *path, char *resolved_path);
 void srand(unsigned int seed);
+double strtod(const char *nptr, char **endptr);
 long strtol(const char *nptr, char **endptr, int base);

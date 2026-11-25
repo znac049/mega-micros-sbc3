@@ -58,13 +58,15 @@ USERLIB=$(OBJ_DIR)libmega.a
 decoy: all
 	@echo Please use \"make all\" to build all the libraries.
 
-VPATH = machine ctype dirent err extras fcntl libgen setjmp stdio stdlib string strings sys time unistd crt0
+VPATH = machine ctype dirent err extras fcntl libgen math setjmp softfp stdio stdlib string strings sys time unistd crt0
 
 include ctype/include.mk
 include dirent/include.mk
 include err/include.mk
 include fcntl/include.mk
 include libgen/include.mk
+include math/include.mk
+include softfp/include.mk
 include machine/include.mk
 include extras/include.mk
 include setjmp/include.mk
