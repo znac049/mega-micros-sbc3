@@ -1,5 +1,6 @@
 LIBOBJECTS=memcmp.o\
 			memcpy.o \
+			memmove.o \
 			memset.o \
 			strcat.o \
 			strchr.o \
