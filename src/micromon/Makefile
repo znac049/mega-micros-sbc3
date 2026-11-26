@@ -21,7 +21,7 @@ scp: first romdisk
 	scp $(ROMIMAGE) bob@192.168.1.60:mame/roms/sbc3
 
 romdisk: first
-	python3 makeromfs.py -i $(ROMDISK) -m $(MONITORIMAGE) -s 4
+	python3 makeromfs.py -i $(ROMDISK) -m $(MONITORIMAGE) -s 4 -d $(MEGA_MICROS_DIR)/src/diskimages/trees/romdisk
 
 inc_build:
 	./increment_build.sh

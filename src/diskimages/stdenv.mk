@@ -13,8 +13,12 @@ TUNE?=$(CPU)
 
 SYSINCDIR?=$(MEGA_MICROS_DIR)/built/include
 SYSLIBDIR?=$(MEGA_MICROS_DIR)/built/lib/bios
-ROMDISKDIR?=$(MEGA_MICROS_DIR)/src/romdisk/romdisk
-ROMDISK_BINDIR?=$(ROMDISKDIR)/bin
+# The disks, and where their trees are
+include $(MEGA_MICROS_DIR)/src/diskimages/disks.mk
+
+# Which disks this program goes on, and where on them
+DISKS?=$(DEFAULT_DISKS)
+INSTALL_SUBDIR?=bin
 
 LDSCRIPT?=$(MEGA_MICROS_DIR)/built/lib/bios/program.ld
 ROM_LDSCRIPT?=none
@@ -138,12 +142,26 @@ $(OBJ_DIR)/%.o : %.asm
 clean:
 	$(RM) -r $(OBJ_DIR)
 
+# Copy the program, stripped, onto each of its disks
+UNKNOWN_DISKS=$(filter-out $(ALL_DISKS),$(DISKS))
+
 install: all
-	$(MKDIR) $(ROMDISK_BINDIR)
-	$(CP) $(ELF) $(ROMDISK_BINDIR)/$(PROGRAM_BASENAME)
-	$(STRIP) $(ROMDISK_BINDIR)/$(PROGRAM_BASENAME)
+ifneq ($(UNKNOWN_DISKS),)
+	$(error $(PROGRAM_BASENAME): unknown disk(s) "$(UNKNOWN_DISKS)" in DISKS - see disks.mk)
+endif
+	@for disk in $(DISKS); do \
+		dest=$(DISK_TREES_DIR)/$$disk/$(INSTALL_SUBDIR); \
+		echo "  $(PROGRAM_BASENAME) -> $$disk/$(INSTALL_SUBDIR)"; \
+		$(MKDIR) $$dest && \
+		$(CP) $(ELF) $$dest/$(PROGRAM_BASENAME) && \
+		$(STRIP) $$dest/$(PROGRAM_BASENAME) || exit 1; \
+	done
+
+# Which disks this program goes on (used by "make list")
+disks:
+	@echo "$(PROGRAM_BASENAME): $(DISKS)"
 
 # Makefile magic (for "phony" targets that are not real files)
-.PHONY: all clean install
+.PHONY: all clean install disks
 
 -include $(DEPS)

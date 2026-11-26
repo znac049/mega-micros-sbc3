@@ -24,4 +24,4 @@ ifndef MEGA_MICROS_DIR
 $(error ERROR: MEGA_MICROS_DIR not set)
 endif
 
--include $(MEGA_MICROS_DIR)/src/romdisk/stdenv.mk
+-include $(MEGA_MICROS_DIR)/src/diskimages/stdenv.mk

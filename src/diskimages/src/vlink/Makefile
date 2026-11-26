@@ -1,8 +1,8 @@
-# vlink for the romdisk: Frank Wille's portable multi-format linker.
+# vlink for the disk images: Frank Wille's portable multi-format linker.
 #
 # This replaces vlink's own Makefile (Unix/gcc), which builds for the host.
-# The romdisk's stdenv.mk supplies the cross compiler, flags and library,
-# and builds into obj/ like the other romdisk programs.
+# src/diskimages/stdenv.mk supplies the cross compiler, flags and library,
+# and builds into obj/ like the other programs.
 #
 # vlink's sources are used unmodified (its licence asks for that).
 
@@ -20,7 +20,7 @@ CSOURCES   = $(sort $(wildcard *.c))
 ASMSOURCES =
 CINCLUDES  =
 
--include $(MEGA_MICROS_DIR)/src/romdisk/stdenv.mk
+-include $(MEGA_MICROS_DIR)/src/diskimages/stdenv.mk
 
 # vlink is third-party C99 code: build it without -Werror/-pedantic/-Wextra.
 # Its style triggers many harmless -Wparentheses and similar warnings,

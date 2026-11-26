@@ -20,17 +20,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# Builds every program for the ROM disk. Each subdirectory of this
-# directory that has its own Makefile is one program.
+# Builds every program for the disk images. Each subdirectory of this
+# directory that has its own Makefile is one program; its Makefile says
+# which disks it goes on (see ../disks.mk).
 #
 #   make            build them all
-#   make install    build them all and copy them into the ROM disk's bin directory
+#   make install    build them all and copy each onto its disks' trees
 #   make clean      clean them all
-#   make list       show which programs were found
+#   make list       show the programs found, and the disks each goes on
 #
 #   make sayhi      build just one program (likewise install-sayhi, clean-sayhi)
 #
 # Builds can run in parallel: make -j4 install
+#
+# Normally this is run from ../Makefile, which also empties the trees
+# first and makes the images.
 
 ifndef MEGA_MICROS_DIR
 $(error ERROR: MEGA_MICROS_DIR not set)
@@ -52,7 +56,7 @@ install: $(INSTALL_TARGETS)
 clean: $(CLEAN_TARGETS)
 
 list:
-	@echo $(PROGRAMS)
+	@for p in $(PROGRAMS); do $(MAKE) -s --no-print-directory -C $$p disks; done
 
 $(PROGRAMS):
 	$(MAKE) -C $@

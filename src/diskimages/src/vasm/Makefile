@@ -1,8 +1,8 @@
-# vasm for the romdisk: the 68k assembler with Motorola syntax.
+# vasm for the disk images: the 68k assembler with Motorola syntax.
 #
 # This replaces vasm's own Makefile (Unix/gcc), which builds for the host.
-# The romdisk's stdenv.mk supplies the cross compiler, flags and library,
-# and builds into obj/ like the other romdisk programs.
+# src/diskimages/stdenv.mk supplies the cross compiler, flags and library,
+# and builds into obj/ like the other programs.
 
 ifndef MEGA_MICROS_DIR
 $(error ERROR: MEGA_MICROS_DIR not set)
@@ -35,7 +35,7 @@ CSOURCES = vasm.c atom.c expr.c symtab.c symbol.c error.c parse.c reloc.c \
 ASMSOURCES =
 CINCLUDES =
 
--include $(MEGA_MICROS_DIR)/src/romdisk/stdenv.mk
+-include $(MEGA_MICROS_DIR)/src/diskimages/stdenv.mk
 
 # vasm is third-party C90 code: build it without -Werror/-pedantic/-Wextra.
 # compat/ comes first, so its stddef.h wraps the library's (see there).

@@ -11,11 +11,12 @@ rom_size = 4 * one_meg
 fs_size = 4 * one_meg
 
 args = sys.argv[1:]
-options = "m:i:s:"
-long_options = ["monitor=", "image=", "size="]
+options = "m:i:s:d:"
+long_options = ["monitor=", "image=", "size=", "dir="]
 
 monitorfile = 'micromon.part1'
 romdisk = 'romdisk.bin'
+tree = '../diskimages/trees/romdisk'   # what goes on the disk
 
 try:
     args, values = getopt.getopt(args, options, long_options)
@@ -27,10 +28,12 @@ try:
             romdisk = val
         elif arg in ("-s", "--size"):
             fs_size = one_meg * int(val)
+        elif arg in ("-d", "--dir"):
+            tree = val
 
 except getopt.error as err:
     print(str(err))
-    exit()
+    sys.exit(1)
 
 
 block_size = 2048
@@ -38,7 +41,11 @@ block_size = 2048
 file = Path(monitorfile)
 if not file.exists():
     print(f"Can't find file '{monitorfile}'")
-    exit()
+    sys.exit(1)
+
+if not Path(tree).is_dir():
+    print(f"Can't find the romdisk's tree '{tree}' (run make in src/diskimages)")
+    sys.exit(1)
 
 monitor_size = file.stat().st_size + 8  # 8 Bytes for the inbetween file (signature)
 print(f"monitor size is {monitor_size}")
@@ -56,7 +63,7 @@ with open(romdisk, mode="w+b") as f:
     f.write(b'\xff' * (block_size * rounded_block_count))
 
 # cmd = ['dd', 'if=/dev/zero', f'of={romdisk}', f'bs={block_size}', f'count={rounded_block_count}']
-cmd = ['mkfs.ext2', '-b', f'{block_size}', '-d', '../romdisk/romdisk', '-m', '1', '-M', '//rom', '-t', 'ext2', romdisk]
+cmd = ['mkfs.ext2', '-b', f'{block_size}', '-d', tree, '-m', '1', '-M', '//rom', '-t', 'ext2', romdisk]
 print(cmd)
 try:
     res = subprocess.run(cmd, text=True, check=True)
@@ -66,4 +73,5 @@ try:
     # res = subprocess.run(cmd, text=True, check=True)
 except subprocess.CalledProcessError as e:
     print(f'{cmd[0]} command failed with return code {e.returncode}')
+    sys.exit(1)
 

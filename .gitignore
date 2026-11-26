@@ -26,5 +26,5 @@ src/elftools/sayhi
 
 *.patch
 
-# Build output of the romdisk programs
-src/romdisk/src/*/obj/
+# Build output of the disk image programs
+src/diskimages/src/*/obj/
