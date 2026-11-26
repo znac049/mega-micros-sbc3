@@ -50,6 +50,16 @@ DISK_SIZE_rescue := 4
 # The monitor's ext2 code only handles 2 KB blocks
 DISK_BLOCK_SIZE := 2048
 
+# Fixed files (from files/<disk>/) to strip of their symbols as they're
+# copied into a disk's tree, keeping only those in STRIP_KEEP_<disk>.
+# The NetBSD kernel keeps dt_blob_start, which the netbsd command looks up
+# to find the device tree. (The linker may only store that name as the
+# tail of _dt_blob_start, so keep both.)
+STRIP_FILES_romdisk := boot/netbsd
+STRIP_KEEP_romdisk  := dt_blob_start _dt_blob_start
+
+DISK_STRIP := m68k-linux-gnu-strip
+
 # The disks that micromon puts in the ROM, rather than in images/
 ROM_DISKS := romdisk
 

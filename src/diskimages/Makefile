@@ -55,7 +55,17 @@ images: trees
 
 images-only: $(IMAGE_TARGETS)
 
-# Start each tree afresh: its fixed files, if any, then the programs
+# Strip one fixed file in a tree, if it's there: $(call strip_file,disk,file)
+define strip_file
+@if [ -f $(DISK_TREES_DIR)/$(1)/$(2) ]; then \
+		echo "  stripping $(1)/$(2), keeping $(STRIP_KEEP_$(1))"; \
+		$(DISK_STRIP) $(addprefix -K ,$(STRIP_KEEP_$(1))) $(DISK_TREES_DIR)/$(1)/$(2) || exit 1; \
+	fi
+
+endef
+
+# Start each tree afresh: its fixed files, if any (stripping those listed
+# in disks.mk), then the programs
 trees:
 	rm -rf $(DISK_TREES_DIR)
 	@for disk in $(ALL_DISKS); do \
@@ -64,6 +74,7 @@ trees:
 			cp -rp $(DISK_FILES_DIR)/$$disk/. $(DISK_TREES_DIR)/$$disk/ || exit 1; \
 		fi; \
 	done
+	$(foreach disk,$(ALL_DISKS),$(foreach f,$(STRIP_FILES_$(disk)),$(call strip_file,$(disk),$(f))))
 	$(MAKE) -C $(PROGRAMS_DIR) install
 
 # mkfs.ext2 -d copies a tree into a new filesystem, of exactly
