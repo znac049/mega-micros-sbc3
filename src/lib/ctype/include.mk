@@ -1,5 +1,9 @@
 LIBOBJECTS=isalnum.o \
 			isalpha.o \
+			iscntrl.o \
+			islower.o \
+			ispunct.o \
+			isupper.o \
 			isblank.o \
 			isdigit.o \
 			isgraph.o \
