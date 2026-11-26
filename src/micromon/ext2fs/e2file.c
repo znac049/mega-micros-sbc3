@@ -156,6 +156,12 @@ int ext2_open(vfile_t *file, const char *name, int flags, vfile_t *cwd) {
             return NOT_OK;
         }
 
+        // O_CREAT | O_EXCL insists on making a new file
+        if ((i == dirc - 1) && ((flags & (O_CREAT | O_EXCL)) == (O_CREAT | O_EXCL))) {
+            errno = EEXIST;
+            return NOT_OK;
+        }
+
         if (ext2_get_inode(file->mp, inode_num, &inode) == NOT_OK) {
             kprintf("ext2_open: failed to read inode %d\n", inode_num);
             errno = EIO;

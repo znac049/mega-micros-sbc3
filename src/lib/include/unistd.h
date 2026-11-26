@@ -25,10 +25,18 @@ SOFTWARE.
 #pragma once
 
 #include <ctype.h>
+#include <sys/types.h>      // uid_t, gid_t, useconds_t
 
-#define SEEK_SET 1
-#define SEEK_CUR 2
-#define SEEK_END 3
+// The usual values: some code (NetHack, for one) writes 0 for SEEK_SET
+#define SEEK_SET 0
+#define SEEK_CUR 1
+#define SEEK_END 2
+
+// access() modes
+#define F_OK 0
+#define X_OK 1
+#define W_OK 2
+#define R_OK 4
 
 
 int chdir(const char *path);
@@ -36,6 +44,15 @@ int close(int fd);
 void exit(int);
 char *getcwd(char *buf, size_t size);
 pid_t getpid(void);
+uid_t getuid(void);
+uid_t geteuid(void);
+gid_t getgid(void);
+gid_t getegid(void);
+unsigned int sleep(unsigned int seconds);
+int usleep(useconds_t usec);
+int access(const char *pathname, int mode);
+
+extern char **environ;
 ssize_t getdents(int fd, void *dirp, size_t count);
 int isatty(int fd);
 off_t lseek(int fd, off_t offset, int whence);

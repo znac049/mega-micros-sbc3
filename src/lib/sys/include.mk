@@ -1,7 +1,8 @@
 LIBOBJECTS=chmod.o \
 			fstat.o \
 			lstat.o \
-			stat.o
+			stat.o \
+			umask.o
 
 LIBINCLUDES=$(DIR)/include
 

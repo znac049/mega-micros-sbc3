@@ -35,6 +35,9 @@ SOFTWARE.
 #include <sys/stat.h>
 
 #include "micromon.h"
+
+// Permissions for the console's files, if they had to be made
+#define DEFAULT_CREATE_MODE     0644
 #include "ptr_array.h"
 
 static vfile_t cwd;
@@ -449,7 +452,7 @@ static int open_console(void) {
             continue;
         }
 
-        fd = bios_open(console[i].path, console[i].flags);
+        fd = bios_open(console[i].path, console[i].flags, DEFAULT_CREATE_MODE);
         if (fd != i) {
             printk("open_console: %s opened as fd %d, not %d\n", console[i].path, fd, i);
             if (fd >= 0) {
@@ -633,15 +636,12 @@ int bios_getcwd(char*buff, size_t size) {
     return (int)buff;
 }
 
-// Permissions for files made by open(O_CREAT), which has no mode argument
-#define DEFAULT_CREATE_MODE     0644
-
 /*
  * Open (and with O_CREAT, create) a file. 'mode' gives the permissions of
  * a newly created file.
  *
- * Understands O_RDONLY, O_WRONLY, O_RDWR, O_CREAT, O_TRUNC, O_APPEND and
- * O_DIRECTORY.
+ * Understands O_RDONLY, O_WRONLY, O_RDWR, O_CREAT, O_EXCL, O_TRUNC,
+ * O_APPEND and O_DIRECTORY.
  */
 static int do_open(const char *pathname, int flags, mode_t mode) {
     char fs_path[PATH_MAX];
@@ -735,8 +735,9 @@ static int do_open(const char *pathname, int flags, mode_t mode) {
     return fd;
 }
 
-int bios_open(const char *pathname, int flags) {
-    return do_open(pathname, flags, DEFAULT_CREATE_MODE);
+// 'mode' gives the permissions of a file that O_CREAT makes
+int bios_open(const char *pathname, int flags, mode_t mode) {
+    return do_open(pathname, flags, mode);
 }
 
 // Same as open(pathname, O_CREAT | O_WRONLY | O_TRUNC), with permissions 'mode'

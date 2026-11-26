@@ -39,3 +39,4 @@ typedef unsigned short  uid_t;
 typedef unsigned short  gid_t;
 typedef unsigned int    blksize_t;
 typedef unsigned int    blkcnt_t;
+typedef unsigned int    useconds_t;

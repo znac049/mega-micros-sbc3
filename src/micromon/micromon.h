@@ -200,7 +200,7 @@ int bios_creat(const char *pathname, mode_t mode);
 int bios_unlink(const char *pathname);
 int bios_rmdir(const char *pathname);
 int bios_chmod(const char *pathname, mode_t mode);
-int bios_open(const char *pathname, int flags);
+int bios_open(const char *pathname, int flags, mode_t mode);
 int bios_close(int fd);
 int bios_read(int fd, char *buff, size_t num_bytes);
 off_t bios_seek(int fd, off_t offset, int whence);
