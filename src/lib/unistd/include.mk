@@ -1,13 +1,16 @@
-LIBOBJECTS=chdir.o \
+LIBOBJECTS=access.o \
+			chdir.o \
 			close.o \
 			getcwd.o \
 			getdents.o \
 			getpid.o \
+			getuid.o \
 			isatty.o \
 			lseek.o \
 			mktime.o \
 			read.o \
 			rmdir.o \
+			sleep.o \
 			syscall.o \
 			unlink.o \
 			write.o
