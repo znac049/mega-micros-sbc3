@@ -32,12 +32,12 @@ How startup errors are displayed depends on how early in the initialisation code
 Simply prints a brief summary of each command the monitor accepts.
 
 ### byteset, wordset, longset - edit data in memory
-__Aliases__: **bs**, **ws**, **ls**
+__Aliases__: **sb**, **sw**, **sl**
 __Shortform__: **!**
 
 ```
-bs [ = <expr> [, <expr> ...]]
-bs <address> [ [ = ] <expr> [, <expr> ...]]
+sb [ = <expr> [, <expr> ...]]
+sb <address> [ [ = ] <expr> [, <expr> ...]]
 ![b|w|l] [ <address> ] [ [ = ] <expr> [, <expr> ...]]
 ```
 
@@ -77,9 +77,22 @@ dcache [ <on> | <off> ]
 #### Details
 
 ### dir - list the contents of a directory
+__Alias__: **ls**
 #### Synopsis
 ```
+dir [-a] [-b] [<path> ...]
 ```
+#### Details
+Lists each directory given, or the current directory, sorted by name. For each entry it shows the type and permissions, the number of links, the size in bytes, the time it was last changed (UTC) and the name, with a `/` after directories:
+```
+drwxr-xr-x   2      2048 2026-11-26 14:24  bin/
+-rwxr-xr-x   1    412345 2026-11-26 14:24  vasm
+-rw-r--r--   1        62 -                 motd
+```
+A time of `-` means it was never set (it was written without the RTC). A summary of the number of directories and files, and their total size, follows. A file given as **_<path>_** is listed on its own line.
+
+- **-b** lists just the names (brief), with `/` after directories
+- **-a** also lists the `.` and `..` entries
 
 ### disassemble - disassemble machine code
 #### Synopsis

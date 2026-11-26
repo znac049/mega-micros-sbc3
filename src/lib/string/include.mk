@@ -7,6 +7,7 @@ LIBOBJECTS=memcmp.o\
 			strcmp.o \
 			strcpy.o \
 			strcspn.o \
+			strdup.o \
 			strerror.o \
 			strlen.o \
 			strncat.o \
