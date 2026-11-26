@@ -34,9 +34,19 @@ typedef struct file {
     uint8_t is_open;
     uint8_t eof;            // a read hit the end of the file (feof)
     uint8_t error;          // a read or write failed (ferror)
+    uint8_t has_ungot;      // a character was pushed back by ungetc()...
+    uint8_t ungot;          // ...and this is it
 } FILE;
 
+// setvbuf() modes (streams aren't buffered, so they're all the same)
+#define _IOFBF  0
+#define _IOLBF  1
+#define _IONBF  2
+
 #define STREAM_TABLE_SIZE 16
+
+// A good size for an I/O buffer
+#define BUFSIZ 1024
 
 // A stream position (fgetpos/fsetpos): just the file offset
 typedef long fpos_t;
@@ -53,6 +63,16 @@ int feof(FILE *stream);
 int ferror(FILE *stream);
 int fflush(FILE *stream);
 int fgetc(FILE *stream);
+#define getc(stream) fgetc(stream)
+int ungetc(int c, FILE *stream);
+int fileno(FILE *stream);
+FILE *fdopen(int fd, const char *mode);
+void setbuf(FILE *stream, char *buf);
+int setvbuf(FILE *stream, char *buf, int mode, size_t size);
+void perror(const char *s);
+int fscanf(FILE *stream, const char *format, ...);
+int scanf(const char *format, ...);
+int vfscanf(FILE *stream, const char *format, va_list ap);
 int fgetpos(FILE *stream, fpos_t *pos);
 char *fgets(char *s, int size, FILE *stream);
 extern FILE *fopen(const char *pathname, const char *mode);
