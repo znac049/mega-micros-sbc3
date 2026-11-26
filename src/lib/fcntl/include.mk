@@ -1,4 +1,5 @@
 LIBOBJECTS=creat.o \
+			fcntl.o \
 			open.o
 
 LIBINCLUDES=$(DIR)/include

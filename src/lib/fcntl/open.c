@@ -28,13 +28,27 @@ SOFTWARE.
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
+#include <stdarg.h>
 
-int open(const char *pathname, int flags) {
+/*
+ * With O_CREAT, a third argument gives the new file's permissions. (The
+ * monitor ignores it otherwise.)
+ */
+int open(const char *pathname, int flags, ...) {
     char real_path[PATH_MAX];
+    mode_t mode = 0;
+
+    if (flags & O_CREAT) {
+        va_list args;
+
+        va_start(args, flags);
+        mode = (mode_t)va_arg(args, int);
+        va_end(args);
+    }
 
     if (realpath(pathname, real_path) == NULL) {
         return NOT_OK;
     }
 
-    return syscall(BIOS_OPEN, (uint32_t)real_path, flags, 0);
+    return syscall(BIOS_OPEN, (uint32_t)real_path, flags, mode);
 }
