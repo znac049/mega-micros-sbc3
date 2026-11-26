@@ -4,6 +4,7 @@ LIBOBJECTS=clearerr.o \
 			ferror.o \
 			fflush.o \
 			fgetc.o \
+			fgetpos.o \
 			fgets.o \
 			fopen.o \
 			fprintf.o \
@@ -11,6 +12,7 @@ LIBOBJECTS=clearerr.o \
 			fputs.o \
 			fread.o \
 			fseek.o \
+			fsetpos.o \
 			ftell.o \
 			fwrite.o \
 			getchar.o \
@@ -24,6 +26,7 @@ LIBOBJECTS=clearerr.o \
 			sprintf.o \
 			sscanf.o \
 			vfprintf.o \
+			vprintf.o \
 			vsnprintf.o \
 			vsprintf.o \
 			vsscanf.o
