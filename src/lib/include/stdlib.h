@@ -46,3 +46,6 @@ char *realpath(const char *path, char *resolved_path);
 void srand(unsigned int seed);
 double strtod(const char *nptr, char **endptr);
 long strtol(const char *nptr, char **endptr, int base);
+long long strtoll(const char *nptr, char **endptr, int base);
+unsigned long strtoul(const char *nptr, char **endptr, int base);
+unsigned long long strtoull(const char *nptr, char **endptr, int base);

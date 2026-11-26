@@ -38,6 +38,9 @@ typedef struct file {
 
 #define STREAM_TABLE_SIZE 16
 
+// A stream position (fgetpos/fsetpos): just the file offset
+typedef long fpos_t;
+
 #define FHAND_DUART 1
 
 extern FILE *stdin;
@@ -50,6 +53,7 @@ int feof(FILE *stream);
 int ferror(FILE *stream);
 int fflush(FILE *stream);
 int fgetc(FILE *stream);
+int fgetpos(FILE *stream, fpos_t *pos);
 char *fgets(char *s, int size, FILE *stream);
 extern FILE *fopen(const char *pathname, const char *mode);
 int fprintf(FILE *stream, const char *fmt, ...);
@@ -57,6 +61,7 @@ int fputc(int c, FILE *stream);
 int fputs(const char *s, FILE *stream);
 size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
 int fseek(FILE *file, long offset, int whence);
+int fsetpos(FILE *stream, const fpos_t *pos);
 long ftell(FILE *file);
 size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream);
 int getchar(void);
@@ -70,6 +75,7 @@ int snprintf(char *buffer, size_t n, const char *fmt, ...);
 int sprintf(char *str, const char *format, ...);
 int sscanf(const char *str, const char *format, ...);
 int vfprintf(FILE *stream, const char *format, va_list ap);
+int vprintf(const char *format, va_list ap);
 int vsnprintf(char *str, size_t size, const char *format, va_list ap);
 int vsprintf(char *str, const char *format, va_list ap);
 int vsscanf(const char *str, const char *format, va_list ap);

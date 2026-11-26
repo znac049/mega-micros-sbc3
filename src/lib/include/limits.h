@@ -52,7 +52,12 @@ SOFTWARE.
 /*Definitions about longs (32 bits in MINIX). */
 #define LONG_MIN (-2147483647L-1)/* minimum value of a long */
 #define LONG_MAX  2147483647L	/* maximum value of a long */
-#define ULONG_MAX 0xFFFFFFFFL	/* maximum value of an unsigned long */
+#define ULONG_MAX 0xFFFFFFFFUL	/* maximum value of an unsigned long */
+
+/* long long (64 bits) */
+#define LLONG_MIN  (-9223372036854775807LL-1)
+#define LLONG_MAX  9223372036854775807LL
+#define ULLONG_MAX 0xFFFFFFFFFFFFFFFFULL
 
 // Filesystem related defines
 #define PATH_MAX 128

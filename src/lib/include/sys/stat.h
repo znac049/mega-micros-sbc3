@@ -26,7 +26,7 @@ SOFTWARE.
 #pragma once
 
 #include <stddef.h>
-#include <ctype.h>                  // mode_t, time_t, off_t
+#include <sys/types.h>             // mode_t, time_t, off_t, dev_t, ino_t ...
 
 /*
  * File status, as returned by stat() and fstat().
@@ -34,14 +34,6 @@ SOFTWARE.
  * The monitor fills this in for user programs, so its layout must be
  * the same in both - change it in one place only (here).
  */
-
-typedef unsigned int    ino_t;      // (also in dirent.h - an identical repeat is fine in C11)
-typedef unsigned short  dev_t;
-typedef unsigned short  nlink_t;
-typedef unsigned short  uid_t;
-typedef unsigned short  gid_t;
-typedef unsigned int    blksize_t;
-typedef unsigned int    blkcnt_t;
 
 struct stat {
     dev_t       st_dev;         // which mount the file is on
@@ -100,3 +92,4 @@ struct stat {
 int stat(const char *pathname, struct stat *statbuf);
 int lstat(const char *pathname, struct stat *statbuf);
 int fstat(int fd, struct stat *statbuf);
+int chmod(const char *pathname, mode_t mode);

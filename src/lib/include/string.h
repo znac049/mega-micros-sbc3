@@ -42,3 +42,7 @@ size_t strlen(const char *str);
 int strncmp(const char *s1, const char *s2, size_t n);
 char *strncpy(char *dst, const char *src, size_t dsize);
 char *strrchr(const char *s, int c);
+char *strstr(const char *haystack, const char *needle);
+char *strpbrk(const char *s, const char *accept);
+size_t strspn(const char *s, const char *accept);
+size_t strcspn(const char *s, const char *reject);

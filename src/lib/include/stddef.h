@@ -26,6 +26,10 @@ SOFTWARE.
 
 #define NULL ((void *)0)
 
+#include <ctype.h>          // size_t
+
+typedef int ptrdiff_t;
+
 #define offsetof(type, member)  __builtin_offsetof(type, member)
 #define EOF -1
 #define EOS '\0'
