@@ -61,6 +61,14 @@ The file specified by **_<filename>_** is displayed on the console. If **_<filen
 ```
 ```
 
+### chmod - change a file's permissions
+#### Synopsis
+```
+chmod <octal mode> <file> [<file> ...]
+```
+#### Details
+Sets the permission bits of each **_<file>_** (or directory) to **_<octal mode>_**, given in octal as for the Unix command: `755`, `0644`, `4755`... The file's type is unchanged. The filesystem must be writable, so not the ROM disk.
+
 ### dcache - control the data cache
 #### Synopsis
 ```
@@ -157,6 +165,22 @@ The monitor loads a program, in Motorola S-Record format, from the console port.
 ```
 pwd
 ```
+
+### rm - delete files
+#### Synopsis
+```
+rm <file> [<file> ...]
+```
+#### Details
+Deletes each **_<file>_**. A directory needs **rmdir**, and a file that's open (by a program that's still running, for instance) can't be deleted. If the file has other names (hard links), only this name goes. The filesystem must be writable, so not the ROM disk.
+
+### rmdir - delete empty directories
+#### Synopsis
+```
+rmdir <directory> [<directory> ...]
+```
+#### Details
+Deletes each **_<directory>_**, which must be empty. The current directory, and the top directory of a mount, can't be deleted.
 
 ### rtc - configure/show clock settings
 #### Synopsis

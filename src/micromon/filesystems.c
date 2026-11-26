@@ -1217,3 +1217,106 @@ int bios_isatty(int fd) {
 
     return YES;
 }
+
+/*
+ * For the filesystems: each open file in turn, then the current
+ * directory, so that one can check whether something it's about to change
+ * or remove is in use. Start with *pos = 0; returns NULL after the last.
+ */
+vfile_t *vfs_next_open_file(int *pos) {
+    while (*pos < MAX_FILES) {
+        vfile_t *file = (vfile_t *)get_array_item(vfs_files_array, (*pos)++);
+
+        if ((file != NULL) && (file->open == YES)) {
+            return file;
+        }
+    }
+
+    if (*pos == MAX_FILES) {
+        (*pos)++;
+
+        if (cwd.open == YES) {
+            return &cwd;
+        }
+    }
+
+    return NULL;
+}
+
+/*
+ * The mount a path to be removed or changed is on, and the path within it.
+ * Character devices and the root directory can't be.
+ */
+static int path_for_change(const char *pathname, vmp_t **mpp, char *fs_path) {
+    if (find_char_device(pathname) != NULL) {
+        errno = EPERM;
+        return NOT_OK;
+    }
+
+    if (resolve_path(pathname, mpp, fs_path) == NOT_OK) {
+        return NOT_OK;
+    }
+
+    if ((*mpp == &root_mount) || ((*mpp)->fs_driver->type != VFS_TYPE_FS)) {
+        errno = EPERM;
+        return NOT_OK;
+    }
+
+    if ((*mpp)->read_only == YES) {
+        errno = EROFS;
+        return NOT_OK;
+    }
+
+    return OK;
+}
+
+// Delete a file (not a directory)
+int bios_unlink(const char *pathname) {
+    char fs_path[PATH_MAX];
+    vmp_t *mp;
+
+    if (path_for_change(pathname, &mp, fs_path) == NOT_OK) {
+        return NOT_OK;
+    }
+
+    if (mp->fs_driver->api.fs.unlink == NULL) {
+        errno = EROFS;
+        return NOT_OK;
+    }
+
+    return mp->fs_driver->api.fs.unlink(mp, fs_path);
+}
+
+// Delete an empty directory
+int bios_rmdir(const char *pathname) {
+    char fs_path[PATH_MAX];
+    vmp_t *mp;
+
+    if (path_for_change(pathname, &mp, fs_path) == NOT_OK) {
+        return NOT_OK;
+    }
+
+    if (mp->fs_driver->api.fs.rmdir == NULL) {
+        errno = EROFS;
+        return NOT_OK;
+    }
+
+    return mp->fs_driver->api.fs.rmdir(mp, fs_path);
+}
+
+// Set a file's permission bits (the low 12 bits of mode)
+int bios_chmod(const char *pathname, mode_t mode) {
+    char fs_path[PATH_MAX];
+    vmp_t *mp;
+
+    if (path_for_change(pathname, &mp, fs_path) == NOT_OK) {
+        return NOT_OK;
+    }
+
+    if (mp->fs_driver->api.fs.chmod == NULL) {
+        errno = EROFS;
+        return NOT_OK;
+    }
+
+    return mp->fs_driver->api.fs.chmod(mp, fs_path, mode);
+}

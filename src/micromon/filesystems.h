@@ -106,6 +106,11 @@ union vfs {
         int (*seek)(vfile_t *file, off_t offset, int whence);
         int (*getdents)(vfile_t *dir, struct dirent *out, int max_ents);
         int (*stat)(vfile_t *file, struct stat *st);   // optional - may be NULL
+
+        // Optional - NULL if the filesystem can't. 'name' is relative to the mount
+        int (*unlink)(vmp_t *mp, const char *name);
+        int (*rmdir)(vmp_t *mp, const char *name);
+        int (*chmod)(vmp_t *mp, const char *name, mode_t mode);
     } fs;
 };
 
@@ -165,6 +170,7 @@ const char *ext2_check_writable(vmp_t *mp);
 // filesystems.c
 vmp_t *vfs_find_mount(const char *name);
 void vfs_close_all(void);
+vfile_t *vfs_next_open_file(int *pos);
 int ext2_alloc_block(vmp_t *mp, uint32_t goal, bool_t zero, uint32_t *block);
 int ext2_free_block(vmp_t *mp, uint32_t block);
 int ext2_alloc_inode(vmp_t *mp, uint32_t parent_inode, bool_t is_dir, uint32_t *inode_num);
@@ -176,6 +182,7 @@ int ext2_sync(vmp_t *mp);
 uint32_t ext2_now(void);
 int ext2_flush_inode(vfile_t *file);
 int ext2_bmap(vfile_t *file, uint32_t n, bool_t create, uint32_t *block, bool_t *created);
+int ext2_free_data_blocks(vmp_t *mp, ext2_inode_t *in);
 int ext2_truncate(vfile_t *file);
 int ext2_add_dirent(vmp_t *mp, uint32_t dir_inode, const char *name, uint32_t inode_num, uint8_t file_type);
 int ext2_init_block_follower(ext2_block_follower_t *bf, vmp_t *mp, uint32_t inode_num);
@@ -183,6 +190,11 @@ void ext2_reset_block_follower(ext2_block_follower_t *bf);
 uint32_t ext2_get_next_block_num(ext2_block_follower_t *bf);
 void ext2_set_block_follower(ext2_block_follower_t *bf, uint32_t n);
 void ext2_dump_block_follower(ext2_block_follower_t *bf);
+
+// ext2/e2remove.c
+int ext2_unlink(vmp_t *mp, const char *name);
+int ext2_rmdir(vmp_t *mp, const char *name);
+int ext2_chmod(vmp_t *mp, const char *name, mode_t mode);
 
 // ext2/e2dir.c
 int ext2_getdents(vfile_t *dir, struct dirent *out, int max_ents);

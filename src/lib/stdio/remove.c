@@ -23,16 +23,18 @@ SOFTWARE.
 */
 
 #include <stdio.h>
-#include <stddef.h>
+#include <unistd.h>
 #include <errno.h>
 
-/*
- * The monitor can't delete files yet, so this always fails. (vasm only
- * uses it to tidy up the output file after an error.)
- */
+// Delete a file or an empty directory
 int remove(const char *pathname) {
-    (void)pathname;
+    if (unlink(pathname) == 0) {
+        return 0;
+    }
 
-    errno = ENOSYS;
+    if (errno == EISDIR) {
+        return rmdir(pathname);
+    }
+
     return -1;
 }

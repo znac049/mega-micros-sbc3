@@ -44,6 +44,7 @@ static command_t commands[] = {
     {"cat",         0, COMMAND, {handle_cat_command},       VEC},
     {"cd",          0, COMMAND, {handle_cd_command},        VEC},
     {"cftest",      0, COMMAND, {handle_cftest_command},    VEC},
+    {"chmod",       0, COMMAND, {handle_chmod_command},     VEC},
     {"dir",         0, COMMAND, {handle_dir_command},       VEC},
     {"disassemble", 3, COMMAND, {handle_disasm_command},    VEC},
     {"e2test",      0, COMMAND, {handle_e2test_command},    VEC},
@@ -53,6 +54,8 @@ static command_t commands[] = {
     {"memtest",     4, COMMAND, {handle_memtest_command},   VEC},
     {"probe",       3, COMMAND, {handle_probe_command},     VEC},
     {"pwd",         0, COMMAND, {handle_pwd_command},       VEC},
+    {"rm",          0, COMMAND, {handle_rm_command},        VEC},
+    {"rmdir",       0, COMMAND, {handle_rmdir_command},     VEC},
     {"rtc",         3, COMMAND, {handle_rtc_command},       VEC},
     {"run",         2, COMMAND, {handle_run_command},       VEC},
     {"ser1",        0, COMMAND, {handle_ser_command},       VEC},
@@ -136,6 +139,7 @@ static void print_help(void) {
     printk("  cat <filename>\n");
     printk("  cd <path>\n");
     printk("  cftest <drive> <sector>\n");
+    printk("  chmod <octal mode> <file> ...\n");
     printk("  e2test <mount>\n");
     printk("  dir [ <path> ]\n");
     printk("  disassemble <address>\n");
@@ -146,6 +150,8 @@ static void print_help(void) {
     printk("  longedit [<address>] [[=] <expr> [, <expr> ...]]\n");
     printk("  memtest [<start> <end> [<passes>]]\n");
     printk("  probe\n");
+    printk("  rm <file> ...\n");
+    printk("  rmdir <directory> ...\n");
     printk("  rtc (erase) | (time [hh:mm[:ss]]) | (date [yyyy:mm:dd])\n");
     printk("  run <file> [<args> ...]\n");
     printk("  ser1|2 baud <baudrate>\n");

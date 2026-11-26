@@ -40,5 +40,7 @@ ssize_t getdents(int fd, void *dirp, size_t count);
 int isatty(int fd);
 off_t lseek(int fd, off_t offset, int whence);
 ssize_t read(int fd, void *buf, size_t count);
+int rmdir(const char *pathname);
 ssize_t write(int fd, void *buf, size_t count);
 int syscall(int number, int p1, int p2, int p3);
+int unlink(const char *pathname);

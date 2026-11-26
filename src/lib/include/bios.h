@@ -48,8 +48,11 @@ SOFTWARE.
 #define BIOS_RAM_BANK       22     // base and size of a RAM bank (0 or 1)
 #define BIOS_REALLOC        23     // resize a malloc()ed block
 #define BIOS_TIME           24     // seconds since 1970, from the RTC
+#define BIOS_UNLINK         25     // delete a file
+#define BIOS_RMDIR          26     // delete an empty directory
+#define BIOS_CHMOD          27     // set a file's permissions
 
-#define NUM_BIOS_CALLS	    25
+#define NUM_BIOS_CALLS	    28
 
 
 

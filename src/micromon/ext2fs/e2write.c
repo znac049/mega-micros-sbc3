@@ -392,28 +392,38 @@ static int free_tree(vmp_t *mp, uint32_t block, int depth) {
     return ext2_free_block(mp, block);
 }
 
-// Cut a file down to nothing, freeing all its blocks
-int ext2_truncate(vfile_t *file) {
-    ext2_file_t *fp = file_inf(file);
-    ext2_inode_t *in = &fp->bf.inode;
+/*
+ * Free all of an inode's data blocks, direct and indirect, and clear its
+ * block pointers. An extended attribute block, if it has one, is left
+ * alone and still counted in i_blocks. The caller writes the inode.
+ */
+int ext2_free_data_blocks(vmp_t *mp, ext2_inode_t *in) {
     int res = OK;
 
     for (int i=0; i<EXT2_SNGL_IND; i++) {
-        if (free_tree(file->mp, in->i_block[i], 0) != OK) {
+        if (free_tree(mp, in->i_block[i], 0) != OK) {
             res = NOT_OK;
         }
     }
 
-    if ((free_tree(file->mp, in->i_block[EXT2_SNGL_IND], 1) != OK) ||
-        (free_tree(file->mp, in->i_block[EXT2_DBL_IND], 2) != OK) ||
-        (free_tree(file->mp, in->i_block[EXT2_TRIP_IND], 3) != OK)) {
+    if ((free_tree(mp, in->i_block[EXT2_SNGL_IND], 1) != OK) ||
+        (free_tree(mp, in->i_block[EXT2_DBL_IND], 2) != OK) ||
+        (free_tree(mp, in->i_block[EXT2_TRIP_IND], 3) != OK)) {
         res = NOT_OK;
     }
 
     memset(in->i_block, 0, sizeof(in->i_block));
-
-    // An extended attribute block, if any, still counts towards i_blocks
     in->i_blocks = (in->i_file_acl != 0)?SECTORS_PER_BLOCK_:0;
+
+    return res;
+}
+
+// Cut a file down to nothing, freeing all its blocks
+int ext2_truncate(vfile_t *file) {
+    ext2_file_t *fp = file_inf(file);
+    ext2_inode_t *in = &fp->bf.inode;
+    int res = ext2_free_data_blocks(file->mp, in);
+
     in->i_size = 0;
     in->i_mtime = in->i_ctime = ext2_now();
     fp->inode_dirty = YES;

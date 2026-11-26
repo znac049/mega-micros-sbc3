@@ -7,7 +7,9 @@ LIBOBJECTS=chdir.o \
 			lseek.o \
 			mktime.o \
 			read.o \
+			rmdir.o \
 			syscall.o \
+			unlink.o \
 			write.o
 
 LIBINCLUDES=$(DIR)/include

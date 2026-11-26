@@ -35,6 +35,7 @@ int strcasecmp(const char *s1, const char *s2);
 int strncasecmp(const char *s1, const char *s2, size_t len);
 char *strcat(char *dst, const char *src);
 char *strncat(char *dst, const char *src, size_t ssize);
+char *strerror(int errnum);
 char *strchr(const char *s, int c);
 int strcmp(const char *s1, const char *s2);
 char *strcpy(char *dst, const char *src);

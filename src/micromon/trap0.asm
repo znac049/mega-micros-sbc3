@@ -92,6 +92,9 @@ trap0_call_table::
         dc.l    bios_ram_bank
         dc.l    bios_realloc
         dc.l    bios_time
+        dc.l    bios_unlink
+        dc.l    bios_rmdir
+        dc.l    bios_chmod
 t0ct_end     
 
         end

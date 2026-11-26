@@ -23,16 +23,10 @@ SOFTWARE.
 */
 
 #include <sys/stat.h>
-#include <errno.h>
+#include <unistd.h>
+#include <bios.h>
 
-/*
- * The monitor has no way to change a file's mode yet, so this always
- * fails. (vlink only uses it to mark its output executable.)
- */
+// Set a file's permission bits (the low 12 bits of mode)
 int chmod(const char *pathname, mode_t mode) {
-    (void)pathname;
-    (void)mode;
-
-    errno = ENOSYS;
-    return -1;
+    return syscall(BIOS_CHMOD, (uint32_t)pathname, (uint32_t)mode, 0);
 }
