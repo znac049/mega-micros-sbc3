@@ -24,9 +24,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <ctype.h>
-
-typedef unsigned int ino_t;
+#include <sys/types.h>     // ino_t, off_t
 
 /* d_type values (same numbering as the ext2 on-disk file type) */
 #define DT_UNKNOWN  0
