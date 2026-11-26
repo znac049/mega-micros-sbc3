@@ -1,4 +1,5 @@
-LIBOBJECTS=fstat.o \
+LIBOBJECTS=chmod.o \
+			fstat.o \
 			lstat.o \
 			stat.o
 
