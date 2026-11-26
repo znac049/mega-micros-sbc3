@@ -1,4 +1,5 @@
-LIBOBJECTS=softfp.o
+LIBOBJECTS=softfp.o \
+			arith.o
 
 LIBINCLUDES=$(DIR)/include
 
