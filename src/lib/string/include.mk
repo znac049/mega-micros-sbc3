@@ -6,11 +6,15 @@ LIBOBJECTS=memcmp.o\
 			strchr.o \
 			strcmp.o \
 			strcpy.o \
+			strcspn.o \
 			strlen.o \
 			strncat.o \
 			strncmp.o \
 			strncpy.o \
-			strrchr.o
+			strpbrk.o \
+			strrchr.o \
+			strspn.o \
+			strstr.o
 
 LIBINCLUDES=$(DIR)/include
 
