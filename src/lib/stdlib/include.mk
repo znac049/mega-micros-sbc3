@@ -1,5 +1,7 @@
 #LIB=stdlib
-LIBOBJECTS=atoi.o \
+LIBOBJECTS=abort.o \
+			abs.o \
+			atoi.o \
 			atol.o \
 			calloc.o \
 			exit.o \
