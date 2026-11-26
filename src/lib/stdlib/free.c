@@ -23,11 +23,16 @@ SOFTWARE.
 */
 
 #include <stdlib.h>
+#include <stddef.h>
 #include <unistd.h>
 #include <bios.h>
 #include <errno.h>
 
 void free(void *ptr)
 {
+    if (ptr == NULL) {
+        return;
+    }
+
     syscall(BIOS_FREE, (uint32_t)ptr, getpid(), 0);
 }

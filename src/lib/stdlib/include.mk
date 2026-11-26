@@ -18,7 +18,11 @@ LIBOBJECTS=atoi.o \
 			snprintf.o \
 			srand.o \
 			strtod.o \
-			strtol.o
+			strtol.o \
+			strtoll.o \
+			strtonum.o \
+			strtoul.o \
+			strtoull.o
 
 LIBINCLUDES=$(DIR)/include
 
