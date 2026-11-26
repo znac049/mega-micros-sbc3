@@ -1,4 +1,8 @@
 LIBOBJECTS=clearerr.o \
+			perror.o \
+			scan.o \
+			setbuf.o \
+			ungetc.o \
 			fclose.o \
 			feof.o \
 			ferror.o \
@@ -6,10 +10,12 @@ LIBOBJECTS=clearerr.o \
 			fgetc.o \
 			fgetpos.o \
 			fgets.o \
+			fileno.o \
 			fopen.o \
 			fprintf.o \
 			fputc.o \
 			fputs.o \
+			fscanf.o \
 			fread.o \
 			fseek.o \
 			fsetpos.o \

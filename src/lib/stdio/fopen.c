@@ -28,6 +28,7 @@ SOFTWARE.
 #include <fcntl.h>
 #include <errno.h>
 #include <dirent.h>
+#include <unistd.h>
 #include <machine.h>
 
 /*
@@ -99,7 +100,7 @@ FILE *fopen(const char *pathname, const char *mode) {
 	}
 
 	// now let open(2) does all the heavy lifting
-	fd = open(pathname, flags);
+	fd = open(pathname, flags, 0644);
 	if (fd == NOT_OK) {
 		return NULL;
 	}
@@ -108,6 +109,43 @@ FILE *fopen(const char *pathname, const char *mode) {
 	stream->fd = fd;
 	stream->eof = NO;
 	stream->error = NO;
+	stream->has_ungot = NO;
+
+	return stream;
+}
+
+/*
+ * A stream for a file descriptor that's already open. The mode isn't
+ * checked against how it was opened: streams just read and write it.
+ */
+FILE *fdopen(int fd, const char *mode) {
+	FILE *stream;
+
+	if ((mode == NULL) || ((mode[0] != 'r') && (mode[0] != 'w') && (mode[0] != 'a'))) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	if ((fd < 0) || (lseek(fd, 0, SEEK_CUR) == NOT_OK && !isatty(fd))) {
+		errno = EBADF;
+		return NULL;
+	}
+
+	stream = find_free_slot();
+	if (stream == NULL) {
+		errno = EMFILE;
+		return NULL;
+	}
+
+	stream->is_open = YES;
+	stream->fd = fd;
+	stream->eof = NO;
+	stream->error = NO;
+	stream->has_ungot = NO;
+
+	if (mode[0] == 'a') {
+		lseek(fd, 0, SEEK_END);
+	}
 
 	return stream;
 }

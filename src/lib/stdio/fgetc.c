@@ -36,6 +36,11 @@ int fgetc(FILE *stream) {
         return EOF;
     }
 
+    if (stream->has_ungot) {
+        stream->has_ungot = NO;
+        return (int)stream->ungot;
+    }
+
     res = read(stream->fd, &ch, 1);
     if (res != 1) {
         if (res == 0) {

@@ -42,6 +42,13 @@ size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream) {
 
     total = size * nmemb;
 
+    // A character pushed back by ungetc() comes first
+    if (stream->has_ungot) {
+        p[0] = (char)stream->ungot;
+        stream->has_ungot = NO;
+        done = 1;
+    }
+
     while (done < total) {
         ssize_t n = read(stream->fd, p + done, total - done);
 

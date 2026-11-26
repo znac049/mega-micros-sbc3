@@ -39,6 +39,7 @@ int fseek(FILE *file, long offset, int whence) {
     }
 
     file->eof = NO;
+    file->has_ungot = NO;
 
     return 0;
 }

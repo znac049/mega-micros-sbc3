@@ -35,5 +35,6 @@ void rewind(FILE *file) {
 
     lseek(file->fd, 0, SEEK_SET);
     file->eof = NO;
+    file->has_ungot = NO;
     file->error = NO;
 }

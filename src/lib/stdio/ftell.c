@@ -33,5 +33,12 @@ long ftell(FILE *file) {
         return -1;
     }
 
-    return lseek(file->fd, 0, SEEK_CUR);
+    // A pushed back character hasn't been read yet, as far as the caller knows
+    off_t pos = lseek(file->fd, 0, SEEK_CUR);
+
+    if ((pos > 0) && file->has_ungot) {
+        pos--;
+    }
+
+    return pos;
 }
