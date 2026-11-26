@@ -69,7 +69,7 @@ int bios_isatty(int fd);
 struct stat;
 int bios_stat(const char *pathname, struct stat *st);
 int bios_fstat(int fd, struct stat *st);
-int bios_open(const char *pathname, int flags);
+int bios_open(const char *pathname, int flags, mode_t mode);
 int bios_read(int fd, char *buff, size_t num_bytes);
 off_t bios_seek(int fd, off_t offset, int whence);
 size_t bios_write(int fd, const char *buff, size_t num_bytes);

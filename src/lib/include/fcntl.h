@@ -35,6 +35,32 @@ SOFTWARE.
 #define O_TMPFILE   (1<<5)
 #define O_TRUNC     (1<<6)
 #define O_APPEND    (1<<7)
+#define O_EXCL      (1<<8)      // with O_CREAT: fail if the file exists
+
+/* fcntl() commands */
+#define F_DUPFD     0
+#define F_GETFD     1
+#define F_SETFD     2
+#define F_GETFL     3
+#define F_SETFL     4
+#define F_GETLK     5
+#define F_SETLK     6
+#define F_SETLKW    7
+
+#define FD_CLOEXEC  1
+
+/* Lock types for struct flock */
+#define F_RDLCK     0
+#define F_WRLCK     1
+#define F_UNLCK     2
+
+struct flock {
+    short l_type;       // F_RDLCK, F_WRLCK or F_UNLCK
+    short l_whence;     // SEEK_SET, SEEK_CUR or SEEK_END
+    off_t l_start;
+    off_t l_len;        // 0 means to the end of the file
+    pid_t l_pid;
+};
 
 /* File mode constants (in octal) */
 #define S_IRWXU     00700
@@ -57,4 +83,5 @@ SOFTWARE.
 
 
 int creat(const char *pathname, mode_t mode);
-int open(const char *pathname, int flags);
+int open(const char *pathname, int flags, ...);
+int fcntl(int fd, int cmd, ...);

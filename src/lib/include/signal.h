@@ -24,6 +24,8 @@ SOFTWARE.
 
 #pragma once
 
+#include <sys/types.h>
+
 #define _NSIG             17	/* number of signals used */
 
 #define SIGHUP             1	/* hangup */
@@ -44,3 +46,17 @@ SOFTWARE.
 #define SIGTERM           15	/* software termination signal from kill */
 #define	SIGSTKFLT	      16	/* used by kernel to indicate stack fault */
 #define SIGCHLD           17	/* child process terminated or stopped */
+typedef void (*sighandler_t)(int);
+typedef int sig_atomic_t;
+
+#define SIG_DFL     ((sighandler_t)0)   // the default action
+#define SIG_IGN     ((sighandler_t)1)   // ignore the signal
+#define SIG_ERR     ((sighandler_t)-1)  // signal()'s error return
+
+/*
+ * Nothing on the board sends signals, but a program can catch the ones it
+ * raises itself, and code written for Unix that sets handlers works.
+ */
+sighandler_t signal(int signum, sighandler_t handler);
+int raise(int sig);
+int kill(pid_t pid, int sig);
