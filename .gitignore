@@ -28,3 +28,6 @@ src/elftools/sayhi
 
 # Build output of the disk image programs
 src/diskimages/src/*/obj/
+
+# The NetBSD kernel, copied in by hand from the netbsd-src build
+src/diskimages/files/romdisk/boot/netbsd
