@@ -10,6 +10,9 @@ ifndef MEGA_MICROS_DIR
 $(error ERROR: MEGA_MICROS_DIR not set)
 endif
 
+# Which disk image to install on
+DISKS = romdisk tools
+
 # These have to be set before stdenv.mk is included, as its rules use them.
 
 PROGRAM_BASENAME = vlink

@@ -8,6 +8,9 @@ ifndef MEGA_MICROS_DIR
 $(error ERROR: MEGA_MICROS_DIR not set)
 endif
 
+# Which disk image to install on
+DISKS = romdisk tools
+
 # These have to be set before stdenv.mk is included, as its rules use them.
 
 # Which assembler to build. (Not CPU and SYNTAX, as vasm's makefiles call
@@ -16,7 +19,8 @@ VASM_CPU    = m68k
 VASM_SYNTAX = mot
 
 # The romdisk program's name
-PROGRAM_BASENAME = vasm$(VASM_CPU)_$(VASM_SYNTAX)
+#PROGRAM_BASENAME = vasm$(VASM_CPU)_$(VASM_SYNTAX)
+PROGRAM_BASENAME = vasm
 
 # Output formats, as in make.rules. vasm.c refers to every one of them, so
 # they all have to be built in.
