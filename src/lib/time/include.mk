@@ -2,6 +2,7 @@ LIBOBJECTS=asctime.o \
 			ctime.o \
 			gmtime.o \
 			localtime.o \
+			strftime.o \
 			time.o
 
 LIBINCLUDES=$(DIR)/include

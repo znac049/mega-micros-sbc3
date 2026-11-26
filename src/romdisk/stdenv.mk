@@ -21,7 +21,7 @@ ROM_LDSCRIPT?=none
 
 DEFINES=-DUSEBIOS
 
-FLAGS=-ffreestanding -ffunction-sections -fdata-sections -fomit-frame-pointer	\
+FLAGS=-ffreestanding -nostdinc -ffunction-sections -fdata-sections -fomit-frame-pointer\
       -Wall -Wextra -Werror -Wno-unused-function -pedantic -I$(SYSINCDIR)			\
       -mcpu=$(CPU) -march=$(ARCH) -mtune=$(TUNE) -msoft-float -g -O2 $(DEFINES)
 CFLAGS=-std=c11 $(FLAGS)
