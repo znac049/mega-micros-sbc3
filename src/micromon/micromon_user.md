@@ -227,5 +227,262 @@ After a successful **_run_**, **_go_** on its own runs the same program again wi
 ```
 ```
 
+## BIOS calls
+
+Programs run by the monitor use its services (the serial ports, files, memory and the clock) through BIOS calls. There are 29 of them, numbered from 0, and the numbers are defined in `bios.h` as `BIOS_PUTCHAR` and so on. Programs built with libmega rarely make them directly: the library functions do it for them (`open()` makes **BIOS_OPEN**, `malloc()` makes **BIOS_MALLOC**, and so on), and each call below names the library functions that use it.
+
+### Making a call
+A call is a `trap #0`, with its number and up to three arguments, each a long word, on the stack. From C, use the library's `syscall()`:
+
+```
+#include <bios.h>
+#include <unistd.h>
+
+int res = syscall(BIOS_TICKS, 0, 0, 0);
+```
+
+`syscall()` calls `do_trap0(number, arg1, arg2, arg3, &err)`, which is in the program startup code (`crt0`) and is just `trap #0` followed by `rts`. In assembler, do the same: push a pointer to a long word for the error number, then the three arguments (unused ones can be anything) and the call number, and `jsr do_trap0`. The trap handler expects that return address on the stack, between the exception frame and the call number, so `trap #0` can't be used inline.
+
+```
+        pea     err_num                 ; where the error number goes
+        clr.l   -(sp)                   ; argument 3
+        clr.l   -(sp)                   ; argument 2
+        clr.l   -(sp)                   ; argument 1
+        move.l  #4,-(sp)                ; the call number: BIOS_TICKS
+        jsr     do_trap0
+        lea     20(sp),sp
+        ; d0 holds the result
+```
+
+The result comes back in `d0`. The trap handler saves and restores `d1`–`d7` and `a0`–`a6`, so only `d0` changes.
+
+### Results and errors
+Most calls return 0 (`OK`) when they work and -1 (`NOT_OK`) when they fail. Calls that return a count, a position or a pointer say so below. When a call fails, the monitor's `errno` value is stored in the long word given for it, and `syscall()` copies it into the program's `errno`. Check `errno` only after a call has failed: when one works, it can still hold the value from an earlier failure. A call number of 29 or more returns -1 and doesn't set the error number.
+
+### Conventions
+- **Serial ports** are numbered: 0 for SER1, the console, and 1 for SER2. Any other number fails. Opened as files, they are `//ser1` and `//ser2`.
+- **Files**: a program starts with file descriptors 0 and 1 (standard input and output) open on SER1, and 2 (standard error) on SER2. Opening a file gives it the lowest free descriptor, and up to 32 can be open at once, including those three. Files the program leaves open are closed when it ends.
+- **Paths** are like the monitor's: `/<mount>/...` from the top, such as `/cf0/bin/nethack`, or relative to the current directory. The current directory is shared with the monitor, so it's still in effect after the program ends.
+- **Owners**: the memory calls take the caller's process ID, which is what the library's `getpid()` returns: 2 for a program, 1 for the monitor. A program's memory is freed when it ends.
+
+### The calls
+
+| Number | Name | Arguments | Returns |
+|---|---|---|---|
+| 0 | BIOS_PUTCHAR | port, character | the character |
+| 1 | BIOS_GETCHAR | port | a character |
+| 2 | BIOS_CHAR_AVAILABLE | port | 1 or 0 |
+| 3 | BIOS_EXIT | status, pid | doesn't return |
+| 4 | BIOS_TICKS | | milliseconds |
+| 5 | BIOS_OPEN | path, flags, mode | a file descriptor |
+| 6 | BIOS_CLOSE | fd | OK |
+| 7 | BIOS_CREAT | path, mode | a file descriptor |
+| 8 | BIOS_READ | fd, buffer, count | bytes read |
+| 9 | BIOS_WRITE | fd, buffer, count | bytes written |
+| 10 | BIOS_RESET_TICKS | | 0 |
+| 11 | BIOS_CHDIR | path | OK |
+| 12 | BIOS_GETCWD | buffer, size | the buffer |
+| 13 | BIOS_MALLOC | size, pid | a pointer |
+| 14 | BIOS_FREE | pointer, pid | nothing |
+| 15 | BIOS_GETDENTS | fd, buffer, size | bytes stored |
+| 16 | BIOS_TEST | three numbers | 42 |
+| 17 | BIOS_SEEK | fd, offset, whence | the new position |
+| 18 | BIOS_ISATTY | fd | 1 or 0 |
+| 19 | BIOS_STAT | path, struct stat | OK |
+| 20 | BIOS_FSTAT | fd, struct stat | OK |
+| 21 | BIOS_FLUSH | port | 0 |
+| 22 | BIOS_RAM_BANK | bank, base, size | OK |
+| 23 | BIOS_REALLOC | pointer, size, pid | a pointer |
+| 24 | BIOS_TIME | time | seconds since 1970 |
+| 25 | BIOS_UNLINK | path | OK |
+| 26 | BIOS_RMDIR | path | OK |
+| 27 | BIOS_CHMOD | path, mode | OK |
+| 28 | BIOS_MKDIR | path, mode | OK |
+
+#### 0: BIOS_PUTCHAR - send a character
+`int putchar(int port, int c)`
+
+Sends **c** to serial **port**, waiting if its output buffer is full, and returns it. Nothing is added: the library's `putchar()` sends `\r` before each `\n` itself.
+
+#### 1: BIOS_GETCHAR - read a character
+`int getchar(int port)`
+
+Waits for a character from serial **port** and returns it. Used by `getchar()`.
+
+#### 2: BIOS_CHAR_AVAILABLE - check for input
+`int char_available(int port)`
+
+Returns 1 if a character from serial **port** is waiting to be read, otherwise 0. It doesn't wait. Used by the library's `char_available()`.
+
+#### 3: BIOS_EXIT - end the program
+`void exit(int status, pid_t pid)`
+
+Frees the memory owned by **pid**, closes the files the program left open, and goes back to the monitor. It doesn't return. The library's `exit()` first runs the `atexit()` functions and the C++ destructors, and the program's startup code calls `exit()` with `main()`'s return value.
+
+#### 4: BIOS_TICKS - read the millisecond counter
+`uint32_t ticks(void)`
+
+Returns the number of milliseconds since the monitor started, or since the last **BIOS_RESET_TICKS**. It goes back to 0 after about 49 days. Used by `ticks()`, `sleep()` and `usleep()`.
+
+#### 5: BIOS_OPEN - open a file
+`int open(const char *path, int flags, mode_t mode)`
+
+Opens **path** and returns a file descriptor. **flags** is made up of these bits, from `fcntl.h`. Their values differ from Unix: `O_RDONLY` is 1, not 0, and must be given to read.
+
+| Flag | Value | Meaning |
+|---|---|---|
+| O_RDONLY | $001 | open for reading |
+| O_WRONLY | $002 | open for writing |
+| O_RDWR | $003 | both |
+| O_CREAT | $008 | create the file if it isn't there |
+| O_DIRECTORY | $010 | it must be a directory (to read with **BIOS_GETDENTS**) |
+| O_TRUNC | $040 | empty the file first |
+| O_APPEND | $080 | write at the end of the file |
+| O_EXCL | $100 | with O_CREAT: fail (EEXIST) if the file is there |
+
+**mode** gives the permissions of a file that `O_CREAT` creates. The filesystem must be writable to create or write a file, so not the ROM disk. Used by `open()`, `fopen()` and `opendir()`.
+
+#### 6: BIOS_CLOSE - close a file
+`int close(int fd)`
+
+Closes **fd**, writing out anything still buffered. Closing a serial port waits until what was written to it has been sent.
+
+#### 7: BIOS_CREAT - create a file
+`int creat(const char *path, mode_t mode)`
+
+The same as **BIOS_OPEN** with `O_CREAT | O_WRONLY | O_TRUNC`.
+
+#### 8: BIOS_READ - read from a file
+`int read(int fd, char *buffer, size_t count)`
+
+Reads up to **count** bytes into **buffer** and returns how many it read, 0 at the end of the file, or -1. It can return fewer bytes than asked for, even in the middle of a file, as it doesn't read past the end of the 2KB block it's in: call it again for the rest. From a serial port, it waits for the first character, then takes whatever else has already arrived, unchanged. A directory can't be read: use **BIOS_GETDENTS**.
+
+#### 9: BIOS_WRITE - write to a file
+`int write(int fd, const char *buffer, size_t count)`
+
+Writes **count** bytes from **buffer** and returns how many it wrote, or -1. A file opened with `O_APPEND` is written at its end. On a serial port, each `\n` is sent as `\r\n`.
+
+#### 10: BIOS_RESET_TICKS - reset the millisecond counter
+`uint32_t reset_ticks(void)`
+
+Sets the counter that **BIOS_TICKS** reads to 0, and returns 0.
+
+#### 11: BIOS_CHDIR - change directory
+`int chdir(const char *path)`
+
+Makes **path** the current directory, for the program and for the monitor.
+
+#### 12: BIOS_GETCWD - get the current directory
+`char *getcwd(char *buffer, size_t size)`
+
+Stores the current directory's path in **buffer**, which has room for **size** bytes, and returns **buffer**.
+
+#### 13: BIOS_MALLOC - allocate memory
+`void *malloc(size_t size, pid_t pid)`
+
+Allocates **size** bytes, rounded up to a whole number of long words, for **pid**, and returns a pointer to them, or 0 (ENOMEM) if there isn't enough memory. The memory isn't cleared. It comes from bank 1 if that's fitted, then the top of bank 0, and it's freed when the program ends. A **size** of 0 prints the heap on the console (for debugging) and returns 0. Used by `malloc()`, `calloc()` and C++'s `new`.
+
+#### 14: BIOS_FREE - free memory
+`void free(void *pointer, pid_t pid)`
+
+Frees memory from **BIOS_MALLOC** or **BIOS_REALLOC**. Memory that isn't owned by **pid** isn't freed (EPERM), and a pointer that isn't to an allocation is ignored.
+
+#### 15: BIOS_GETDENTS - read a directory
+`ssize_t getdents(int fd, struct dirent *buffer, size_t size)`
+
+Reads entries from a directory opened with **BIOS_OPEN**, into **buffer**, which has room for **size** bytes. Each entry is a whole `struct dirent` (from `dirent.h`), so **size** must be at least one of those. Returns the number of bytes stored, a multiple of `sizeof(struct dirent)`, 0 when there are no more, or -1. Used by `readdir()`.
+
+```
+struct dirent {
+    ino_t           d_ino;          // inode number
+    off_t           d_off;
+    unsigned short  d_reclen;
+    unsigned char   d_type;         // DT_REG, DT_DIR, DT_LNK, ...
+    char            d_name[256];
+};
+```
+
+#### 16: BIOS_TEST - test the BIOS call mechanism
+`int test(int p1, int p2, int p3)`
+
+Prints its three arguments, in hex, on the console, and returns 42.
+
+#### 17: BIOS_SEEK - move in a file
+`off_t lseek(int fd, off_t offset, int whence)`
+
+Moves the position in **fd** to **offset** bytes from the start (`SEEK_SET`, 0), the current position (`SEEK_CUR`, 1) or the end (`SEEK_END`, 2), and returns the new position. A serial port can't seek (ESPIPE). Used by `lseek()`, `fseek()` and `ftell()`.
+
+#### 18: BIOS_ISATTY - is it a terminal?
+`int isatty(int fd)`
+
+Returns 1 if **fd** is a serial port, otherwise 0 (ENOTTY).
+
+#### 19: BIOS_STAT - get a file's details
+`int stat(const char *path, struct stat *st)`
+
+Fills in **st** (from `sys/stat.h`) for **path**, without opening it.
+
+```
+struct stat {
+    dev_t       st_dev;         // which mount the file is on
+    ino_t       st_ino;         // inode number (0 if the filesystem has none)
+    mode_t      st_mode;        // file type (S_IFREG, S_IFDIR, ...) and permissions
+    nlink_t     st_nlink;       // number of hard links
+    uid_t       st_uid;
+    gid_t       st_gid;
+    off_t       st_size;        // size in bytes
+    time_t      st_atime;       // last access
+    time_t      st_mtime;       // last modification
+    time_t      st_ctime;       // last status change
+    blksize_t   st_blksize;     // best size for reads and writes
+    blkcnt_t    st_blocks;      // space used, in 512-byte units
+};
+```
+
+#### 20: BIOS_FSTAT - get an open file's details
+`int fstat(int fd, struct stat *st)`
+
+The same as **BIOS_STAT**, for an open file. For a serial port, only `st_mode` (`S_IFCHR`, permissions 666) and `st_nlink` are filled in.
+
+#### 21: BIOS_FLUSH - wait for output to be sent
+`int flush(int port)`
+
+Waits until everything written to serial **port** has been sent, and returns 0. Used by `fflush()`, for SER1.
+
+#### 22: BIOS_RAM_BANK - find a RAM bank
+`int ram_bank(int bank, uint32_t *base, uint32_t *size)`
+
+Stores where RAM **bank** (0 or 1) starts in **\*base**, and how much usable RAM it has in **\*size**. A bank that isn't fitted, or that failed its test at boot, has a size of 0. Any other bank number fails (EINVAL).
+
+#### 23: BIOS_REALLOC - resize memory
+`void *realloc(void *pointer, size_t size, pid_t pid)`
+
+Resizes an allocation to **size** bytes, keeping its contents up to the smaller of the two sizes, and returns where it now is, which may have moved. A **pointer** of 0 is the same as **BIOS_MALLOC**, and a **size** of 0 frees it and returns 0. If there isn't enough memory, it returns 0 and the old allocation is left as it was.
+
+#### 24: BIOS_TIME - get the time
+`time_t time(time_t *t)`
+
+Returns the time from the real-time clock, in seconds since 1 January 1970, and stores it in **\*t** too, unless **t** is 0. Without a clock, or if it doesn't hold a sensible time, it returns 0. Used by `time()`.
+
+#### 25: BIOS_UNLINK - delete a file
+`int unlink(const char *path)`
+
+Deletes **path**, which can't be a directory (EISDIR) or a file that's open (EBUSY). If the file has other names (hard links), only this one goes. Used by `unlink()` and `remove()`.
+
+#### 26: BIOS_RMDIR - delete a directory
+`int rmdir(const char *path)`
+
+Deletes the directory **path**, which must be empty (ENOTEMPTY). The current directory, and the top directory of a mount, can't be deleted. Used by `rmdir()` and `remove()`.
+
+#### 27: BIOS_CHMOD - set permissions
+`int chmod(const char *path, mode_t mode)`
+
+Sets the permissions of **path** to the low 12 bits of **mode** (the read, write and execute bits, setuid, setgid and sticky).
+
+#### 28: BIOS_MKDIR - make a directory
+`int mkdir(const char *path, mode_t mode)`
+
+Makes the directory **path**, with permissions **mode**. The directory it goes in must already exist (ENOENT), and **path** mustn't (EEXIST).
+
 ## Installing the monitor
 
