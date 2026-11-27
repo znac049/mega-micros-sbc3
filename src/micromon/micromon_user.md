@@ -168,6 +168,14 @@ load
 #### Details
 The monitor loads a program, in Motorola S-Record format, from the console port. A countdown is displayed and if no data has been received when it hits zero, the load is aborted. If a start address record is present, it will be remembered and used by the **_go_** command, if no other address is specified.
 
+### mkdir - make directories
+#### Synopsis
+```
+mkdir [-p] <directory> [<directory> ...]
+```
+#### Details
+Makes each **_<directory>_**, with permissions 755. The directory it goes in must already exist, unless **-p** is given: then any missing parents are made too, and a directory that's already there isn't an error. The filesystem must be writable, so not the ROM disk.
+
 ### probe
 #### Synopsis
 ```

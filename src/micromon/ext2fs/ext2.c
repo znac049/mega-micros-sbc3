@@ -325,6 +325,7 @@ int setup_vfs_ext2_handler(vfs_fs_t *vfs) {
     vfs->api.fs.stat = ext2_stat;
     vfs->api.fs.unlink = ext2_unlink;
     vfs->api.fs.rmdir = ext2_rmdir;
+    vfs->api.fs.mkdir = ext2_mkdir;
     vfs->api.fs.chmod = ext2_chmod;
 
     return OK;

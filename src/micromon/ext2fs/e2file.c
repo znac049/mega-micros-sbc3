@@ -373,3 +373,157 @@ int ext2_stat(vfile_t *file, struct stat *st) {
 
     return OK;
 }
+
+/*
+ * Make a directory 'name' (relative to the mount's root, normalised by the
+ * VFS) with permissions mode. Its first block holds "." and "..", and its
+ * parent gains a link (the new directory's "..").
+ */
+int ext2_mkdir(vmp_t *mp, const char *name, mode_t mode) {
+    ext2_fs_t *fs = &mp->private.data.ext2_fs_inf;
+    bool_t has_ftype = ((fs->sb.s_rev_level >= 1) &&
+                        (fs->sb.s_feature_incompat & EXT2_FEATURE_INCOMPAT_FILETYPE))?YES:NO;
+    char path[PATH_MAX];
+    char *dirv[EXT2_MAX_DIR_DEPTH];
+    int dirc;
+    uint32_t parent = EXT2_ROOT_INO;
+    uint32_t inode_num, block, goal;
+    const char *leaf;
+    ext2_inode_t inode;
+    uint8_t *buf = mp->block_buffer;
+    uint32_t now = ext2_now();
+    int err;
+
+    if (fs->writable != YES) {
+        errno = EROFS;
+        return NOT_OK;
+    }
+
+    if (strlen(name) >= sizeof(path)) {
+        errno = ENAMETOOLONG;
+        return NOT_OK;
+    }
+
+    // split_str() writes into the string it splits, so work on a copy
+    strcpy(path, name);
+    dirc = (path[0] != EOS)?split_str(path, '/', dirv, EXT2_MAX_DIR_DEPTH):0;
+    if (dirc <= 0) {
+        errno = EEXIST;                 // the root directory
+        return NOT_OK;
+    }
+
+    // Walk down to the directory the new one goes in
+    for (int i=0; i<dirc; i++) {
+        if (ext2_get_inode(mp, parent, &inode) != OK) {
+            errno = EIO;
+            return NOT_OK;
+        }
+
+        if (!S_ISDIR(inode.i_mode)) {
+            errno = ENOTDIR;
+            return NOT_OK;
+        }
+
+        if (i == dirc - 1) {
+            break;
+        }
+
+        parent = e2_search(mp, parent, dirv[i], NULL);
+        if (parent == 0) {
+            errno = ENOENT;
+            return NOT_OK;
+        }
+    }
+
+    leaf = dirv[dirc - 1];
+    if ((strcmp(leaf, ".") == 0) || (strcmp(leaf, "..") == 0) || (e2_search(mp, parent, leaf, NULL) != 0)) {
+        errno = EEXIST;
+        return NOT_OK;
+    }
+
+    if (strlen(leaf) > EXT2_MAX_LEN) {
+        errno = ENAMETOOLONG;
+        return NOT_OK;
+    }
+
+    if (ext2_alloc_inode(mp, parent, YES, &inode_num) != OK) {
+        return NOT_OK;
+    }
+
+    // Its block goes near its inode, in the same group
+    goal = fs->sb.s_first_data_block + ((inode_num - 1) / fs->sb.s_inodes_per_group) * fs->sb.s_blocks_per_group;
+    if (ext2_alloc_block(mp, goal, NO, &block) != OK) {
+        err = errno;
+        ext2_free_inode(mp, inode_num, YES);
+        errno = err;
+        return NOT_OK;
+    }
+
+    // "." and "..": the second one takes the rest of the block
+    memset(buf, 0, BLOCK_DEVICE_BLOCK_SIZE);
+    buf[0] = (uint8_t)inode_num;
+    buf[1] = (uint8_t)(inode_num >> 8);
+    buf[2] = (uint8_t)(inode_num >> 16);
+    buf[3] = (uint8_t)(inode_num >> 24);
+    buf[4] = 12;
+    buf[6] = 1;
+    buf[7] = (has_ftype == YES)?EXT2_FT_DIR:0;
+    buf[8] = '.';
+
+    buf[12] = (uint8_t)parent;
+    buf[13] = (uint8_t)(parent >> 8);
+    buf[14] = (uint8_t)(parent >> 16);
+    buf[15] = (uint8_t)(parent >> 24);
+    buf[16] = (uint8_t)((BLOCK_DEVICE_BLOCK_SIZE - 12) & 0xff);
+    buf[17] = (uint8_t)((BLOCK_DEVICE_BLOCK_SIZE - 12) >> 8);
+    buf[18] = 2;
+    buf[19] = (has_ftype == YES)?EXT2_FT_DIR:0;
+    buf[20] = '.';
+    buf[21] = '.';
+
+    mp->block_num_in_buffer = block;
+    mp->block_in_buffer_valid = YES;
+
+    memset(&inode, 0, sizeof(inode));
+    inode.i_mode = S_IFDIR | (mode & 07777);
+    inode.i_links_count = 2;            // its entry in the parent, and its own "."
+    inode.i_size = BLOCK_DEVICE_BLOCK_SIZE;
+    inode.i_blocks = BLOCK_DEVICE_BLOCK_SIZE / 512;
+    inode.i_block[0] = block;
+    inode.i_atime = inode.i_ctime = inode.i_mtime = now;
+
+    /*
+     * The new directory's block and inode go first, then the entry that
+     * points to it: if the power goes in between, e2fsck just finds an
+     * unused inode and block.
+     */
+    if ((ext2_write_fs_block(mp) != OK) ||
+        (ext2_put_inode(mp, inode_num, &inode) != OK) ||
+        (ext2_add_dirent(mp, parent, leaf, inode_num, EXT2_FT_DIR) != OK)) {
+        err = errno;
+        mp->block_in_buffer_valid = NO;
+        ext2_free_block(mp, block);
+        ext2_free_inode(mp, inode_num, YES);
+        ext2_sync(mp);
+        errno = err;
+        return NOT_OK;
+    }
+
+    // The new directory's ".." links to its parent
+    err = OK;
+    if (ext2_get_inode(mp, parent, &inode) != OK) {
+        errno = EIO;
+        err = NOT_OK;
+    }
+    else {
+        inode.i_links_count++;
+        inode.i_ctime = now;
+        err = ext2_put_inode(mp, parent, &inode);
+    }
+
+    if (ext2_sync(mp) != OK) {
+        err = NOT_OK;
+    }
+
+    return err;
+}

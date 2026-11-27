@@ -1305,6 +1305,23 @@ int bios_rmdir(const char *pathname) {
     return mp->fs_driver->api.fs.rmdir(mp, fs_path);
 }
 
+// Make a directory, with permissions mode (the low 12 bits)
+int bios_mkdir(const char *pathname, mode_t mode) {
+    char fs_path[PATH_MAX];
+    vmp_t *mp;
+
+    if (path_for_change(pathname, &mp, fs_path) == NOT_OK) {
+        return NOT_OK;
+    }
+
+    if (mp->fs_driver->api.fs.mkdir == NULL) {
+        errno = EROFS;
+        return NOT_OK;
+    }
+
+    return mp->fs_driver->api.fs.mkdir(mp, fs_path, mode);
+}
+
 // Set a file's permission bits (the low 12 bits of mode)
 int bios_chmod(const char *pathname, mode_t mode) {
     char fs_path[PATH_MAX];

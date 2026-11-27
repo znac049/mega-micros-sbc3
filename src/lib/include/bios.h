@@ -51,8 +51,9 @@ SOFTWARE.
 #define BIOS_UNLINK         25     // delete a file
 #define BIOS_RMDIR          26     // delete an empty directory
 #define BIOS_CHMOD          27     // set a file's permissions
+#define BIOS_MKDIR          28     // make a directory
 
-#define NUM_BIOS_CALLS	    28
+#define NUM_BIOS_CALLS	    29
 
 
 

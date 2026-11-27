@@ -129,6 +129,7 @@ void handle_icache_cmd(int argc, char *argv[]);
 void handle_rm_command(int argc, char *argv[]);
 void handle_rmdir_command(int argc, char *argv[]);
 void handle_chmod_command(int argc, char *argv[]);
+void handle_mkdir_command(int argc, char *argv[]);
 
 // cat_cmd.c
 void handle_cat_command(int argc, char *argv[]);
@@ -200,6 +201,7 @@ int bios_creat(const char *pathname, mode_t mode);
 int bios_unlink(const char *pathname);
 int bios_rmdir(const char *pathname);
 int bios_chmod(const char *pathname, mode_t mode);
+int bios_mkdir(const char *pathname, mode_t mode);
 int bios_open(const char *pathname, int flags, mode_t mode);
 int bios_close(int fd);
 int bios_read(int fd, char *buff, size_t num_bytes);

@@ -24,8 +24,8 @@ SOFTWARE.
 
 
 /*
- * rm, rmdir and chmod: delete files and empty directories, and set
- * permissions.
+ * rm, rmdir, mkdir and chmod: delete files and empty directories, make
+ * directories, and set permissions.
  */
 
 #include <stddef.h>
@@ -57,6 +57,66 @@ void handle_rmdir_command(int argc, char *argv[]) {
     for (int i=1; i<argc; i++) {
         if (bios_rmdir(argv[i]) != OK) {
             printk("rmdir: %s: %s\n", argv[i], strerror(errno));
+        }
+    }
+}
+
+#define MKDIR_MODE  0755
+
+/*
+ * Make each directory in turn: with -p, its parents too where they're
+ * missing, and one that's already there isn't an error.
+ */
+static int make_parents(char *path) {
+    struct stat st;
+
+    // Each '/' after the first character ends a parent
+    for (char *p = path + 1; *p != EOS; p++) {
+        if (*p != '/') {
+            continue;
+        }
+
+        *p = EOS;
+        if ((bios_stat(path, &st) != OK) && (bios_mkdir(path, MKDIR_MODE) != OK)) {
+            *p = '/';
+            return NOT_OK;
+        }
+        *p = '/';
+    }
+
+    return OK;
+}
+
+void handle_mkdir_command(int argc, char *argv[]) {
+    bool_t parents = NO;
+    int first = 1;
+
+    if ((argc >= 2) && (strcmp(argv[1], "-p") == 0)) {
+        parents = YES;
+        first = 2;
+    }
+
+    if (argc <= first) {
+        printk("usage: mkdir [-p] <directory> [<directory> ...]\n");
+        return;
+    }
+
+    for (int i=first; i<argc; i++) {
+        struct stat st;
+
+        if (parents == YES) {
+            if (make_parents(argv[i]) != OK) {
+                printk("mkdir: %s: %s\n", argv[i], strerror(errno));
+                continue;
+            }
+
+            if ((bios_stat(argv[i], &st) == OK) && S_ISDIR(st.st_mode)) {
+                continue;
+            }
+        }
+
+        if (bios_mkdir(argv[i], MKDIR_MODE) != OK) {
+            printk("mkdir: %s: %s\n", argv[i], strerror(errno));
         }
     }
 }

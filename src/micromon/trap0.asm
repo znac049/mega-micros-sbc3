@@ -95,6 +95,7 @@ trap0_call_table::
         dc.l    bios_unlink
         dc.l    bios_rmdir
         dc.l    bios_chmod
+        dc.l    bios_mkdir
 t0ct_end     
 
         end

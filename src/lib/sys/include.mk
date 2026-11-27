@@ -1,6 +1,7 @@
 LIBOBJECTS=chmod.o \
 			fstat.o \
 			lstat.o \
+			mkdir.o \
 			stat.o \
 			umask.o
 

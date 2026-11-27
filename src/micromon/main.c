@@ -52,6 +52,7 @@ static command_t commands[] = {
     {"go",          0, COMMAND, {handle_go_command},        VEC},
     {"load",        2, COMMAND, {handle_load_command},      VEC},
     {"memtest",     4, COMMAND, {handle_memtest_command},   VEC},
+    {"mkdir",       0, COMMAND, {handle_mkdir_command},     VEC},
     {"probe",       3, COMMAND, {handle_probe_command},     VEC},
     {"pwd",         0, COMMAND, {handle_pwd_command},       VEC},
     {"rm",          0, COMMAND, {handle_rm_command},        VEC},
@@ -149,6 +150,7 @@ static void print_help(void) {
     printk("  load\n");
     printk("  longedit [<address>] [[=] <expr> [, <expr> ...]]\n");
     printk("  memtest [<start> <end> [<passes>]]\n");
+    printk("  mkdir [-p] <directory> ...\n");
     printk("  probe\n");
     printk("  rm <file> ...\n");
     printk("  rmdir <directory> ...\n");

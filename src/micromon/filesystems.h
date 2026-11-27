@@ -110,6 +110,7 @@ union vfs {
         // Optional - NULL if the filesystem can't. 'name' is relative to the mount
         int (*unlink)(vmp_t *mp, const char *name);
         int (*rmdir)(vmp_t *mp, const char *name);
+        int (*mkdir)(vmp_t *mp, const char *name, mode_t mode);
         int (*chmod)(vmp_t *mp, const char *name, mode_t mode);
     } fs;
 };
@@ -194,6 +195,7 @@ void ext2_dump_block_follower(ext2_block_follower_t *bf);
 // ext2/e2remove.c
 int ext2_unlink(vmp_t *mp, const char *name);
 int ext2_rmdir(vmp_t *mp, const char *name);
+int ext2_mkdir(vmp_t *mp, const char *name, mode_t mode);
 int ext2_chmod(vmp_t *mp, const char *name, mode_t mode);
 
 // ext2/e2dir.c
