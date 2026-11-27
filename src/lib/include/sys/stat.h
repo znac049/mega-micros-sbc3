@@ -25,6 +25,10 @@ SOFTWARE.
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 #include <sys/types.h>             // mode_t, time_t, off_t, dev_t, ino_t ...
 
@@ -94,3 +98,7 @@ int lstat(const char *pathname, struct stat *statbuf);
 int fstat(int fd, struct stat *statbuf);
 int chmod(const char *pathname, mode_t mode);
 mode_t umask(mode_t mask);
+
+#ifdef __cplusplus
+}
+#endif

@@ -24,6 +24,10 @@ SOFTWARE.
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * The POSIX system types. Most of them live in <ctype.h>, where the
  * library has always had them; the rest are here.
@@ -40,3 +44,7 @@ typedef unsigned short  gid_t;
 typedef unsigned int    blksize_t;
 typedef unsigned int    blkcnt_t;
 typedef unsigned int    useconds_t;
+
+#ifdef __cplusplus
+}
+#endif

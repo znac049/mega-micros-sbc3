@@ -24,6 +24,10 @@ SOFTWARE.
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
 typedef unsigned int uint32_t;
@@ -66,3 +70,7 @@ int isspace(int c);
 int isxdigit(int c);
 int tolower(int c);
 int toupper(int c);
+
+#ifdef __cplusplus
+}
+#endif

@@ -24,7 +24,15 @@ SOFTWARE.
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifdef __cplusplus
+#define NULL __null
+#else
 #define NULL ((void *)0)
+#endif
 
 #include <ctype.h>          // size_t
 
@@ -42,3 +50,6 @@ typedef int ptrdiff_t;
 #define OK 0
 #define NOT_OK -1
 
+#ifdef __cplusplus
+}
+#endif

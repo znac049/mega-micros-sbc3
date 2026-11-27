@@ -24,6 +24,10 @@ SOFTWARE.
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <ctype.h>
 
 /* File flags */
@@ -85,3 +89,7 @@ struct flock {
 int creat(const char *pathname, mode_t mode);
 int open(const char *pathname, int flags, ...);
 int fcntl(int fd, int cmd, ...);
+
+#ifdef __cplusplus
+}
+#endif

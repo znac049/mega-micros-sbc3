@@ -24,6 +24,10 @@ SOFTWARE.
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <ctype.h>
 #include <stddef.h>
 
@@ -48,3 +52,7 @@ char *strstr(const char *haystack, const char *needle);
 char *strpbrk(const char *s, const char *accept);
 size_t strspn(const char *s, const char *accept);
 size_t strcspn(const char *s, const char *reject);
+
+#ifdef __cplusplus
+}
+#endif

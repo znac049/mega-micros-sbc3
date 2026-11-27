@@ -24,6 +24,10 @@ SOFTWARE.
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <sys/types.h>     // ino_t, off_t
 
 /* d_type values (same numbering as the ext2 on-disk file type) */
@@ -59,3 +63,7 @@ struct dirent *readdir(DIR *dirp);
 void rewinddir(DIR *dirp);
 void seekdir(DIR *dirp, long loc);
 long telldir(DIR *dirp);
+
+#ifdef __cplusplus
+}
+#endif

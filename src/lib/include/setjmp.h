@@ -24,6 +24,10 @@ SOFTWARE.
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
     uint32_t d1;        // 0
     uint32_t d2;        // 4
@@ -46,3 +50,7 @@ typedef struct {
  
 int  setjmp(jmp_buf env);
 void longjmp(jmp_buf env, int val) __attribute__((noreturn));
+
+#ifdef __cplusplus
+}
+#endif

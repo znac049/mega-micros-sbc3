@@ -39,11 +39,32 @@ ibdone:
 	move.l	4(sp),d0		; pass argc, argv to main()
 	move.l	8(sp),d1
 	movem.l	d0-d1,-(sp)
+	bsr		run_init_array	; the constructors run first
 	jsr	    main			; jsr, not bsr: a big program puts main
 					; more than 32K away
 
-; Calling exit() takes care of any housekeeping.
+; Calling exit() takes care of any housekeeping: the atexit() functions
+; and C++'s static destructors. main()'s return value is the exit status.
+	move.l	d0,-(sp)
 	jsr		exit			; passes control back to the monitor
+
+
+; Call each function in the init array (see sections.ld): the C++
+; compiler puts the constructors of static objects there, and C's
+; __attribute__((constructor)) functions go there too
+run_init_array:
+	movem.l	a2-a3,-(sp)
+	lea		__init_array_start,a2
+	lea		__init_array_end,a3
+.next:
+	cmp.l	a3,a2
+	beq.s	.done
+	move.l	(a2)+,a0
+	jsr		(a0)
+	bra.s	.next
+.done:
+	movem.l	(sp)+,a2-a3
+	rts
 
 	
 

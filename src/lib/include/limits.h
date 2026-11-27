@@ -24,6 +24,10 @@ SOFTWARE.
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Borrowed this from the Minix source tree */
 
 /* The <limits.h> header defines some basic sizes, both of the language types 
@@ -62,3 +66,7 @@ SOFTWARE.
 // Filesystem related defines
 #define PATH_MAX 128
 #define MAX_DIR_DEPTH 16
+
+#ifdef __cplusplus
+}
+#endif

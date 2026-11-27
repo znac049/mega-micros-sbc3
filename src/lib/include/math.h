@@ -24,8 +24,16 @@ SOFTWARE.
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define HUGE_VAL    __builtin_huge_val()
 #define INFINITY    __builtin_inff()
 #define NAN         __builtin_nanf("")
 
 double ldexp(double x, int exp);
+
+#ifdef __cplusplus
+}
+#endif

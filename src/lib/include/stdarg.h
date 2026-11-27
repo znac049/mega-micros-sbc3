@@ -1,4 +1,8 @@
 #pragma once
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 #ifndef __GNUC_VA_LIST
 #define __GNUC_VA_LIST
 typedef __builtin_va_list	__gnuc_va_list;
@@ -15,3 +19,7 @@ typedef __builtin_va_list	__gnuc_va_list;
 #define va_copy(d, s)		__builtin_va_copy(d, s)
 
 typedef __gnuc_va_list va_list;
+
+#ifdef __cplusplus
+}
+#endif

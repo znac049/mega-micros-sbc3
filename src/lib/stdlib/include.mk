@@ -1,5 +1,6 @@
 #LIB=stdlib
 LIBOBJECTS=abort.o \
+			atexit.o \
 			abs.o \
 			atoi.o \
 			atol.o \

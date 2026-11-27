@@ -24,6 +24,10 @@ SOFTWARE.
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // fnmatch() flags (the same values as glibc's)
 #define FNM_PATHNAME    0x01    // a slash is only matched by a slash
 #define FNM_NOESCAPE    0x02    // backslash is an ordinary character
@@ -32,3 +36,7 @@ SOFTWARE.
 #define FNM_NOMATCH     1       // the return value when there's no match
 
 int fnmatch(const char *pattern, const char *string, int flags);
+
+#ifdef __cplusplus
+}
+#endif

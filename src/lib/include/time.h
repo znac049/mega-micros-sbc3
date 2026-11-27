@@ -24,6 +24,10 @@ SOFTWARE.
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <ctype.h>
 
 struct tm {
@@ -50,3 +54,6 @@ time_t time(time_t *t);
 struct tm *gmtime(const time_t *timep);
 struct tm *gmtime_r(const time_t *timep, struct tm *result);
 
+#ifdef __cplusplus
+}
+#endif

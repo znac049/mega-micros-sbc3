@@ -24,6 +24,10 @@ SOFTWARE.
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <ctype.h>
 #include <sys/types.h>      // uid_t, gid_t, useconds_t
 
@@ -61,3 +65,7 @@ int rmdir(const char *pathname);
 ssize_t write(int fd, void *buf, size_t count);
 int syscall(int number, int p1, int p2, int p3);
 int unlink(const char *pathname);
+
+#ifdef __cplusplus
+}
+#endif

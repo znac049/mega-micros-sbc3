@@ -25,6 +25,10 @@ SOFTWARE.
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef _SYSTEM
 # define _SIGN         -
 # define OK            0
@@ -76,3 +80,7 @@ SOFTWARE.
 #define ENOTSUP       (_SIGN 41)  /* Operation not supported */
 
 extern int errno;
+
+#ifdef __cplusplus
+}
+#endif

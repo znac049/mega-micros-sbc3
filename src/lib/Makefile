@@ -58,7 +58,7 @@ USERLIB=$(OBJ_DIR)libmega.a
 decoy: all
 	@echo Please use \"make all\" to build all the libraries.
 
-VPATH = machine ctype dirent err extras fcntl fnmatch libgen math setjmp signal softfp stdio stdlib string strings sys time unistd crt0
+VPATH = machine ctype dirent err extras fcntl fnmatch libgen math setjmp signal softfp stdio stdlib string strings sys time unistd cxx crt0
 
 include ctype/include.mk
 include dirent/include.mk
@@ -79,6 +79,7 @@ include strings/include.mk
 include sys/include.mk
 include time/include.mk
 include unistd/include.mk
+include cxx/include.mk
 include crt0/include.mk
 
 #$(info VPATH is $(VPATH))
@@ -129,9 +130,10 @@ actual_install: build install_headers
 	$(CP_R) $(CRT0_OBJS) $(INSTALL_LIB)
 
 install_headers:
-	rm -f $(INSTALL_INC)/*.h $(INSTALL_INC)/sys/*.h
+	rm -f $(INSTALL_INC)/*.h $(INSTALL_INC)/sys/*.h $(INSTALL_INC)/new
 	$(MKDIR_P) $(INSTALL_INC)/sys
 	$(CP_R) $(INCDIR)/*.h $(INSTALL_INC)
+	$(CP_R) $(INCDIR)/new $(INSTALL_INC)
 	$(CP_R) $(INCDIR)/sys/*.h $(INSTALL_INC)/sys
 	$(CP_R) $(INCLUDES) $(INSTALL_INC)
 

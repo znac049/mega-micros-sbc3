@@ -24,6 +24,10 @@ SOFTWARE.
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <ctype.h>
 #include <stddef.h>
 
@@ -41,6 +45,8 @@ int abs(int j);
 long labs(long j);
 long long llabs(long long j);
 void abort(void);
+int atexit(void (*function)(void));
+void _run_exit_handlers(void);
 char *itoa(unsigned int value, char *string, int base);
 void _init_heap(void);
 char *itoa_padded(unsigned int value, char *string, int base, char width, char zeropad, char is_signed, char ten_char);
@@ -56,3 +62,7 @@ long strtol(const char *nptr, char **endptr, int base);
 long long strtoll(const char *nptr, char **endptr, int base);
 unsigned long strtoul(const char *nptr, char **endptr, int base);
 unsigned long long strtoull(const char *nptr, char **endptr, int base);
+
+#ifdef __cplusplus
+}
+#endif

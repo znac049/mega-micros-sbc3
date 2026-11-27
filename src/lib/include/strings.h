@@ -24,4 +24,12 @@ SOFTWARE.
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <string.h>
+
+#ifdef __cplusplus
+}
+#endif

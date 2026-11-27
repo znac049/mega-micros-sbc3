@@ -29,6 +29,8 @@ FLAGS=-ffreestanding -nostdinc -ffunction-sections -fdata-sections -fomit-frame-
       -Wall -Wextra -Werror -Wno-unused-function -pedantic -I$(SYSINCDIR)			\
       -mcpu=$(CPU) -march=$(ARCH) -mtune=$(TUNE) -msoft-float -g -O2 $(DEFINES)
 CFLAGS=-std=c11 $(FLAGS)
+# C++ without exceptions or run-time type information: the library has the
+# run-time support for the rest (new/delete, static objects), not libstdc++
 CXXFLAGS=-std=c++20 -fno-exceptions -fno-rtti $(FLAGS)
 GCC_LIBS?=$(shell $(CC) --print-search-dirs \
           | grep libraries:\ = \
@@ -63,12 +65,15 @@ CC_MAJOR:=$(firstword $(subst ., ,$(CC_VERSION)))
 # If this is GCC 12, 13, or 14, add flag --param=min-pagesize=0 to CFLAGS
 ifeq ($(CC_MAJOR),12)
 CFLAGS+=--param=min-pagesize=0
+CXXFLAGS+=--param=min-pagesize=0
 endif
 ifeq ($(CC_MAJOR),13)
 CFLAGS+=--param=min-pagesize=0
+CXXFLAGS+=--param=min-pagesize=0
 endif
 ifeq ($(CC_MAJOR),14)
 CFLAGS+=--param=min-pagesize=0
+CXXFLAGS+=--param=min-pagesize=0
 endif
 endif
 
@@ -82,7 +87,7 @@ LDFLAGS+=-z max-page-size=16 -z common-page-size=16
 endif
 
 # Output config (assume name of directory). A program's Makefile can set
-# PROGRAM_BASENAME, CSOURCES, CINCLUDES and ASMSOURCES before including
+# PROGRAM_BASENAME, CSOURCES, CXXSOURCES, CINCLUDES and ASMSOURCES before including
 # this file, to override the defaults.
 PROGRAM_BASENAME?=$(shell basename $(CURDIR))
 
@@ -97,9 +102,10 @@ DISASM=$(OBJ_DIR)/$(PROGRAM_BASENAME).dis
 
 # Assume source files in Makefile directory are source files for project
 CSOURCES?=$(wildcard *.c)
+CXXSOURCES?=$(wildcard *.cpp)
 CINCLUDES?=$(wildcard *.h)
 ASMSOURCES?=$(wildcard *.asm)
-SOURCES=$(CSOURCES) $(ASMSOURCES)
+SOURCES=$(CSOURCES) $(CXXSOURCES) $(ASMSOURCES)
 
 # Assume each source files makes an object file
 OBJECTS=$(addprefix $(OBJ_DIR)/,$(addsuffix .o,$(basename $(SOURCES))))

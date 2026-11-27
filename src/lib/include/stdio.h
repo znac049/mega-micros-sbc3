@@ -24,6 +24,10 @@ SOFTWARE.
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdarg.h>
 #include <ctype.h>
 #include <unistd.h>
@@ -99,3 +103,7 @@ int vprintf(const char *format, va_list ap);
 int vsnprintf(char *str, size_t size, const char *format, va_list ap);
 int vsprintf(char *str, const char *format, va_list ap);
 int vsscanf(const char *str, const char *format, va_list ap);
+
+#ifdef __cplusplus
+}
+#endif

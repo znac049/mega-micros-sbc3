@@ -47,6 +47,15 @@ SECTIONS
     KEEP(*(.ctors))           /* Run in reverse order, so non-priority ones go first  */
     KEEP(*(SORT(.ctors.*)))   /* followed by ctors with priority */
     _ctors_end = .;
+
+    /* What crt0 calls before main(): __attribute__((constructor)) */
+    /* functions and the constructors of C++'s static objects      */
+    . = ALIGN(4);
+    __init_array_start = .;
+    KEEP(*(.preinit_array))
+    KEEP(*(SORT(.init_array.*)))
+    KEEP(*(.init_array))
+    __init_array_end = .;
   } > TEXT_REGION
 
   .dtors ALIGN(4) :             /* Destructors */
@@ -54,6 +63,13 @@ SECTIONS
     _dtors_start = .;
     KEEP(*(SORT(.dtors.*)))   /* dtors with priority go first */
     KEEP(*(.dtors))           /* Followed by non-priority ones */
+
+    /* What exit() calls last, in reverse: __attribute__((destructor)) */
+    . = ALIGN(4);
+    __fini_array_start = .;
+    KEEP(*(SORT(.fini_array.*)))
+    KEEP(*(.fini_array))
+    __fini_array_end = .;
     _dtors_end = .;
   } > TEXT_REGION
 

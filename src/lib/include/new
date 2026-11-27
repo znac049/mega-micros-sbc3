@@ -1,0 +1,52 @@
+/*
+MIT License
+
+Copyright (c) 2026 Bob Green
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+/*
+ * C++'s <new>: placement new, and std::nothrow for new that returns
+ * nullptr instead of ending the program when memory runs out. new and
+ * delete themselves are in the library (cxx/cxxrt.c).
+ */
+
+#pragma once
+
+#include <stddef.h>
+
+namespace std {
+    struct nothrow_t {
+        explicit nothrow_t() = default;
+    };
+
+    extern const nothrow_t nothrow;
+}
+
+void *operator new(size_t size, const std::nothrow_t &) noexcept;
+void *operator new[](size_t size, const std::nothrow_t &) noexcept;
+void operator delete(void *p, const std::nothrow_t &) noexcept;
+void operator delete[](void *p, const std::nothrow_t &) noexcept;
+
+// Placement new: make an object in memory that's already there
+inline void *operator new(size_t, void *p) noexcept { return p; }
+inline void *operator new[](size_t, void *p) noexcept { return p; }
+inline void operator delete(void *, void *) noexcept { }
+inline void operator delete[](void *, void *) noexcept { }

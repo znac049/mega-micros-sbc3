@@ -24,6 +24,10 @@ SOFTWARE.
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <ctype.h>
 
 int char_available(void);
@@ -36,3 +40,7 @@ int split_str(const char *s, char sep, char *bits[], int max_bits);
 int strblank(const char *s);
 int strpad(char *str, int width, char pad_ch);
 uint32_t ticks(void);
+
+#ifdef __cplusplus
+}
+#endif

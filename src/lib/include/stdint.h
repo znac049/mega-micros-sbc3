@@ -24,6 +24,10 @@ SOFTWARE.
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * The exact-width types themselves are in <ctype.h>, where the rest of
  * the library has always found them; this adds the rest of <stdint.h>.
@@ -50,3 +54,7 @@ typedef unsigned long long  uintmax_t;
 #define INTPTR_MAX  INT32_MAX
 #define UINTPTR_MAX UINT32_MAX
 #define SIZE_MAX    UINT32_MAX
+
+#ifdef __cplusplus
+}
+#endif

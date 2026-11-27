@@ -24,6 +24,10 @@ SOFTWARE.
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <sys/types.h>
 
 #define _NSIG             17	/* number of signals used */
@@ -60,3 +64,7 @@ typedef int sig_atomic_t;
 sighandler_t signal(int signum, sighandler_t handler);
 int raise(int sig);
 int kill(pid_t pid, int sig);
+
+#ifdef __cplusplus
+}
+#endif

@@ -24,6 +24,14 @@ SOFTWARE.
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int errno;
 void err(int eval, const char *fmt, ...);
 void warn(const char *fmt, ...);
+
+#ifdef __cplusplus
+}
+#endif
