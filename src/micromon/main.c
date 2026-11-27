@@ -171,10 +171,13 @@ static command_t *find_command(char *cmd) {
     return NULL;
 }
 
-static int find_command_on_disk(char *cmdline) {
+/*
+ * Find a program on disk and open it. The path it was found at is left in
+ * name (PATH_MAX bytes), so the program can be told where it is.
+ */
+static int find_command_on_disk(char *cmdline, char *name) {
     char *argv[MAX_ARGS];
     int argc = split_str(cmdline, ' ', argv, MAX_ARGS);
-    char name[PATH_MAX];
     char pwd[PATH_MAX];
     struct stat sb;
 
@@ -189,8 +192,8 @@ static int find_command_on_disk(char *cmdline) {
      *   table order
      */
 
-    if (getcwd(pwd, sizeof(name)) != NULL) {
-        snprintf(name, sizeof(name), "/%s/%s", pwd, argv[0]);
+    if (getcwd(pwd, sizeof(pwd)) != NULL) {
+        snprintf(name, PATH_MAX, "%s/%s", pwd, argv[0]);
 
         if (stat(name, &sb) == OK) {
             // Something found. Check it's a file
@@ -206,7 +209,7 @@ static int find_command_on_disk(char *cmdline) {
         vmp_t *mp = vfs_get_mount(i);
 
         if ((mp != NULL) && (mp->mounted == YES)) {
-            snprintf(name, sizeof(name), "/%s/bin/%s", mp->name, argv[0]);
+            snprintf(name, PATH_MAX, "/%s/bin/%s", mp->name, argv[0]);
 
             if (stat(name, &sb) == OK) {
                 // Something found. Check it's a file
@@ -246,7 +249,8 @@ static void handle_command(char *cmdline) {
         int argc;
 
         // It's not a builtin command. Search the disk
-        int fd = find_command_on_disk(cmdstr);
+        char path[PATH_MAX];
+        int fd = find_command_on_disk(cmdstr, path);
         if (fd == NOT_OK) {
             printk("'%s': unrecognised command\n", cmdstr);
             return;
@@ -256,12 +260,16 @@ static void handle_command(char *cmdline) {
         close(fd);
 
         if (res == NOT_OK) {
-            printk("%s: not loaded\n", argv[1]);
+            printk("%s: not loaded\n", path);
             return;
         }
     
+        // The program is told where it was found (argv[0] is the full
+        // path), and 'go' on its own will re-run it
+        snprintf(program_name, sizeof(program_name), "%s", path);
         go_address = entry;
         argc = split_str(cmdline, ' ', argv, MAX_ARGS);
+        argv[0] = program_name;
         go_run(argc, argv);
     }
     else {
