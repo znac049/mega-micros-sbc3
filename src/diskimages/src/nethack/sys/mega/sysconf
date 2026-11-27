@@ -1,0 +1,27 @@
+# NetHack 3.6 sysconf for the Mega-Micros SBC-3
+#
+# The system-wide settings, read from games/nethack when the game starts.
+# (Each player's own options go in games/nethack/.nethackrc.)
+
+# Who may use debug ("wizard") mode, with nethack -D. The board has one
+# user, "player", so this lets anyone: remove the line to stop that.
+WIZARDS=player
+
+# Who may use explore mode (nethack -X): everyone
+EXPLORERS=*
+
+# These names make the game ask "Who are you?" at the start, rather than
+# use the name it was given
+GENERICUSERS=play player game games nethack nethacker
+
+# Only one game at a time can run on the board anyway
+MAXPLAYERS=1
+
+# The score list: entries kept, and how many for each player
+PERSMAX=10
+ENTRYMAX=100
+POINTSMIN=1
+
+# There's no gdb or libc backtrace to show after a crash
+PANICTRACE_GDB=0
+PANICTRACE_LIBC=0
