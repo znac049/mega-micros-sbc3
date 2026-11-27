@@ -44,7 +44,7 @@ ALL_DISKS := romdisk tools rescue
 DEFAULT_DISKS := romdisk
 
 # Image sizes, in MB, for the disks that get their own image
-DISK_SIZE_tools  := 16
+DISK_SIZE_tools  := 8
 DISK_SIZE_rescue := 4
 
 # The monitor's ext2 code only handles 2 KB blocks
