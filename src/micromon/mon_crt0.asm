@@ -34,7 +34,7 @@
 ;
 ; 1. Calculate a ROM checksum and compare it against a checksum (stored in
 ;    the ROM). 
-; 2. Quickly test the RAM the monitor uses ($400 to the top of the stack).
+; 2. Quickly test the RAM the monitor uses ($400 to _PROGRAM_BASE).
 
 ; Beyond this point, we can use the stack and the first MB of RAM.
 
@@ -93,8 +93,9 @@ sum_done:
 
 sum_ok:
 
-; Now check the RAM the monitor itself uses: $400 up to the top of its
-; stack. The rest is tested from C (test_ram in memory.c).
+; Now check the RAM the monitor itself uses: $400 up to _PROGRAM_BASE,
+; which holds its variables and stack. The rest is tested from C
+; (test_ram in memory.c).
         lea     ram_test_done(pc),a6    ; Still can't trust the stack
         jmp     ram_test
 ram_test_done:
@@ -173,9 +174,10 @@ done:
         bra     die                            ; Don't know what else to do!
 
 
+; The heap starts above the monitor's stack (see micromon.ld)
 get_heap_start::
         move.l	a0,-(sp)
-        lea	_bss_end,a0
+        lea	_INITIAL_STACK,a0
         addq.l  #4,a0
         move.l  a0,d0
         and.l	#$fffffffc,d0

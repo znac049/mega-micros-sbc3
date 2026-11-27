@@ -210,6 +210,18 @@ ssize_t bios_getdents(int fd, void *dirp, size_t count);
 
 // go_cmd.c
 extern uint32_t go_address;
+extern uint32_t program_stack_size;
+int call_on_stack(uint32_t fn, int argc, char *argv[], void *stack_top);
+
+/*
+ * Who owns memory on the heap: the monitor (as getpid() says in the bare
+ * library), the program it's running (the BIOS library's getpid()), and
+ * the program's own code and data, which stay claimed after it exits, so
+ * that 'go' can run it again, until the next program is loaded.
+ */
+#define MONITOR_PID             1
+#define PROGRAM_PID             2
+#define LOADED_PROGRAM_OWNER    3
 extern jmp_buf go_env;
 void handle_go_command(int argc, char *argv[]);
 int go_run(int argc, char *argv[]);
@@ -218,6 +230,7 @@ int go_run(int argc, char *argv[]);
 void bios_free(void *ptr, pid_t pid);
 void *bios_malloc(size_t size, pid_t pid);
 void clean_heap(pid_t pid);
+int heap_claim_range(uint32_t start, uint32_t end, pid_t owner);
 bool_t heap_range_in_use(uint32_t start, uint32_t end);
 void init_heap(void);
 void heap_add_region(uint32_t start, uint32_t end);

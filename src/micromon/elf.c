@@ -36,11 +36,17 @@ SOFTWARE.
 #define MAX_PHDRS       16
 
 /*
- * Programs are loaded above the monitor's stack, which grows down from
- * _STACK_SIZE (the user program link scripts put CODE_START there too).
+ * Programs are loaded from _PROGRAM_BASE (memory.ld) up: the user program
+ * link scripts put CODE_START there too.
  */
-extern char _STACK_SIZE[];
-#define LOAD_MIN        ((uint32_t)_STACK_SIZE)
+extern char _PROGRAM_BASE[];
+#define LOAD_MIN        ((uint32_t)_PROGRAM_BASE)
+
+/*
+ * The stack size the loaded program asked for, from its PT_GNU_STACK
+ * header (link with -z stack-size=<bytes>), or 0 for the default
+ */
+uint32_t program_stack_size;
 
 // CACR bits
 #define CACR_EI         (1<<0)      // instruction cache enabled
@@ -170,6 +176,8 @@ int load_elf(int fd, uint32_t *entry) {
     uint32_t total = 0;
     int num_loaded = 0;
     bool_t entry_ok = NO;
+    uint32_t low = 0xffffffffU;
+    uint32_t high = 0;
 
     file_size = lseek(fd, 0, SEEK_END);
     if (file_size == NOT_OK) {
@@ -194,8 +202,20 @@ int load_elf(int fd, uint32_t *entry) {
         return NOT_OK;
     }
 
+    /*
+     * The program that was loaded before is about to be replaced: give
+     * its memory back, so the new one can go there
+     */
+    clean_heap(LOADED_PROGRAM_OWNER);
+    program_stack_size = 0;
+
     // Pass 1: check everything before touching memory
     for (int i=0; i<eh.e_phnum; i++) {
+        if (ph[i].p_type == PT_GNU_STACK) {
+            program_stack_size = ph[i].p_memsz;
+            continue;
+        }
+
         if ((ph[i].p_type != PT_LOAD) || (ph[i].p_memsz == 0)) {
             continue;
         }
@@ -208,11 +228,30 @@ int load_elf(int fd, uint32_t *entry) {
         if ((eh.e_entry >= ph[i].p_vaddr) && (eh.e_entry - ph[i].p_vaddr < ph[i].p_memsz)) {
             entry_ok = YES;
         }
+
+        if (ph[i].p_vaddr < low) {
+            low = ph[i].p_vaddr;
+        }
+
+        if (ph[i].p_vaddr + ph[i].p_memsz - 1 > high) {
+            high = ph[i].p_vaddr + ph[i].p_memsz - 1;
+        }
     }
 
     if (entry_ok == NO) {
         printk("Entry point $%08x isn't in a loaded segment\n", eh.e_entry);
         errno = ENOEXEC;
+        return NOT_OK;
+    }
+
+    /*
+     * Keep the heap off the program's memory until the next program is
+     * loaded: the program's own mallocs mustn't land on it, and 'go' can
+     * run it again after it exits
+     */
+    if (heap_claim_range(low, high, LOADED_PROGRAM_OWNER) == NOT_OK) {
+        printk("$%08x-$%08x isn't free for the program\n", low, high);
+        errno = ENOMEM;
         return NOT_OK;
     }
 

@@ -31,6 +31,7 @@ SOFTWARE.
 
 // From the linker script: the top of the monitor's stack
 extern char _INITIAL_STACK[];
+extern char _PROGRAM_BASE[];
 
 /*
  * The SBC-3 has two RAM areas, each an 8MB window:
@@ -676,12 +677,16 @@ void pr_mem_test_failure(const memtest_result_t *r) {
 }
 
 /*
- * The lowest address the boot test and the memtest command may use: above
- * the monitor's stack and variables. Below this, bank 0 is checked by
- * ram_test.asm at reset.
+ * The lowest address the boot test and the memtest command may use: where
+ * programs load, above the monitor's variables and stack. Below this, bank
+ * 0 is checked by ram_test.asm at reset.
  */
 uint32_t ram_test_start(void) {
-    uint32_t start = (uint32_t)_INITIAL_STACK + 4;
+    uint32_t start = (uint32_t)_PROGRAM_BASE;
+
+    if ((uint32_t)_INITIAL_STACK + 4 > start) {
+        start = (uint32_t)_INITIAL_STACK + 4;
+    }
 
     if ((uint32_t)&_bss_end > start) {
         start = (uint32_t)&_bss_end;

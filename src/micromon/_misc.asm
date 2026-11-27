@@ -73,6 +73,30 @@ illegal_inst:
                 move.b  #$ff,d3
                 rte
 
+
+; int call_on_stack(uint32_t fn, int argc, char *argv[], void *stack_top)
+;
+; Call fn(argc, argv) on a stack of its own, growing down from stack_top,
+; and come back to the caller's stack when it returns. (A program that
+; calls exit() comes back by longjmp instead, which puts the stack back
+; too.)
+call_on_stack::
+                move.l  4(sp),a0                ; fn
+                move.l  8(sp),d0                ; argc
+                move.l  12(sp),d1               ; argv
+                move.l  16(sp),a1               ; the top of the new stack
+
+                move.l  sp,-(a1)                ; the caller's stack, to go back to
+                move.l  a1,sp
+
+                move.l  d1,-(sp)                ; fn(argc, argv)
+                move.l  d0,-(sp)
+                jsr     (a0)
+                addq.l  #8,sp
+
+                move.l  (sp),sp                 ; back on the caller's stack
+                rts
+
                 section .data,data
 
 saved_vector    dc.l    0

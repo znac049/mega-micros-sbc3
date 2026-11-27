@@ -42,6 +42,7 @@ SOFTWARE.
 #define EM_68K          4
 
 #define PT_LOAD         1
+#define PT_GNU_STACK    0x6474e551      // its p_memsz: the stack the program wants (ld -z stack-size=)
 
 #define PF_X            0x1
 #define PF_W            0x2

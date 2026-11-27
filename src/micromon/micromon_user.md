@@ -208,7 +208,9 @@ run <file> [ <args> ... ]
 #### Details
 Loads **_<file>_**, which must be a 32-bit big-endian m68k ELF executable (as produced by the standard program build), and runs it. The program receives **_<file>_** as `argv[0]`, followed by any **_<args>_**.
 
-Each loadable segment must lie between the top of the monitor's stack ($00040000) and the end of RAM, and must not overlap memory the monitor is using. The whole file is checked before anything is loaded, so a bad file leaves memory unchanged.
+Each loadable segment must lie between $00040000, where programs are loaded, and the end of RAM, and must not overlap memory the monitor is using. The whole file is checked before anything is loaded, so a bad file leaves memory unchanged. The program's memory is then kept for it until another program is loaded, so nothing the program (or the monitor) allocates can land on it.
+
+The program runs on a stack of its own, 64KB unless it was linked with `-z stack-size=<bytes>` (the BIOS calls it makes use it too, needing up to about 5KB). If the program uses all, or nearly all, of it, a warning is printed when it ends.
 
 After a successful **_run_**, **_go_** on its own runs the same program again without reloading it. Its data is not reset, so reload it with **_run_** if it depends on its initial values.
 

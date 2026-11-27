@@ -10,6 +10,6 @@ PROVIDE(_STACK_SIZE     = 256k);          /* 128KB default stack size     */
 REGION_ALIAS("TEXT_REGION", RAM)
 REGION_ALIAS("DATA_REGION", RAM)
 
-CODE_START = _STACK_SIZE;
+CODE_START = _PROGRAM_BASE;
 
 INCLUDE "sections.ld"

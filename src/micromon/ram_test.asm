@@ -53,9 +53,11 @@
 
 
 RAM_START       equ     $00000400
-RAM_END         equ     $00040000               ; top of the monitor's stack
-                                                ; (_STACK_SIZE); the C test
-                                                ; covers the rest
+RAM_END         equ     $00040000               ; _PROGRAM_BASE (memory.ld):
+                                                ; the monitor's variables and
+                                                ; stack, and the bottom of
+                                                ; the heap. The C test covers
+                                                ; the rest
 
 ram_test::
 

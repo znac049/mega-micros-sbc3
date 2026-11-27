@@ -33,29 +33,62 @@ SOFTWARE.
 #include "micromon.h"
 #include "expr.h"
 
-uint32_t go_address = 0x40000;
+// Where 'go' starts a program: _PROGRAM_BASE (memory.ld), until one is loaded
+extern char _PROGRAM_BASE[];
+uint32_t go_address = (uint32_t)_PROGRAM_BASE;
 
 jmp_buf go_env;
 
+/*
+ * Each program gets a stack of its own from the heap, rather than running
+ * on the monitor's. Its BIOS calls and the interrupts that happen while it
+ * runs use it too: they need up to about 5K. A program can ask for a
+ * different size by linking with -z stack-size=<bytes>.
+ */
+#define DEFAULT_STACK_SIZE  (64 * 1024)
+#define MIN_STACK_SIZE      (8 * 1024)
+
+/*
+ * The bottom of the stack is filled with this when the program starts. If
+ * any of it has changed when the program ends, the stack (very probably)
+ * overflowed.
+ */
+#define STACK_GUARD_LONGS   256
+#define STACK_GUARD_FILL    0x5354414bU             // "STAK"
+
 static int do_the_business(int argc, char *argv[]) {
-    int (*fn)(const int, const char *[]) = (int (*)(const int, const char *[]))go_address;
+    uint32_t stack_size = (program_stack_size != 0)?program_stack_size:DEFAULT_STACK_SIZE;
+    uint32_t *volatile stack;
+    volatile int return_code;
     int go_res;
-    
+
+    stack_size = (stack_size + 3) & ~3U;
+    if (stack_size < MIN_STACK_SIZE) {
+        stack_size = MIN_STACK_SIZE;
+    }
+
+    // The monitor owns it, so it's still there to check after the program's exit()
+    stack = (uint32_t *)bios_malloc(stack_size, MONITOR_PID);
+    if (stack == NULL) {
+        printk("Not enough memory for the program's stack (%u bytes)\n", (unsigned)stack_size);
+        return -1;
+    }
+
+    for (int i=0; i<STACK_GUARD_LONGS; i++) {
+        stack[i] = STACK_GUARD_FILL;
+    }
+
     go_res = setjmp(go_env);
     if (go_res == 0) {
-        int return_code;
-
         // First call - invoke the user program
         // printk("Launching code at 0x%08x\n", go_address);
-        return_code = fn(argc, (const char **)argv);
+        return_code = call_on_stack(go_address, argc, argv, (uint8_t *)stack + stack_size);
         if (return_code) {
             printk("\n---\nSHOULDN'T HAPPEN: User code exited with %d\n", return_code);
         }
         else {
             printk("\n---\nSHOULDN'T HAPPEN: Exited.\n");
         }
-
-        return return_code;
     }
     else {
         // If we arrive here, it's because either:
@@ -63,8 +96,20 @@ static int do_the_business(int argc, char *argv[]) {
         //   2. the user code has called exit() (most likely)
         // printk("\n---\nUser code exited with code %d\n", go_res-1);
 
-        return go_res - 1;
+        return_code = go_res - 1;
     }
+
+    for (int i=0; i<STACK_GUARD_LONGS; i++) {
+        if (stack[i] != STACK_GUARD_FILL) {
+            printk("\n*** The program used all, or nearly all, of its %u byte stack (link it with -z stack-size=<bytes> for more)\n",
+                (unsigned)stack_size);
+            break;
+        }
+    }
+
+    bios_free(stack, MONITOR_PID);
+
+    return return_code;
 }
 
 int go_run(int argc, char *argv[]) {

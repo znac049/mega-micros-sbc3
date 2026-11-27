@@ -396,10 +396,9 @@ void *bios_malloc(size_t nbytes, pid_t pid) {
     /*
      * Find a chunk with enough space, starting from the highest one and
      * taking memory from its top end. That keeps allocations away from
-     * the bottom of bank 0, where the monitor's stack is (the first free
-     * block starts just after the .bss, below the stack) and where
-     * programs are loaded ($40000 up), until memory runs short. With
-     * bank 1 fitted, it's used first.
+     * the bottom of bank 0, where programs are loaded (_PROGRAM_BASE
+     * up; the loader claims what a program uses), until memory runs
+     * short. With bank 1 fitted, it's used first.
      */
     list_item_t *last = free_items;
 
@@ -525,6 +524,67 @@ bool_t heap_range_in_use(uint32_t start, uint32_t end) {
     }
 
     return NO;
+}
+
+/*
+ * Take start..end (inclusive) out of the free memory for owner, as though
+ * it had been malloc'd, so nothing else is given it: the loader uses this
+ * for the program it loads. The range must be in one free block, with
+ * room below it for the block's header. Returns OK, or NOT_OK if it isn't
+ * free. The block can be bigger than the range, by up to a header and the
+ * smallest payload at either end; clean_heap(owner) gives it back.
+ */
+int heap_claim_range(uint32_t start, uint32_t end, pid_t owner) {
+    uint32_t lo = (start & ~3U) - sizeof(list_item_t);    // the new block's header
+    uint32_t hi = (end + 4) & ~3U;                          // just past it
+    uint32_t min_block = sizeof(list_item_t) + SMALLEST_PAYLOAD;
+    list_item_t *item;
+
+    if ((end < start) || (start < sizeof(list_item_t))) {
+        return NOT_OK;
+    }
+
+    for (item = free_items; item != NULL; item = item->next) {
+        uint32_t item_start = (uint32_t)item;
+        uint32_t item_end = item_start + sizeof(list_item_t) + item->payload_size;   // just past it
+        list_item_t *taken;
+
+        if ((lo < item_start) || (hi > item_end)) {
+            continue;
+        }
+
+        // Too little left either side to be a free block: take it too
+        if ((lo - item_start) < min_block) {
+            lo = item_start;
+        }
+
+        if ((item_end - hi) < min_block) {
+            hi = item_end;
+        }
+
+        // What's below stays free (shrunk), or the whole block goes
+        if (lo == item_start) {
+            remove_from_free(item);
+        }
+        else {
+            item->payload_size = lo - item_start - sizeof(list_item_t);
+        }
+
+        taken = (list_item_t *)lo;
+        taken->signature = ITEM_SIG;
+        taken->payload_size = hi - lo - sizeof(list_item_t);
+        taken->owner = owner;
+        insert_in_allocated(taken);
+
+        // What's above becomes a free block of its own
+        if (hi < item_end) {
+            heap_add_region(hi, item_end - 1);
+        }
+
+        return OK;
+    }
+
+    return NOT_OK;
 }
 
 void clean_heap(pid_t pid) {

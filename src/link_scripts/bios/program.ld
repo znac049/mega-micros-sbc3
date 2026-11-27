@@ -5,11 +5,11 @@ STARTUP(crt0.o)
 
 INCLUDE "memory.ld"
 
-PROVIDE(_STACK_SIZE     = 256k);          /* 128KB default stack size     */
+PROVIDE(_STACK_SIZE     = 256k);          /* not used: the monitor gives each program its own stack */
 
 REGION_ALIAS("TEXT_REGION", RAM)
 REGION_ALIAS("DATA_REGION", RAM)
 
-CODE_START = _STACK_SIZE;
+CODE_START = _PROGRAM_BASE;
 
 INCLUDE "sections.ld"

@@ -419,6 +419,11 @@ void handle_load_command(int argc, char *argv[]) {
         return;
     }
 
+    // This replaces any program loaded from a file: its memory isn't kept
+    // for it any more, and its stack size doesn't apply
+    clean_heap(LOADED_PROGRAM_OWNER);
+    program_stack_size = 0;
+
     printk("Reading...\n");
     status = load_single_srec();
     while (status != DONE) {
